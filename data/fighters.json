@@ -1,0 +1,12 @@
+{
+  "stage": { "groundRatio": 0.79, "playerStartRatio": 0.31, "cpuStartRatio": 0.69, "moveSpeed": 285, "jumpVelocity": 590, "gravity": 1500, "roundSeconds": 60, "winsToMatch": 2 },
+  "characters": {
+    "hung": { "name": "Hùng", "hp": 100, "width": 42, "height": 104, "color": "#ed7955", "glow": "#ffac75", "cpu": false },
+    "mai": { "name": "Mai", "hp": 100, "width": 42, "height": 104, "color": "#6398e8", "glow": "#9bd3ff", "cpu": true }
+  },
+  "attacks": {
+    "light": { "label": "ĐẤM NHẸ", "damage": 7, "startup": 5, "active": 4, "recovery": 10, "range": 63, "height": 38, "yOffset": 37, "knockback": 105, "hitstun": 13, "blockDamage": 1 },
+    "heavy": { "label": "ĐẤM NẶNG", "damage": 15, "startup": 13, "active": 5, "recovery": 20, "range": 81, "height": 57, "yOffset": 25, "knockback": 235, "hitstun": 25, "blockDamage": 2 },
+    "kick": { "label": "ĐÁ", "damage": 11, "startup": 9, "active": 5, "recovery": 15, "range": 93, "height": 35, "yOffset": 56, "knockback": 175, "hitstun": 19, "blockDamage": 2 }
+  }
+}
