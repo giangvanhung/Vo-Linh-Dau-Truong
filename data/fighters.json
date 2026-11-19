@@ -6,6 +6,7 @@
     "moveSpeed": 285,
     "jumpVelocity": 590,
     "gravity": 1500,
+    "pushboxHeightRatio": 0.65,
     "roundSeconds": 60,
     "winsToMatch": 2
   },
@@ -17,7 +18,102 @@
       "height": 104,
       "color": "#ed7955",
       "glow": "#ffac75",
-      "cpu": false
+      "cpu": false,
+      "skills": {
+        "closeSkill": {
+          "label": "Uy Lực Trảm",
+          "damage": 21,
+          "startup": 14,
+          "active": 5,
+          "recovery": 30,
+          "range": 101,
+          "knockback": 340,
+          "cooldownFrames": 300,
+          "radial": false,
+          "height": 74,
+          "yOffset": 17,
+          "hitstun": 27,
+          "hitstop": 4,
+          "guardDamage": 29,
+          "cancelInto": [
+            "light",
+            "kick"
+          ]
+        },
+        "rangedSkill": {
+          "label": "Hỏa Cầu",
+          "damage": 13,
+          "startup": 18,
+          "active": 1,
+          "recovery": 27,
+          "range": 30,
+          "knockback": 145,
+          "hitstun": 20,
+          "hitstop": 2,
+          "guardDamage": 18,
+          "cooldownFrames": 390,
+          "cancelInto": [],
+          "projectile": {
+            "speed": 430,
+            "width": 30,
+            "height": 32,
+            "pierce": false,
+            "color": "#ff783e",
+            "yOffset": 58,
+            "lifetimeFrames": 100
+          }
+        },
+        "ultimate": {
+          "label": "Sóng Đấm Thép",
+          "damage": 13,
+          "startup": 30,
+          "active": 23,
+          "recovery": 34,
+          "range": 115,
+          "height": 84,
+          "yOffset": 11,
+          "cost": 100,
+          "groundOnly": true,
+          "travel": {
+            "speed": 760,
+            "frames": 23,
+            "passesThrough": false
+          },
+          "pulses": [
+            {
+              "from": 0,
+              "to": 10,
+              "knockback": 35,
+              "hitstun": 15
+            },
+            {
+              "from": 10,
+              "to": 17,
+              "knockback": 40,
+              "hitstun": 15
+            },
+            {
+              "from": 17,
+              "to": 23,
+              "knockback": 490,
+              "hitstun": 33,
+              "damage": 23
+            }
+          ],
+          "hitstop": 3,
+          "guardDamage": 11,
+          "cancelInto": [],
+          "effect": {
+            "color": "#ffb36a",
+            "flashSeconds": 0.23,
+            "flashOpacity": 0.27,
+            "shakeSeconds": 0.36,
+            "shakeIntensity": 44,
+            "particles": 24,
+            "trailSeconds": 0
+          }
+        }
+      }
     },
     "mai": {
       "name": "Mai",
@@ -26,7 +122,104 @@
       "height": 104,
       "color": "#6398e8",
       "glow": "#9bd3ff",
-      "cpu": true
+      "cpu": true,
+      "skills": {
+        "closeSkill": {
+          "label": "Vũ Đao Xoáy",
+          "damage": 18,
+          "startup": 11,
+          "active": 7,
+          "recovery": 28,
+          "range": 87,
+          "knockback": 245,
+          "cooldownFrames": 270,
+          "radial": true,
+          "height": 74,
+          "yOffset": 17,
+          "hitstun": 27,
+          "hitstop": 4,
+          "guardDamage": 29,
+          "cancelInto": [
+            "light",
+            "kick"
+          ]
+        },
+        "rangedSkill": {
+          "label": "Phong Kiếm",
+          "damage": 12,
+          "startup": 15,
+          "active": 1,
+          "recovery": 27,
+          "range": 53,
+          "knockback": 145,
+          "hitstun": 20,
+          "hitstop": 2,
+          "guardDamage": 18,
+          "cooldownFrames": 360,
+          "cancelInto": [],
+          "projectile": {
+            "speed": 530,
+            "width": 53,
+            "height": 16,
+            "pierce": true,
+            "color": "#8defff",
+            "yOffset": 58,
+            "lifetimeFrames": 100
+          }
+        },
+        "ultimate": {
+          "label": "Vũ Điệu Lửa",
+          "damage": 12,
+          "startup": 30,
+          "active": 23,
+          "recovery": 31,
+          "range": 107,
+          "height": 84,
+          "yOffset": 11,
+          "cost": 100,
+          "groundOnly": true,
+          "travel": {
+            "speed": 820,
+            "frames": 18,
+            "passesThrough": true,
+            "crossDistance": 52
+          },
+          "pulses": [
+            {
+              "from": 0,
+              "to": 9,
+              "knockback": 20,
+              "hitstun": 14
+            },
+            {
+              "from": 9,
+              "to": 16,
+              "knockback": 25,
+              "hitstun": 14
+            },
+            {
+              "from": 16,
+              "to": 23,
+              "knockback": 365,
+              "hitstun": 30,
+              "damage": 21
+            }
+          ],
+          "hitstop": 3,
+          "guardDamage": 11,
+          "cancelInto": [],
+          "effect": {
+            "color": "#fa765e",
+            "flashSeconds": 0.23,
+            "flashOpacity": 0.27,
+            "shakeSeconds": 0.36,
+            "shakeIntensity": 44,
+            "particles": 24,
+            "trailSeconds": 0.36
+          },
+          "radial": true
+        }
+      }
     }
   },
   "attacks": {
@@ -45,7 +238,8 @@
       "guardDamage": 15,
       "cancelInto": [
         "heavy",
-        "kick"
+        "kick",
+        "closeSkill"
       ]
     },
     "heavy": {
@@ -62,7 +256,8 @@
       "hitstop": 5,
       "guardDamage": 30,
       "cancelInto": [
-        "kick"
+        "kick",
+        "closeSkill"
       ]
     },
     "kick": {
@@ -78,7 +273,9 @@
       "hitstun": 19,
       "hitstop": 0,
       "guardDamage": 22,
-      "cancelInto": []
+      "cancelInto": [
+        "closeSkill"
+      ]
     }
   },
   "combat": {
@@ -119,19 +316,6 @@
       "invulnerableFrames": 18,
       "recoveryFrames": 12,
       "pushSpeed": 380
-    },
-    "ultimate": {
-      "cost": 100,
-      "damage": 27,
-      "startup": 21,
-      "active": 5,
-      "recovery": 35,
-      "range": 96,
-      "knockback": 315,
-      "hitstun": 28,
-      "hitstop": 6,
-      "guardDamage": 42,
-      "cancelInto": []
     }
   }
 }

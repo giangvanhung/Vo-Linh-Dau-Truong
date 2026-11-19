@@ -26,12 +26,14 @@
             <div class="player-meta"><div><span class="player-side">NGƯỜI CHƠI 1</span><strong>HÙNG</strong></div><span class="wins" id="hung-wins" aria-label="Số hiệp thắng">◇ ◇</span></div>
             <div class="health-track"><div class="health-fill" id="hung-health"></div><span class="health-number" id="hung-hp">100</span></div>
             <div class="energy-row"><span>Năng lượng</span><div class="energy-track"><div id="hung-meter-fill" class="energy-fill"></div></div><span id="hung-meter-value">0/100</span></div>
+            <div class="skill-status" id="hung-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
           <div class="timer-wrap"><div class="timer" id="timer">60</div><div class="timer-caption">THỜI GIAN</div></div>
           <div class="player-hud player-mai">
             <div class="player-meta"><span class="wins" id="mai-wins" aria-label="Số hiệp thắng">◇ ◇</span><div class="align-right"><span class="player-side">CPU · CẤP ĐỘ THƯỜNG</span><strong>MAI</strong></div></div>
             <div class="health-track"><div class="health-fill" id="mai-health"></div><span class="health-number" id="mai-hp">100</span></div>
             <div class="energy-row"><span>Năng lượng</span><div class="energy-track"><div id="mai-meter-fill" class="energy-fill"></div></div><span id="mai-meter-value">0/100</span></div>
+            <div class="skill-status" id="mai-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
         </div>
 
@@ -49,10 +51,12 @@
       <section class="lower-grid">
         <div class="controls-card"><div class="section-heading"><span class="tiny-icon">⌘</span><h2>ĐIỀU KHIỂN</h2><span class="heading-note">HÙNG · NGƯỜI CHƠI</span></div><div class="controls-list">
           <div class="control-row"><span class="key-group"><kbd>A</kbd><kbd>D</kbd></span><span>Di chuyển</span></div><div class="control-row"><kbd>W</kbd><span>Nhảy</span></div><div class="control-row"><kbd>S</kbd><span>Ngồi</span></div><div class="control-row"><kbd>J</kbd><span>Đấm nhẹ</span><small>NHANH</small></div><div class="control-row"><kbd>K</kbd><span>Đấm nặng</span><small>UY LỰC</small></div><div class="control-row"><kbd>L</kbd><span>Đá</span><small>TẦM TRUNG</small></div><div class="control-row"><kbd>P</kbd><span>Đỡ đòn</span><small>GIỮ ĐỂ BLOCK</small></div>
-          <div class="control-row"><kbd>O</kbd><span>Lướt</span></div>
-          <div class="control-row"><span class="key-group"><kbd>Shift</kbd><kbd>O</kbd></span><span>Lướt mạnh · 25</span></div>
+          <div class="control-row"><kbd>Q</kbd><span>Lướt</span></div>
+          <div class="control-row"><span class="key-group"><kbd>Shift</kbd><kbd>Q</kbd></span><span>Lướt mạnh · 25</span></div>
           <div class="control-row"><kbd>T</kbd><span>Thoát combo · 50</span></div>
-          <div class="control-row"><kbd>U</kbd><span>Tuyệt chiêu · 100</span></div>
+          <div class="control-row"><kbd>U</kbd><span>Uy Lực Trảm</span></div>
+          <div class="control-row"><kbd>I</kbd><span>Hỏa Cầu</span></div>
+          <div class="control-row"><kbd>O</kbd><span>Sóng Đấm Thép · 100</span></div>
         </div><div class="action-status"><span id="hung-dash">Lướt sẵn sàng</span><span id="hung-escape"></span></div></div>
         <div class="guide-card"><div class="section-heading"><span class="tiny-icon guide-icon">✦</span><h2>LUẬT ĐẤU</h2><span class="heading-note">BO3 · THẮNG 2 HIỆP</span></div><div class="guide-body"><div class="guide-stat"><strong>60<span>s</span></strong><span>MỖI HIỆP</span></div><div class="guide-divider"></div><p>Hạ HP đối thủ về <b>0</b>, hoặc còn nhiều máu hơn khi hết giờ. Thắng <b>2 trên 3 hiệp</b> để trở thành Võ Linh.</p></div><div class="match-score"><span>HÙNG <b id="score-hung">0</b></span><span class="score-dash">—</span><span><b id="score-mai">0</b> MAI</span></div></div>
       </section>

@@ -23,10 +23,14 @@ Mở địa chỉ `http://localhost:5173` trong trình duyệt. Không cần cà
 | K | Đấm nặng |
 | L | Đá |
 | P (giữ) | Đỡ đòn |
-| O | Lướt tới |
-| Shift + O | Lướt mạnh (25 năng lượng) |
+| Q | Lướt tới |
+| Shift + Q | Lướt mạnh (25 năng lượng) |
 | T | Thoát khi đang chịu combo từ 2 hit (50 năng lượng) |
-| U | Tuyệt chiêu (100 năng lượng) |
+| U | Uy Lực Trảm |
+| I | Hỏa Cầu |
+| O | Sóng Đấm Thép (100 năng lượng) |
+
+Mai (CPU) sử dụng Vũ Đao Xoáy, Phong Kiếm và Vũ Điệu Lửa.
 
 ## Cấu trúc
 

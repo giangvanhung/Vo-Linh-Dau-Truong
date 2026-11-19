@@ -4,3 +4,9 @@
 .energy-track { flex: 1; height: 4px; background: #37323c; }
 .energy-fill { width: 0; height: 100%; background: #f0c079; }
 .action-status { display: flex; gap: 12px; color: #c8b9a4; font-size: 8px; margin-top: 10px; }
+
+.hud { height: auto; min-height: 112px; }
+.skill-status { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 5px; color: #a19aa6; font-size: 8px; }
+.player-mai .skill-status { justify-content: flex-end; }
+.skill-status .ready { color: #f3c096; }
+.player-mai .skill-status .ready { color: #a4d7ff; }
