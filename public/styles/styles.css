@@ -268,6 +268,74 @@
 
 @media (max-width: 460px) { .roster-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
+.stage-wrap #setup-panel:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 22px);
+  max-width: 1000px;
+  height: calc(100% - 18px);
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  border-radius: 10px;
+  background: #181923;
+}
+.setup-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px 14px;
+  flex: none;
+  padding: 10px 14px;
+  border-bottom: 1px solid #41404d;
+  background: #222330;
+}
+.setup-header h2 { margin: 0; font-size: 18px; }
+.setup-switcher { display: flex; flex-wrap: wrap; gap: 5px; }
+.setup-switcher button { background: #292b38; border-color: #56576b; font: inherit; font-size: 12px; }
+.setup-switcher button[aria-pressed="true"] { background: #f1ae75; color: #261c1c; border-color: #ffd2a3; }
+.setup-content { flex: 1; min-height: 0; overflow: auto; padding: 10px 14px; }
+.setup-content [hidden] { display: none; }
+#setup-panel #setup-roster:not([hidden]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#setup-panel #setup-roster fieldset {
+  padding: 6px 8px 8px;
+  border: 1px solid #755343;
+  border-radius: 7px;
+  background: #211c25;
+}
+#setup-panel #setup-roster fieldset + fieldset { border-color: #42637c; background: #1b2330; }
+#setup-panel #setup-roster legend { padding: 0 6px; color: #ffbf90; }
+#setup-panel #setup-roster fieldset + fieldset legend { color: #a8d8ff; }
+#setup-roster .roster-name { display: block; margin: 0 0 6px; font: 800 15px/1.2 "Be Vietnam Pro", sans-serif; }
+#setup-panel .roster-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+#setup-roster .roster-card { min-height: 0; padding: 2px; background: #272633; }
+#setup-roster .roster-portrait { width: 100%; max-width: 46px; height: auto; aspect-ratio: 1; }
+#setup-roster .roster-card > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+#setup-panel .roster-card.is-selected { border-color: #ffbc87; background: #583b34; }
+#setup-panel fieldset + fieldset .roster-card.is-selected { border-color: #9fd9ff; background: #29465e; }
+#setup-panel .roster-card:focus-within { outline: 2px solid #fff2d9; outline-offset: 1px; }
+#setup-panel .stage-picker { margin-top: 0; }
+#setup-panel .setup-options { justify-content: flex-start; }
+#setup-panel .setup-options [hidden] { display: none; }
+#setup-panel .setup-footer {
+  flex: none;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 8px 14px;
+  border-top: 1px solid #41404d;
+  background: #222330;
+}
+#setup-panel .setup-footer button { min-height: 36px; }
+#setup-panel .setup-footer [data-menu] { margin-right: auto; }
+#setup-panel #start-button { min-width: 105px; font-weight: 800; }
+@media (max-width: 490px) {
+  #setup-panel #setup-roster:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
+  .setup-header, .setup-content, #setup-panel .setup-footer { padding-left: 8px; padding-right: 8px; }
+  #setup-panel #start-button { min-width: 74px; }
+}
+
 .arena-display-controls {
   display: flex;
   align-items: center;

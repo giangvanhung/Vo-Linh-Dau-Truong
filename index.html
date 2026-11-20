@@ -133,24 +133,35 @@
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="lan-start">Chọn nhân vật</button></div>
           </div>
           <div class="center-callout game-panel setup-panel" id="setup-panel" hidden>
-            <h2 id="setup-title">Chọn nhân vật</h2>
-            <div id="setup-roster"></div>
-            <fieldset class="stage-picker">
-              <legend>Sân đấu</legend>
-              <div id="stage-cards" aria-describedby="stage-description"></div>
-              <p id="stage-description"></p>
-            </fieldset>
-            <p id="team-rules" hidden>Đấu tiếp sức. P2 vào khi P1 bị hạ. Hai CPU ngẫu nhiên cũng lần lượt ra sân.</p>
-            <div class="setup-options">
-              <label class="toggle-field">Hiệu ứng môi trường <input class="toggle-input" type="checkbox" id="stage-hazards" checked></label>
-              <label class="toggle-field">Vui nhộn · Hộp mù <input class="toggle-input" type="checkbox" id="party-items" aria-describedby="party-items-hint"></label>
-              <label id="round-format-picker">Thể thức <select id="round-format"></select></label>
-              <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
+            <header class="setup-header">
+              <h2 id="setup-title">Chọn nhân vật</h2>
+              <nav class="setup-switcher" aria-label="Thiết lập trận đấu">
+                <button type="button" class="panel-button" aria-controls="setup-roster" aria-pressed="true">Võ sĩ</button>
+                <button type="button" class="panel-button" aria-controls="setup-stage" aria-pressed="false">Sân đấu</button>
+                <button type="button" class="panel-button" aria-controls="setup-rules" aria-pressed="false">Luật đấu</button>
+              </nav>
+            </header>
+            <div class="setup-content">
+              <div id="setup-roster"></div>
+              <fieldset class="stage-picker" id="setup-stage" hidden>
+                <legend id="setup-stage-title">Sân đấu</legend>
+                <div id="stage-cards" aria-describedby="stage-description"></div>
+                <p id="stage-description"></p>
+              </fieldset>
+              <section id="setup-rules" aria-label="Luật đấu" hidden>
+                <p id="team-rules" hidden>Đấu tiếp sức. P2 vào khi P1 bị hạ. Hai CPU ngẫu nhiên cũng lần lượt ra sân.</p>
+                <div class="setup-options">
+                  <label class="toggle-field">Hiệu ứng môi trường <input class="toggle-input" type="checkbox" id="stage-hazards" checked></label>
+                  <label class="toggle-field">Vui nhộn · Hộp mù <input class="toggle-input" type="checkbox" id="party-items" aria-describedby="party-items-hint"></label>
+                  <label id="round-format-picker">Thể thức <select id="round-format"></select></label>
+                  <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
+                </div>
+                <p id="party-items-hint">Bật để hộp đầu tiên rơi khoảng 3 giây sau khi hiệp bắt đầu. Chạm hộp dấu hỏi để nhận vũ khí hoặc buff ngẫu nhiên. Đòn nhẹ và Đòn nặng đều dùng vũ khí nhặt được.</p>
+              </section>
             </div>
-            <p id="party-items-hint">Bật để hộp đầu tiên rơi khoảng 3 giây sau khi hiệp bắt đầu. Chạm hộp dấu hỏi để nhận vũ khí hoặc buff ngẫu nhiên. Đòn nhẹ và Đòn nặng đều dùng vũ khí nhặt được.</p>
-            <div class="panel-actions">
+            <div class="panel-actions setup-footer">
               <button class="panel-button" data-menu>Về menu</button>
-              <button type="button" class="panel-button" id="solo-lan-button" aria-controls="lan-panel">Kết nối tay cầm P1</button>
+              <button type="button" class="panel-button" id="solo-lan-button" aria-controls="lan-panel">Tay cầm P1</button>
               <button class="primary-button" id="start-button">Vào trận</button>
             </div>
           </div>

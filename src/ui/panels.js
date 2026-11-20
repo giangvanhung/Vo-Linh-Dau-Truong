@@ -18,7 +18,12 @@ function choiceCard(group, id, name, image, checked, onSelect) {
   radio.name = group;
   radio.value = id;
   radio.checked = checked;
-  radio.addEventListener('change', () => onSelect(id));
+  card.classList.toggle('is-selected', checked);
+  radio.addEventListener('change', () => {
+    card.parentElement.querySelector('.is-selected')?.classList.remove('is-selected');
+    card.classList.add('is-selected');
+    onSelect(id);
+  });
   const preview = document.createElement(image ? 'img' : 'span');
   preview.className = 'roster-portrait';
   if (image) {
@@ -58,8 +63,23 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
   const stageIds = Object.keys(stages);
   let selectedStage = stageIds[0];
   const hazards = byId('stage-hazards');
+  const setupPanel = byId('setup-panel');
+  const setupContent = setupPanel.querySelector('.setup-content');
+  const setupSections = [...setupPanel.querySelectorAll('.setup-switcher button')];
+  function showSetupSection(id) {
+    for (const button of setupSections) {
+      const section = button.getAttribute('aria-controls');
+      button.setAttribute('aria-pressed', String(section === id));
+      byId(section).hidden = section !== id;
+    }
+    setupContent.scrollTop = 0;
+  }
+  for (const button of setupSections) {
+    button.addEventListener('click', () => showSetupSection(button.getAttribute('aria-controls')));
+  }
   function selectStage(id) {
     selectedStage = id;
+    byId('setup-stage-title').textContent = stages[id]?.name ?? 'Ngẫu nhiên';
     byId('stage-description').textContent = stages[id]?.description ?? 'Sân đấu sẽ được chọn khi vào trận.';
   }
   for (const [id, stage] of [...Object.entries(stages), ['random', { name: 'Ngẫu nhiên' }]]) {
@@ -80,6 +100,8 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
     const legend = sideLabels[side] = document.createElement('legend');
     const cards = document.createElement('div');
     cards.className = 'roster-cards';
+    const name = document.createElement('strong');
+    name.className = 'roster-name';
     const detail = document.createElement('p');
     const condition = document.createElement('p');
     condition.className = 'roster-detail';
@@ -87,6 +109,7 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
     function select(id) {
       selections[side] = id;
       const fighter = characters[id];
+      name.textContent = fighter?.name ?? 'Ngẫu nhiên';
       detail.textContent = fighter
         ? [fighter.profile.role, ...Object.values(fighter.skills).map(skill => skill.label)].join(' · ')
         : 'Võ sĩ sẽ được chọn khi vào trận.';
@@ -102,7 +125,7 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
       cards.append(choiceCard(side + '-fighter', id, fighter.name, image, selections[side] === id, select));
     }
     select(selections[side]);
-    group.append(legend, cards, detail, condition);
+    group.append(legend, name, cards, detail, condition);
     roster.append(group);
   }
 
@@ -132,6 +155,7 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
     sideLabels.opponent.textContent = lan || localMode ? 'Người chơi 2' : practice ? 'Bạn tập' : 'Đối thủ CPU';
     byId('difficulty-picker').hidden = practice || lan || localMode === 'versus';
     byId('setup-title').textContent = practice ? 'Chọn nhân vật luyện tập' : lan || localMode ? 'Chọn nhân vật P1 và P2' : 'Chọn nhân vật';
+    showSetupSection('setup-roster');
     show('setup');
   }
 
