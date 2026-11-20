@@ -78,6 +78,22 @@ button.is-down, button:active { background: #f3a368; color: #23151d; border-colo
 }
 .pad-tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px }
 .pad-tools button { min-height: 40px; padding-inline: 8px; font-size: .8rem; touch-action: manipulation }
+.pad-network {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 84px; padding: 4px 8px; border-radius: 8px;
+  background: #211c2a; color: #c9c3d3; font-size: .76rem; font-variant-numeric: tabular-nums;
+}
+.pad-signal { display: flex; align-items: end; gap: 2px; height: 12px }
+.pad-signal i { width: 3px; border-radius: 1px; background: currentColor; opacity: .28 }
+.pad-signal i:nth-child(1) { height: 4px }
+.pad-signal i:nth-child(2) { height: 8px }
+.pad-signal i:nth-child(3) { height: 12px }
+.pad-network[data-quality="good"] { color: #90ebba }
+.pad-network[data-quality="fair"] { color: #ffdd85 }
+.pad-network[data-quality="poor"] { color: #ffaaa8 }
+.pad-network[data-quality="good"] i,
+.pad-network[data-quality="fair"] i:nth-child(-n+2),
+.pad-network[data-quality="poor"] i:first-child { opacity: 1 }
 .pad-expanded { overflow: hidden }
 .pad-connected.pad-expanded .controller-header { display: none }
 .pad-expanded #pad {

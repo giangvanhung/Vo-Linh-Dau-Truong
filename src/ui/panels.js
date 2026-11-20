@@ -72,7 +72,9 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
         ? [fighter.profile.role, ...Object.values(fighter.skills).map(skill => skill.label)].join(' · ')
         : 'Võ sĩ sẽ được chọn khi vào trận.';
       condition.hidden = !fighter?.awakening;
-      condition.textContent = fighter?.awakening ? 'Đột phá · ' + fighter.awakening.condition : '';
+      condition.textContent = fighter?.awakening
+        ? (fighter.awakening.evolution ? 'Tiến hóa' : 'Đột phá') + ' · ' + fighter.awakening.condition
+        : '';
     }
 
     const options = [...entries, ['random', { name: 'Ngẫu nhiên' }]];

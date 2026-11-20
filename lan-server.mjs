@@ -44,9 +44,9 @@ export function attachLan(server) {
   }
 
   sockets.on('connection', (socket, url, request) => {
-    socket.alive = true;
+    socket.missedPongs = 0;
     socket.on('error', () => socket.terminate());
-    socket.on('pong', () => { socket.alive = true; });
+    socket.on('pong', () => { socket.missedPongs = 0; });
     if (url.searchParams.get('role') === 'host') {
       if (rooms.size >= 32) return socket.close(1013, 'Server busy');
       const id = randomBytes(12).toString('base64url');
@@ -101,7 +101,11 @@ export function attachLan(server) {
     if (room.players[index]) return socket.close(4003, 'Slot occupied');
     room.players[index] = socket;
     const player = index + 1;
-    socket.lastInput = Date.now();
+    socket.releaseStaleInput = now => {
+      if (!socket.lastInput || now - socket.lastInput <= 3500) return;
+      socket.lastInput = 0;
+      send(room.host, { type: 'reset', player });
+    };
     socket.on('close', () => {
       room.players[index] = null;
       send(room.host, { type: 'reset', player });
@@ -113,6 +117,9 @@ export function attachLan(server) {
       socket.lastInput = Date.now();
       try {
         const message = JSON.parse(raw);
+        if (message.type === 'heartbeat' && Number.isFinite(message.sentAt)) {
+          send(socket, { type: 'heartbeat', sentAt: message.sentAt });
+        }
         if (message.type === 'reset') send(room.host, { type: 'reset', player });
         if (message.type === 'input' && buttons.has(message.button) && typeof message.down === 'boolean') {
           send(room.host, { type: 'input', player, button: message.button, down: message.down });
@@ -122,12 +129,14 @@ export function attachLan(server) {
   });
 
   const check = setInterval(() => {
+    const now = Date.now();
     for (const socket of sockets.clients) {
-      if (!socket.alive || (socket.lastInput && Date.now() - socket.lastInput > 3500)) {
+      if (socket.missedPongs >= 5) {
         socket.terminate();
         continue;
       }
-      socket.alive = false;
+      socket.releaseStaleInput?.(now);
+      socket.missedPongs++;
       socket.ping();
     }
   }, 1500);

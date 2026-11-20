@@ -247,6 +247,10 @@
     "mai": {
       "awakening": {
         "condition": "Lộn né qua đòn rồi phản công trúng",
+        "evolution": {
+          "wings": "/assets/effects/mai-evolution-wings.png",
+          "color": "#9cdcff"
+        },
         "skill": "rangedSkill",
         "label": "Phong Kiếm · Hồi Phong",
         "changes": {

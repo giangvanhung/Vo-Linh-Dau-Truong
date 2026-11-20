@@ -13,6 +13,10 @@ export function createArenaRenderer(canvas, config) {
   const paths = new Set(Object.values(config.stages).flatMap(stage => [stage.background, ...stage.parallax]));
   paths.add(sparkSheet);
   paths.add(evolutionFist);
+  for (const character of Object.values(config.characters)) {
+    const wings = character.awakening?.evolution?.wings;
+    if (wings) paths.add(wings);
+  }
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
   function drawStage(ctx, stage, w, h, ground, center) {
@@ -69,6 +73,7 @@ export function createArenaRenderer(canvas, config) {
     for (const shot of projectiles) drawProjectile(shot, ground);
     for (const f of fighters) drawAura(f, ground, animationTime);
     for (const f of fighters) {
+      if (f.evolving && f.hp > 0) drawEvolutionWings(f, ground, animationTime);
       drawFighter(f, ground, animationTime);
       if (f.attack?.evolvedPunch) drawEvolutionFist(f, ground, animationTime);
       if (f.hp <= 0 || (!f.freezeFrames && !f.poisonFrames)) continue;
@@ -281,7 +286,7 @@ export function createArenaRenderer(canvas, config) {
     ctx.translate(fighter.x, ground + fighter.y);
     ctx.strokeStyle = ctx.fillStyle = fighter.glow;
     if (fighter.charging || fighter.evolving) {
-      const color = fighter.evolving ? '#ffcc53' : fighter.glow;
+      const color = fighter.evolving ? fighter.awakening.evolution.color ?? '#ffcc53' : fighter.glow;
       ctx.strokeStyle = color;
       drawChargeAura(fighter, time, fighter.evolving ? 1 : Math.min(1, fighter.chargeFrames / 24), color);
       ctx.restore();
@@ -300,6 +305,22 @@ export function createArenaRenderer(canvas, config) {
         ctx.fillRect(Math.round(Math.cos(angle) * 34), Math.round(-height), 3, 3);
       }
     }
+    ctx.restore();
+  }
+
+  function drawEvolutionWings(fighter, ground, time) {
+    const image = images.get(fighter.awakening.evolution.wings);
+    if (!image) return;
+    const pulse = Math.sin(time / 105);
+    const progress = Math.min(1, (480 - fighter.awakeningFrames + 1) / 12, fighter.awakeningFrames / 20);
+    const width = fighter.height * (1.42 + pulse * .09) * (.62 + .38 * progress);
+    const height = width * image.height / image.width;
+    ctx.save();
+    ctx.translate(fighter.x - fighter.facing * 8, ground + fighter.y - fighter.hurtbox.height * .67);
+    ctx.scale(fighter.facing, 1);
+    ctx.rotate(pulse * .055);
+    ctx.globalAlpha = progress * (.94 + pulse * .06);
+    ctx.drawImage(image, -width * .66, -height * .83, width, height);
     ctx.restore();
   }
 

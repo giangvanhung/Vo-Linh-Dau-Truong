@@ -85,8 +85,8 @@ export class Fighter {
     this.awakeningUsed = true;
     this.awakeningFrames = 480;
     this.attackLock = .32;
-    if (this.evolving) {
-      const { bonusHp } = this.awakening.evolution;
+    const bonusHp = this.awakening.evolution?.bonusHp;
+    if (bonusHp) {
       this.maxHp = this.baseHp + bonusHp;
       this.hp = Math.min(this.maxHp, this.hp + bonusHp);
     }
@@ -132,7 +132,7 @@ export class Fighter {
 
     if (!previous) this.combo = 0;
     this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false };
-    if (this.evolving && (id === 'light' || id === 'heavy')) {
+    if (this.evolving && this.awakening.evolution.punchMultiplier && (id === 'light' || id === 'heavy')) {
       this.attack.evolvedPunch = true;
     }
     this.crouching = false;

@@ -7,6 +7,8 @@ const join = document.querySelector('#join');
 const leave = document.querySelector('#leave');
 const qrReconnect = document.querySelector('#qr-reconnect');
 const pad = document.querySelector('#pad');
+const network = document.querySelector('#pad-network');
+const latency = document.querySelector('#pad-latency');
 const stick = document.querySelector('#stick');
 const arrows = pad.querySelector('.direction');
 const directionMode = document.querySelector('#direction-mode');
@@ -20,8 +22,9 @@ const portrait = matchMedia('(orientation: portrait)');
 const fullscreenRoot = document.documentElement;
 const directions = new Set();
 let stickPointer = null;
+let stickRect;
 const pointers = new Map();
-let socket, heartbeat;
+let socket, heartbeat, reconnectTimer;
 
 function send(message) {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
@@ -32,6 +35,7 @@ function reset() {
   pointers.clear();
   directions.clear();
   stickPointer = null;
+  stickRect = undefined;
   centerStick();
   send({ type: 'reset' });
 }
@@ -39,6 +43,7 @@ function reset() {
 function showJoin(message, expired = false) {
   reset();
   clearInterval(heartbeat);
+  clearTimeout(reconnectTimer);
   label.textContent = message;
   setExpanded(false);
   exitFullscreen();
@@ -223,29 +228,71 @@ qrImage.addEventListener('change', readRoomQr);
 
 playerTwo.hidden = query.get('solo') === '1';
 
+function showNetwork(quality, message) {
+  network.dataset.quality = quality;
+  if (latency.textContent !== message) latency.textContent = message;
+}
+
+function connectPlayer(player, retries = 0) {
+  const connection = socket = lanSocket({ room, player });
+  let joined = false;
+  let lastReply;
+  function beat() {
+    const now = performance.now();
+    if (now - lastReply > 3500) showNetwork('waiting', 'Chưa đo được');
+    send({ type: 'heartbeat', sentAt: now });
+  }
+  connection.onmessage = ({ data }) => {
+    if (socket !== connection) return;
+    const message = JSON.parse(data);
+    if (message.type === 'heartbeat' && joined && Number.isFinite(message.sentAt)) {
+      lastReply = performance.now();
+      const ms = Math.max(0, Math.round(lastReply - message.sentAt));
+      showNetwork(ms < 90 ? 'good' : ms < 180 ? 'fair' : 'poor', ms + ' ms');
+      return;
+    }
+    if (message.type !== 'joined') return;
+    joined = true;
+    label.textContent = 'Đã kết nối P' + player;
+    pad.hidden = leave.hidden = false;
+    document.body.classList.add('pad-connected');
+    qrReconnect.hidden = true;
+    if (!retries) {
+      setExpanded(true);
+      setRotated(true);
+    }
+    lastReply = performance.now();
+    showNetwork('waiting', 'Đang đo');
+    beat();
+    heartbeat = setInterval(beat, 750);
+  };
+  connection.onclose = event => {
+    if (socket !== connection) return;
+    socket = undefined;
+    const attempts = joined ? 0 : retries;
+    if ((joined || retries) && attempts < 4 && [1006, 1012, 1013, 4003].includes(event.code)) {
+      reset();
+      clearInterval(heartbeat);
+      label.textContent = 'Đang kết nối lại P' + player + '…';
+      showNetwork('waiting', 'Kết nối lại…');
+      reconnectTimer = setTimeout(() => {
+        reset();
+        connectPlayer(player, attempts + 1);
+      }, 900 + attempts * 1500);
+      return;
+    }
+    showJoin(event.code === 4003 ? 'Vị trí này đang được dùng. Hãy chọn vị trí khác.'
+      : event.code === 4002 ? 'Liên kết đã hết hạn. Mở phòng trên máy tính rồi bấm Quét QR mới.'
+      : 'Mất kết nối. Thử vào lại hoặc quét mã QR mới.', event.code === 4002);
+  };
+}
+
 for (const button of join.querySelectorAll('button')) {
   button.onclick = () => {
     stopScan();
     join.hidden = true;
     label.textContent = 'Đang kết nối…';
-    const connection = socket = lanSocket({ room, player: button.dataset.player });
-    connection.onmessage = ({ data }) => {
-      if (socket !== connection || JSON.parse(data).type !== 'joined') return;
-      label.textContent = 'Đã kết nối P' + button.dataset.player;
-      pad.hidden = leave.hidden = false;
-      document.body.classList.add('pad-connected');
-      qrReconnect.hidden = true;
-      setExpanded(true);
-      setRotated(true);
-      heartbeat = setInterval(() => send({ type: 'heartbeat' }), 750);
-    };
-    connection.onclose = event => {
-      if (socket !== connection) return;
-      socket = undefined;
-      showJoin(event.code === 4003 ? 'Vị trí này đang được dùng. Hãy chọn vị trí khác.'
-        : event.code === 4002 ? 'Liên kết đã hết hạn. Mở phòng trên máy tính rồi bấm Quét QR mới.'
-        : 'Mất kết nối. Thử vào lại hoặc quét mã QR mới.', event.code === 4002);
-    };
+    connectPlayer(button.dataset.player);
   };
 }
 
@@ -261,6 +308,7 @@ leave.onclick = leaveRoom;
 document.querySelector('#leave-pad').onclick = leaveRoom;
 
 function setExpanded(enabled) {
+  stickRect = undefined;
   if (!enabled) setRotated(false);
   document.body.classList.toggle('pad-expanded', enabled);
   expand.setAttribute('aria-pressed', String(enabled));
@@ -268,6 +316,7 @@ function setExpanded(enabled) {
 }
 
 function setRotated(enabled) {
+  stickRect = undefined;
   document.body.classList.toggle('pad-rotate', enabled);
   rotate.setAttribute('aria-pressed', String(enabled));
   rotate.textContent = enabled ? 'Bỏ xoay ngang' : 'Xoay ngang';
@@ -313,6 +362,7 @@ rotate.onclick = () => {
   if (enabled && !document.body.classList.contains('pad-expanded')) void toggleExpanded(true);
 };
 portrait.addEventListener?.('change', reset);
+window.addEventListener('resize', () => { stickRect = undefined; });
 
 light.onclick = () => {
   const enabled = document.body.classList.toggle('pad-light');
@@ -372,7 +422,7 @@ function updateDirections(next) {
 
 function moveStick(event) {
   if (event.pointerId !== stickPointer) return;
-  const rect = stick.getBoundingClientRect();
+  const rect = stickRect ??= stick.getBoundingClientRect();
   const screenX = event.clientX - rect.left - rect.width / 2;
   const screenY = event.clientY - rect.top - rect.height / 2;
   const rotated = portrait.matches && document.body.classList.contains('pad-rotate');
@@ -382,16 +432,18 @@ function moveStick(event) {
   const scale = Math.min(1, travel / Math.max(1, Math.hypot(x, y)));
   stick.style.setProperty('--stick-x', x * scale + 'px');
   stick.style.setProperty('--stick-y', y * scale + 'px');
-  const threshold = travel * 0.4;
   const next = new Set();
-  if (Math.abs(x) > threshold) next.add(x < 0 ? 'a' : 'd');
-  if (Math.abs(y) > threshold) next.add(y < 0 ? 'w' : 's');
+  const horizontal = x < 0 ? 'a' : 'd';
+  const vertical = y < 0 ? 'w' : 's';
+  if (Math.abs(x) > travel * (directions.has(horizontal) ? .22 : .34)) next.add(horizontal);
+  if (Math.abs(y) > travel * (directions.has(vertical) ? .30 : .48)) next.add(vertical);
   updateDirections(next);
 }
 
 stick.addEventListener('pointerdown', event => {
   if (event.button !== 0 || stickPointer !== null) return;
   event.preventDefault();
+  stickRect = undefined;
   stickPointer = event.pointerId;
   stick.setPointerCapture(event.pointerId);
   moveStick(event);
@@ -431,8 +483,7 @@ pad.addEventListener('contextmenu', event => event.preventDefault());
 window.addEventListener('blur', reset);
 window.addEventListener('pagehide', () => {
   stopScan();
-  reset();
-  socket?.close();
+  if (socket || reconnectTimer) leaveRoom();
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });
 if (!room) showJoin('Quét mã QR trên máy tính để mở tay cầm.');

@@ -64,10 +64,11 @@ export function createHud(config) {
       fighter.freezeFrames ? 'Đóng băng' : fighter.frostStacks ? 'Hàn ' + fighter.frostStacks + '/3' : '',
       fighter.poisonFrames ? 'Trúng độc ' + fighter.poisonStacks + '/3' : '',
     ].filter(Boolean).join(' · ');
-    const focus = fighter.awakeningFrames ? (fighter.evolving ? 'Tiến hóa' : 'Đột phá') + ' · ' + (fighter.awakeningFrames * FRAME_SECONDS).toFixed(1) + 's'
+    const transformation = fighter.awakening?.evolution ? 'Tiến hóa' : 'Đột phá';
+    const focus = fighter.awakeningFrames ? transformation + ' · ' + (fighter.awakeningFrames * FRAME_SECONDS).toFixed(1) + 's'
       : fighter.charging ? 'Đang tụ khí'
-      : fighter.awakeningReady ? 'Đột phá sẵn sàng'
-      : fighter.awakeningUnlocked && !fighter.awakeningUsed ? 'Đã đạt điều kiện Đột phá' : '';
+      : fighter.awakeningReady ? transformation + ' sẵn sàng'
+      : fighter.awakeningUnlocked && !fighter.awakeningUsed ? 'Đã đạt điều kiện ' + transformation : '';
     const message = [focus, status].filter(Boolean).join(' · ');
     if (meter.focus.textContent !== message) meter.focus.textContent = message;
     if (meter.dash) meter.dash.textContent = fighter.dashCooldown

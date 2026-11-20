@@ -341,7 +341,8 @@ export function startGame(config) {
     if (!canBuffer) fighter.bufferedAttack = null;
     if (input.action === 'awaken' && fighter.awaken()) {
       toast(fighter.name + (fighter.evolving ? ' · TIẾN HÓA!' : ' · ĐỘT PHÁ!'));
-      burst(fighter.x, fighter.y - 16, fighter.evolving ? 42 : 26, fighter.evolving ? '#ffcc53' : fighter.glow);
+      const color = fighter.evolving ? fighter.awakening.evolution.color ?? '#ffcc53' : fighter.glow;
+      burst(fighter.x, fighter.y - 16, fighter.evolving ? 42 : 26, color);
       if (fighter.evolving) shake = Math.max(shake, .24);
       return;
     }
