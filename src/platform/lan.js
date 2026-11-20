@@ -22,6 +22,8 @@ function inputState() {
       if (button === 'w') jump = true;
       if (button === 'q') action = 'dash';
       if (button === 'enhanced') action = 'enhancedDash';
+      if (button === 'r') action = 'roll';
+      if (button === 'g') action = 'awaken';
       if (button === 't') action = 'escape';
     },
     clear() {
@@ -31,7 +33,7 @@ function inputState() {
     },
     consume() {
       const input = { direction: Number(held.has('d')) - Number(held.has('a')),
-        crouch: held.has('s'), guard: held.has('p'), jump, attack, action };
+        charge: held.has('f'), crouch: held.has('s'), guard: held.has('p'), jump, attack, action };
       attack = action = undefined;
       jump = false;
       return input;
@@ -42,6 +44,7 @@ function inputState() {
 export function mergeInputs(local, remote) {
   return {
     direction: local.direction || remote.direction,
+    charge: local.charge || remote.charge,
     crouch: local.crouch || remote.crouch,
     guard: local.guard || remote.guard,
     jump: local.jump || remote.jump,

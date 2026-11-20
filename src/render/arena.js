@@ -1,32 +1,31 @@
+import { activeZone, zoneRanges } from '../game/stages.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
 
 export function createArenaRenderer(canvas, config) {
   const ctx = canvas.getContext('2d');
 
   const drawSprite = createSpriteRenderer(ctx, config.characters);
-  const layers = [null, null, null];
-  const { background, parallax = [] } = config.stage;
-  let composite;
-  if (background) loadImage(background).then(image => { composite = image; }).catch(() => {});
-  parallax.forEach((path, index) => {
-    loadImage(path).then(image => { layers[index] = image; }).catch(() => {});
-  });
+  const images = new Map();
+  const paths = new Set(Object.values(config.stages).flatMap(stage => [stage.background, ...stage.parallax]));
+  for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
-  function drawStage(w, h, ground, center) {
+  function drawStage(stage, w, h, ground, center) {
+    const layers = stage.parallax.map(path => images.get(path));
+    const composite = images.get(stage.background);
     ctx.fillStyle = '#191922';
     ctx.fillRect(0, 0, w, h);
-    const draw = (image, shift) => {
-      const scale = Math.max(w * 1.10 / image.width, h / image.height);
+    const draw = (image, shift = 0, overscan = 1) => {
+      const scale = Math.max(w * overscan / image.width, h / image.height);
       const width = image.width * scale;
       const height = image.height * scale;
-      const floor = config.stage.artGroundRatio ?? .724;
+      const floor = stage.artGroundRatio ?? .724;
       const top = Math.min(0, Math.max(h - height, ground - height * floor));
       ctx.drawImage(image, (w - width) / 2 + shift, top, width, height);
     };
-    if (layers.every(Boolean)) {
+    if (layers.length && layers.every(Boolean)) {
       layers.forEach((image, index) => {
         const shift = (w / 2 - center) * [.035, .075, .12][index];
-        draw(image, Math.max(-w * .05, Math.min(w * .05, shift)));
+        draw(image, Math.max(-w * .05, Math.min(w * .05, shift)), 1.10);
       });
     } else if (composite || layers[0]) {
       draw(composite ?? layers[0], 0);
@@ -38,13 +37,14 @@ export function createArenaRenderer(canvas, config) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  function render({ fighters, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime }) {
+  function render({ stage, stageFrame, fighters, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime }) {
     const w = canvas.width, h = canvas.height, ground = h * config.stage.groundRatio;
     ctx.clearRect(0, 0, w, h);
     const center = (fighters[0].x + fighters[1].x) / 2;
-    drawStage(w, h, ground, center);
+    drawStage(stage, w, h, ground, center);
     ctx.save();
     applyShake(shake, screenEffect);
+    drawTerrain(stage, stageFrame, w, ground);
     for (const trail of trails) {
       ctx.globalAlpha = trail.life / trail.total;
       ctx.fillStyle = trail.color;
@@ -52,7 +52,32 @@ export function createArenaRenderer(canvas, config) {
     }
     ctx.globalAlpha = 1;
     for (const shot of projectiles) drawProjectile(shot, ground);
-    for (const f of fighters) drawFighter(f, ground, animationTime);
+    for (const f of fighters) drawAura(f, ground, animationTime);
+    for (const f of fighters) {
+      drawFighter(f, ground, animationTime);
+      if (f.hp <= 0 || (!f.freezeFrames && !f.poisonFrames)) continue;
+      ctx.save();
+      ctx.strokeStyle = f.freezeFrames ? '#a7f0ff' : '#ace781';
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.globalAlpha = .62;
+      const y = ground + f.y;
+      if (f.freezeFrames) {
+        ctx.beginPath();
+        ctx.moveTo(f.x - 31, y);
+        ctx.lineTo(f.x - 24, y - f.height * .68);
+        ctx.lineTo(f.x, y - f.height - 4);
+        ctx.lineTo(f.x + 25, y - f.height * .59);
+        ctx.lineTo(f.x + 33, y);
+        ctx.closePath();
+        ctx.stroke();
+      } else {
+        for (let i = 0; i < 4; i++) {
+          const rise = (animationTime / 24 + i * 13) % 46;
+          ctx.fillRect(f.x + Math.cos(i * 2.1 + rise / 10) * 25, y - rise, 3, 3);
+        }
+      }
+      ctx.restore();
+    }
     for (const p of particles) { ctx.globalAlpha = Math.max(0, p.life / .35); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); }
     ctx.globalAlpha = 1;
     for (const f of floaters) {
@@ -120,13 +145,90 @@ export function createArenaRenderer(canvas, config) {
     }
   }
 
-  function drawProjectile({ x, y, attack }, ground) {
-    const { color, width, height, pierce } = attack.projectile;
+  function drawTerrain(stage, frame, w, ground) {
+    ctx.save();
+    for (const platform of stage.platforms ?? []) {
+      const [left, right] = platform.range.map(value => Math.round(value * w));
+      const y = ground + platform.y;
+      ctx.fillStyle = '#182939';
+      ctx.fillRect(left + 5, y + 4, right - left - 10, 13);
+      ctx.fillStyle = stage.zone?.color ?? '#92a6b7';
+      ctx.fillRect(left, y, right - left, 4);
+      ctx.fillStyle = '#536579';
+      for (let x = left + 16; x < right - 6; x += 24) ctx.fillRect(x, y + 7, 8, 4);
+    }
+    const zone = stage.zone;
+    if (zone) {
+      const active = activeZone(zone, frame);
+      const warning = zone.cycle && frame % zone.cycle >= zone.cycle - zone.active - 48;
+      ctx.fillStyle = zone.color;
+      for (const [start, end] of zoneRanges(zone)) {
+        const left = start * w, width = (end - start) * w;
+        ctx.globalAlpha = active ? .55 : warning ? .35 : .15;
+        ctx.fillRect(left, ground + 2, width, zone.kind === 'slip' ? 5 : 3);
+        if (!active || zone.kind === 'slip') continue;
+        for (let i = 0; i < 12; i++) {
+          const x = left + ((i * 37 + frame * 3) % width);
+          const y = ground - 5 - ((i * 17 + frame * 4) % (zone.kind === 'wind' ? 145 : 72));
+          ctx.fillRect(x, y, zone.kind === 'wind' ? 15 : 3, zone.kind === 'wind' ? 2 : 9);
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawAura(fighter, ground, time) {
+    const fullMeter = fighter.meter >= fighter.rules.meterMax;
+    if (fighter.hp <= 0 || (!fighter.charging && !fighter.awakeningFrames && !fullMeter)) return;
+    const pulse = Math.sin(time / 110);
+    ctx.save();
+    ctx.translate(fighter.x, ground + fighter.y);
+    ctx.strokeStyle = ctx.fillStyle = fighter.glow;
+    ctx.globalAlpha = fighter.charging ? .40 + fighter.chargeFrames / 200 : .78;
+    ctx.lineWidth = fighter.awakeningFrames ? 3 : 2;
+    ctx.beginPath();
+    const sweep = fighter.charging && !fullMeter ? Math.PI * 2 * Math.min(1, fighter.chargeFrames / 35) : Math.PI * 2;
+    ctx.ellipse(0, 0, 35 + pulse * 2, 9, 0, 0, sweep);
+    ctx.stroke();
+    if (fighter.charging || fighter.awakeningFrames) {
+      for (let i = 0; i < 8; i++) {
+        const angle = time / 340 + i * Math.PI / 4;
+        const height = (time / 27 + i * 9) % 66;
+        ctx.globalAlpha = (1 - height / 66) * .65;
+        ctx.fillRect(Math.round(Math.cos(angle) * 34), Math.round(-height), 3, 3);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawProjectile({ x, y, facing, attack }, ground) {
+    const { color, width, height, pierce, shape } = attack.projectile;
     ctx.save();
     ctx.shadowColor = ctx.fillStyle = color;
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 10;
+    ctx.translate(x, ground + y);
+    ctx.scale(facing, 1);
     ctx.beginPath();
-    ctx.ellipse(x, ground + y, width / 2, height / 2, pierce ? -.22 * attack.facing : 0, 0, Math.PI * 2);
+    const outlines = {
+      ice: [[-.5,0], [-.15,-.49], [.38,-.3], [.5,0], [.34,.39], [-.19,.5]],
+      vial: [[-.28,-.5], [.25,-.5], [.25,-.24], [.5,.05], [.32,.5], [-.38,.5], [-.5,.02], [-.28,-.24]],
+      pool: [[-.50,.22], [-.36,-.10], [-.18,.02], [-.06,-.45], [.11,.02], [.36,-.16], [.5,.29], [.28,.5], [-.33,.46]],
+      embers: [[-.5,.5], [-.34,-.25], [-.16,.23], [0,-.5], [.16,.24], [.32,-.21], [.5,.5]],
+      fire: [[-.5,0], [-.30,-.35], [.12,-.5], [.5,-.22], [.45,.29], [.10,.5], [-.33,.30]],
+      wind: [[-.5,.42], [-.12,-.35], [.5,-.44], [.14,.1], [.39,.36], [-.09,.2]],
+      pillar: [[-.5,.5], [-.38,.17], [-.22,.12], [-.16,-.4], [.08,-.5], [.24,-.06], [.38,.08], [.5,.5]],
+      bloom: [[-.5,0], [-.34,-.42], [-.08,-.31], [.18,-.5], [.44,-.15], [.5,.17], [.2,.45], [-.13,.32], [-.34,.5]],
+      bolt: [[-.5,-.35], [.04,-.5], [-.06,-.1], [.5,-.16], [.01,.5], [.1,.14], [-.5,.26]],
+      stone: [[-.5,.5], [-.38,-.08], [-.16,-.21], [0,-.5], [.24,-.29], [.5,.5]],
+      petal: [[-.5,0], [-.15,-.41], [.16,-.46], [.5,-.19], [.26,.26], [-.05,.49]],
+    };
+    const outline = outlines[shape];
+    if (outline) {
+      outline.forEach(([px, py]) => ctx.lineTo(px * width, py * height));
+      ctx.closePath();
+    } else {
+      ctx.ellipse(0, 0, width / 2, height / 2, pierce ? -.22 : 0, 0, Math.PI * 2);
+    }
     ctx.fill();
     ctx.restore();
   }

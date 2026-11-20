@@ -1,3 +1,5 @@
+import { overlapsSurface } from '../game/stages.js';
+
 export const FRAME_SECONDS = 1 / 60;
 
 export class Fighter {
@@ -24,6 +26,18 @@ export class Fighter {
     this.guardRegenDelay = 0;
     this.combo = 0;
     this.meter = 0;
+    this.chargeFrames = 0;
+    this.awakeningFrames = 0;
+    this.awakeningUsed = false;
+    this.awakeningUnlocked = false;
+    this.awakeningWindow = 0;
+    this.lastConfirmedAttack = null;
+    this.frostStacks = 0;
+    this.frostWindow = 0;
+    this.freezeFrames = 0;
+    this.frostImmunity = 0;
+    this.poisonStacks = 0;
+    this.poisonFrames = 0;
     this.dash = null;
     this.dashCooldown = 0;
     this.cooldowns = {};
@@ -32,12 +46,53 @@ export class Fighter {
     this.escapeRecovery = 0;
   }
 
-  get disabled() { return this.hitstun > 0 || this.guardBreak > 0 || this.escapeRecovery > 0 || this.hp <= 0; }
+  get disabled() { return this.freezeFrames > 0 || this.hitstun > 0 || this.guardBreak > 0 || this.escapeRecovery > 0 || this.hp <= 0; }
   get invulnerable() { return this.escapeProtection > 0 || (this.dash && this.dash.elapsed <= this.dash.invulnerableFrames); }
   get attacking() { return this.attack !== null; }
   get attackActive() {
     const attack = this.attack;
     return attack && attack.elapsed >= attack.startup && attack.elapsed < attack.startup + attack.active;
+  }
+
+  get charging() { return this.chargeFrames > 0; }
+  get awakeningReady() {
+    return this.awakening && this.awakeningUnlocked && !this.awakeningUsed && this.meter >= this.rules.meterMax;
+  }
+  get canFocus() {
+    return this.onGround && !this.disabled && !this.attackLock && !this.attacking
+      && !this.dash && !this.blocking && Math.abs(this.knockVelocity) < 12;
+  }
+
+  charge(held) {
+    if (!held || !this.canFocus || this.awakeningFrames) {
+      this.chargeFrames = 0;
+      return;
+    }
+    this.chargeFrames = Math.min(60, this.chargeFrames + 1);
+    if (this.chargeFrames > 18) this.gainMeter(.45);
+  }
+
+  awaken() {
+    if (!this.awakeningReady || !this.canFocus) return false;
+    this.meter = 0;
+    this.chargeFrames = 0;
+    this.awakeningUsed = true;
+    this.awakeningFrames = 480;
+    this.attackLock = .32;
+    delete this.cooldowns[this.awakening.skill];
+    return true;
+  }
+
+  skillFor(id) {
+    const skill = this.skills[id];
+    if (!this.awakeningFrames || this.awakening?.skill !== id) return skill;
+    const { label, changes } = this.awakening;
+    return {
+      ...skill, ...changes, label,
+      ...(skill.projectile && { projectile: { ...skill.projectile, ...changes.projectile } }),
+      effect: { color: this.glow, particles: 18, flashSeconds: .12, flashOpacity: .10,
+        shakeSeconds: .14, shakeIntensity: 16, trailSeconds: .20 },
+    };
   }
 
   setGuard(held) {
@@ -76,15 +131,17 @@ export class Fighter {
     this.meter = Math.min(this.rules.meterMax, Math.round((this.meter + amount) * 100) / 100);
   }
 
-  startDash(enhanced) {
-    const dash = this.dashOptions[enhanced ? 'enhanced' : 'normal'];
+  startDash(enhanced, rollDirection = 0) {
+    const dash = rollDirection
+      ? { frames: 18, distance: 104, invulnerableFrames: 10, roll: true }
+      : this.dashOptions[enhanced ? 'enhanced' : 'normal'];
     const cost = dash.cost ?? 0;
     if (this.disabled || this.attackLock > 0 || !this.onGround || this.attacking
       || this.blocking || this.dash || this.dashCooldown > 0 || this.meter < cost) return false;
 
     this.meter -= cost;
     this.dashCooldown = this.dashCooldownFrames;
-    this.dash = { ...dash, facing: this.facing, elapsed: 0 };
+    this.dash = { ...dash, facing: rollDirection || this.facing, elapsed: 0 };
     this.crouching = false;
     this.knockVelocity = 0;
     return true;
@@ -109,6 +166,15 @@ export class Fighter {
   }
 
   endFrame() {
+    if (this.frostWindow > 0 && --this.frostWindow === 0) this.frostStacks = 0;
+    this.freezeFrames = Math.max(0, this.freezeFrames - 1);
+    this.frostImmunity = Math.max(0, this.frostImmunity - 1);
+    if (this.poisonFrames > 0) {
+      if (--this.poisonFrames === 0) this.poisonStacks = 0;
+      else if (this.poisonFrames % 30 === 0 && this.hp > 1) this.hp = Math.max(1, Math.round((this.hp - 1) * 100) / 100);
+    }
+    this.awakeningFrames = Math.max(0, this.awakeningFrames - 1);
+    this.awakeningWindow = Math.max(0, this.awakeningWindow - 1);
     for (const id of Object.keys(this.cooldowns)) {
       if (--this.cooldowns[id] <= 0) delete this.cooldowns[id];
     }
@@ -132,12 +198,15 @@ export class Fighter {
     if (this.blocking) {
       this.spendGuard(this.rules.guardDrain * dt);
     } else if (this.guardBreak === 0 && this.guardRegenDelay === 0) {
-      this.guard = Math.min(this.rules.guardMax, this.guard + this.rules.guardRegen * dt);
+      this.guard = Math.min(this.rules.guardMax, this.guard + this.rules.guardRegen * (this.poisonFrames ? .45 : 1) * dt);
     }
     if (this.attack) {
       const attack = this.attack;
       attack.elapsed++;
       const activeFrame = attack.elapsed - attack.startup;
+      if (attack.travel?.retreatFrames && activeFrame < 0 && -activeFrame <= attack.travel.retreatFrames) {
+        this.x -= attack.facing * attack.travel.speed * .55 * dt;
+      }
       if (attack.travel && activeFrame >= 0 && activeFrame < attack.travel.frames) {
         this.x += attack.facing * attack.travel.speed * dt;
         if (Math.abs(this.y - target.y) < Math.min(this.height, target.height)) {
@@ -150,16 +219,20 @@ export class Fighter {
       }
       if (this.attack.elapsed >= this.attack.startup + this.attack.active + this.attack.recovery) this.attack = null;
     }
-    this.updateVertical(dt, world.gravity);
+    this.updateVertical(dt, world);
     this.x += this.knockVelocity * dt;
     this.knockVelocity *= Math.pow(0.001, dt);
     this.clampX(world);
   }
 
-  updateVertical(dt, gravity) {
-    this.vy += gravity * dt;
-    this.y = Math.min(0, this.y + this.vy * dt);
-    this.onGround = this.y === 0;
+  updateVertical(dt, world) {
+    let floor = 0;
+    for (const platform of world.platforms ?? []) {
+      if (this.y <= platform.y && overlapsSurface(this.x, world.width, platform.range)) floor = Math.min(floor, platform.y);
+    }
+    this.vy += world.gravity * dt;
+    this.y = Math.min(floor, this.y + this.vy * dt);
+    this.onGround = this.y === floor;
     if (this.onGround) this.vy = 0;
   }
 
@@ -218,13 +291,17 @@ export function findHit(attacker, defender) {
 }
 
 function findContact(attacker, defender, attack, box, sourceX, direction) {
-  if (defender.invulnerable || defender.hp <= 0) return null;
+  if (defender.hp <= 0) return null;
   const hurt = defender.hurtbox;
   const left = Math.max(box.x, hurt.x);
   const right = Math.min(box.x + box.width, hurt.x + hurt.width);
   const top = Math.max(box.y, hurt.y);
   const bottom = Math.min(box.y + box.height, hurt.y + hurt.height);
   if (left >= right || top >= bottom) return null;
+  if (defender.invulnerable) {
+    if (defender.characterId === 'mai' && defender.dash?.roll) defender.awakeningWindow = 150;
+    return null;
+  }
   return {
     attacker, defender, attack,
     blocked: defender.blocking && (!defender.lowGuardOnly || attack.level === 'low')
@@ -250,21 +327,64 @@ export function applyHit(contact) {
   defender.hp = Math.max(0, Math.round((previousHP - attack.damage * multiplier) * 100) / 100);
   defender.knockVelocity = contact.direction * attack.knockback * (blocked ? .16 : 1);
   const damage = Math.round((previousHP - defender.hp) * 100) / 100;
+  let inflicted;
+  if (!blocked) {
+    if (defender.freezeFrames) {
+      defender.freezeFrames = 0;
+      inflicted = 'shatter';
+    }
+    if (attack.status === 'frost' && !defender.frostImmunity) {
+      defender.frostWindow = 240;
+      if (++defender.frostStacks >= 3) {
+        defender.frostStacks = 0;
+        defender.freezeFrames = 45;
+        defender.frostImmunity = 140;
+        defender.knockVelocity = 0;
+        attacker.awakeningUnlocked = true;
+        inflicted = 'freeze';
+      }
+    }
+    if (attack.status === 'poison') {
+      defender.poisonFrames = 210;
+      if (++defender.poisonStacks >= 3) {
+        defender.poisonStacks = 0;
+        attacker.awakeningUnlocked = true;
+        inflicted = 'poisonStun';
+      }
+    }
+  }
   attacker.gainMeter(damage * rules.meterOnDeal);
   defender.gainMeter(blocked ? rules.meterOnBlock : damage * rules.meterOnReceive);
   const broken = blocked && defender.spendGuard(attack.guardDamage);
+  if (blocked && !broken && defender.characterId === 'hung') defender.awakeningWindow = 150;
+  if (broken && attacker.characterId === 'ngoc') attacker.awakeningUnlocked = true;
   if (blocked) {
     defender.attackLock = .14;
   } else {
     defender.attack = null;
     defender.dash = null;
-    defender.hitstun = attack.hitstun;
+    defender.chargeFrames = 0;
+    if (attack.launch) {
+      defender.vy = -attack.launch;
+      defender.onGround = false;
+    }
+    if ((attacker.characterId === 'hung' && attacker.awakeningWindow && attack.id === 'heavy')
+      || (attacker.characterId === 'mai' && attacker.awakeningWindow)
+      || (attacker.characterId === 'linh' && combo >= 2 && attacker.lastConfirmedAttack === 'kick' && attack.id === 'closeSkill')) {
+      attacker.awakeningUnlocked = true;
+    }
+    if (attacker.characterId === 'vy' && attack.level === 'low' && !contact.projectile) {
+      attacker.awakeningWindow = 150;
+      attacker.awakeningSide = Math.sign(defender.x - attacker.x);
+    }
+    attacker.lastConfirmedAttack = attack.id;
+    defender.hitstun = inflicted === 'poisonStun' ? Math.max(42, attack.hitstun) : attack.hitstun;
     defender.crouching = false;
     defender.flash = .13;
   }
 
   return {
-    ...contact, combo, broken,
+    ...contact, combo, broken, inflicted,
     damage,
     hitstop: blocked ? 0 : attack.hitstop,
   };
@@ -278,33 +398,55 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
     const { width, yOffset, lifetimeFrames } = attack.projectile;
     projectiles.push({
       attacker, attack, x: attacker.x + attack.facing * (attacker.width + width) / 2,
-      y: attacker.y - yOffset, frames: lifetimeFrames, hit: false,
+      y: attacker.y - yOffset, frames: lifetimeFrames, age: 0, facing: attack.facing, hit: false,
     });
   }
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const shot = projectiles[i];
     const { attacker, attack } = shot;
-    const { speed, width, height, pierce } = attack.projectile;
+    const { speed, width, height, pierce, returnAfter, delayFrames, afterfire, poolFrames } = attack.projectile;
+    const reachedEdge = shot.facing > 0 ? shot.x >= world.width - width / 2 : shot.x <= width / 2;
+    if (returnAfter && !shot.returned && (shot.age >= returnAfter || reachedEdge)) {
+      shot.returned = true;
+      shot.facing *= -1;
+      shot.hit = false;
+    }
+    shot.age++;
+    const velocity = shot.age <= (delayFrames ?? 0) ? speed * .12 : speed;
     const oldX = shot.x;
-    shot.x += attack.facing * speed * dt;
+    shot.x += shot.facing * velocity * dt;
     shot.frames--;
     const defender = fighters.find(fighter => fighter !== attacker);
     if (!shot.hit) {
       const hit = findContact(attacker, defender, attack, {
         x: Math.min(oldX, shot.x) - width / 2, y: shot.y - height / 2,
         width: width + Math.abs(shot.x - oldX), height,
-      }, oldX, -attack.facing);
+      }, oldX, -shot.facing);
       if (hit) {
         contacts.push({ ...hit, projectile: true });
         shot.hit = true;
-        if (hit.blocked || !pierce) shot.frames = 0;
+        if ((!returnAfter && hit.blocked) || !pierce) shot.frames = 0;
       }
     }
     const expired = shot.frames <= 0 || shot.x < -width || shot.x > world.width + width;
     if (!shot.hit && (expired || (shot.x - defender.x) * attack.facing > (width + defender.width) / 2)) {
       attack.projectileMissed = true;
     }
-    if (expired) projectiles.splice(i, 1);
+    if (expired && poolFrames) {
+      const platform = (world.platforms ?? []).find(surface => shot.y <= surface.y && overlapsSurface(shot.x, world.width, surface.range));
+      shot.x = Math.max(42, Math.min(world.width - 42, shot.x));
+      shot.y = (platform?.y ?? 0) - 9;
+      shot.attack = { ...attack, damage: 2, knockback: 35, hitstun: 8, level: 'low',
+        projectile: { ...attack.projectile, poolFrames: 0, speed: 0, width: 84, height: 18, pierce: true, shape: 'pool' } };
+      shot.hit = false;
+      shot.frames = poolFrames;
+    } else if (expired && afterfire && shot.x >= 0 && shot.x <= world.width) {
+      shot.attack = { ...attack, damage: 5, level: 'low', hitstun: 12, knockback: 65,
+        projectile: { ...attack.projectile, afterfire: false, speed: 0, width: 65, height: 16, shape: 'embers' } };
+      shot.y = -8;
+      shot.hit = false;
+      shot.frames = 27;
+    } else if (expired) projectiles.splice(i, 1);
   }
   return contacts;
 }

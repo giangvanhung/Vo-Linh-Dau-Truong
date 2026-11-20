@@ -31,8 +31,8 @@ async function loadAtlas(atlasPath, imagePath) {
 
 export function animationName(fighter) {
   if (fighter.hp <= 0) return 'ko';
-  if (fighter.hitstun || fighter.guardBreak) return 'hit';
-  if (fighter.attack) return attackClips[fighter.attack.id]?.[0] ?? fighter.attack.id;
+  if (fighter.freezeFrames || fighter.hitstun || fighter.guardBreak) return 'hit';
+  if (fighter.attack) return fighter.attack.animation ?? attackClips[fighter.attack.id]?.[0] ?? fighter.attack.id;
   if (fighter.dash) return 'dash';
   if (!fighter.onGround) return 'jump';
   if (fighter.blocking) return 'block';
@@ -42,8 +42,8 @@ export function animationName(fighter) {
 
 function selectFrame(frames, fighter, name, elapsed) {
   const attack = fighter.attack;
-  if (attack && attackClips[attack.id]?.[0] === name) {
-    const strike = Math.min(attackClips[attack.id][1], frames.length - 1);
+  if (attack && (attack.animation ?? attackClips[attack.id]?.[0]) === name) {
+    const strike = Math.min(attack.strikeFrame ?? attackClips[attack.id]?.[1] ?? 0, frames.length - 1);
     if (fighter.attackActive) return frames[strike];
     if (attack.elapsed < attack.startup) {
       return frames[Math.floor(attack.elapsed * strike / attack.startup)];
@@ -92,6 +92,14 @@ export function createSpriteRenderer(ctx, characters) {
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(fighter.x), Math.round(ground + fighter.y));
     ctx.scale((fighter.attack?.facing ?? fighter.dash?.facing ?? fighter.facing) < 0 ? -1 : 1, 1);
+    if (fighter.dash?.roll) {
+      const progress = fighter.dash.elapsed / fighter.dash.frames;
+      const tuck = Math.sin(Math.PI * progress);
+      ctx.translate(0, -scale * (source.h - 24 * tuck) * .37);
+      ctx.rotate(progress * 2 * Math.PI);
+      ctx.scale(1 - .24 * tuck, 1 - .35 * tuck);
+      ctx.translate(0, scale * source.h * .37);
+    }
     if (fighter.invulnerable) ctx.globalAlpha = .78;
     if (fighter.flash > 0) ctx.filter = 'brightness(1.5)';
     ctx.drawImage(sheet.image, x, y, w, h,

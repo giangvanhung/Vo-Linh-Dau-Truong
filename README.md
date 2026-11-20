@@ -1,6 +1,6 @@
 # Võ Linh Đấu Trường
 
-Game đối kháng arcade fantasy 2D, chơi trực tiếp trên trình duyệt. Chọn Hùng hoặc Mai để đấu với CPU theo thể thức ba hiệp thắng hai, hoặc vào chế độ luyện tập.
+Game đối kháng arcade fantasy 2D trên trình duyệt. Chọn avatar Hùng, Mai, Linh, Ngọc, Vy, Lam hoặc Diệp trước khi đấu với CPU, luyện tập hoặc chơi LAN.
 
 ## Chạy trên máy
 
@@ -35,6 +35,9 @@ Nếu có nhiều địa chỉ LAN, chọn địa chỉ của mạng đang dùng
 | P (giữ) | Đỡ đòn |
 | Q | Lướt tới |
 | Shift + Q | Lướt mạnh (25 năng lượng) |
+| R | Lộn né theo hướng A/D đang giữ, mặc định lùi |
+| F | Giữ để tụ nộ. Di chuyển, ra đòn, thủ hoặc bị đánh sẽ ngắt tụ khí. |
+| G | Đột phá khi đầy nộ và đã đạt điều kiện của võ sĩ. |
 | T | Thoát khi đang chịu combo từ 2 hit (50 năng lượng) |
 | U / I | Kỹ năng gần / xa của nhân vật đã chọn |
 | O | Tuyệt kỹ (100 năng lượng) |
@@ -82,3 +85,16 @@ Mỗi bước mô phỏng đọc lệnh bàn phím, cập nhật quyết định
 Vào **Luyện tập** từ menu và dùng bảng dưới sân đấu để chọn bù nhìn, đặt lại vị trí, hồi máu hoặc đưa năng lượng về 0. Chế độ **Ngồi đỡ đòn thấp** đỡ đòn đá (L). Debug vẽ hurtbox xanh và hitbox đang hoạt động màu đỏ.
 
 **Ghi input** lưu tối đa 10 giây mô phỏng. **Phát cho bù nhìn** chạy lại chuỗi lệnh bằng bộ chiêu của bù nhìn và đảo hướng trái/phải để tập đối kháng từ phía đối diện. Trong lúc phát, người chơi vẫn điều khiển nhân vật bình thường. Lợi thế khi trúng được ước tính bằng số frame hitstun còn lại của bù nhìn trừ số frame người đánh còn bị khóa.
+
+
+### Tụ khí và Đột phá
+
+Điều kiện Đột phá hiển thị trên màn chọn võ sĩ. Có thể hoàn thành điều kiện trước khi đầy nộ. Đột phá tiêu toàn bộ thanh nộ, kéo dài 8 giây và chỉ dùng một lần mỗi hiệp. Dùng U hoặc I như thường để tung chiêu biến thể. Trong luyện tập, nút **Nạp đầy để thử Đột phá** bỏ qua điều kiện mở khóa để thử chiêu.
+
+Ở chế độ LAN, P2 giữ `[` để tụ khí và bấm `]` để đột phá. Tay cầm điện thoại có hai nút tương ứng.
+
+### Võ sĩ và sân tương tác
+
+- Lam tích một dấu Hàn với mỗi kỹ năng băng trúng. Ba dấu đóng băng đối thủ trong tối đa 0,75 giây. Đòn kế tiếp phá băng.
+- Diệp có Bình Độc tạo vũng độc lúc vỡ. Độc rút nhẹ máu và làm chậm hồi thủ trong 3,5 giây. Ba lần dính đòn độc liên tiếp trong thời gian hiệu lực gây choáng ngắn.
+- Chọn sân trước trận CPU, luyện tập hoặc LAN. Dùng ô **Hiệu ứng môi trường** để bật hoặc tắt trượt, gió và khe hơi. Các bệ cao vẫn dùng được khi tắt hiệu ứng.

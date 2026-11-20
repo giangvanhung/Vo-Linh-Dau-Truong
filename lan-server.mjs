@@ -3,7 +3,7 @@ import { networkInterfaces } from 'node:os';
 import QRCode from 'qrcode';
 import { WebSocket, WebSocketServer } from 'ws';
 
-const buttons = new Set(['a','d','w','s','p','j','k','l','q','t','u','i','o','enhanced']);
+const buttons = new Set(['a','d','w','s','p','j','k','l','q','r','t','u','i','o','f','g','enhanced']);
 const send = (socket, message) => {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
 };

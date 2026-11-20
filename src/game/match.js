@@ -9,6 +9,7 @@ import { createArenaRenderer } from '../render/arena.js';
 import { createHud, damageFormat } from '../ui/hud.js';
 import { createPanels } from '../ui/panels.js';
 import { createTrainingPanel } from '../ui/training-panel.js';
+import { applyStageEffects, stageForMatch } from './stages.js';
 import { TrainingSession } from './training.js';
 
 export function startGame(config) {
@@ -23,6 +24,13 @@ export function startGame(config) {
   const audio = new GameAudio();
   audio.configure(settings);
   const world = { width: canvas.width, height: canvas.height, gravity: config.stage.gravity };
+  let stage = stageForMatch(config.stage, config.stages.rooftop, true);
+  let stageFrame = 0;
+  function setStage(id, hazards) {
+    stage = stageForMatch(config.stage, config.stages[id], hazards);
+    Object.assign(world, { platforms: stage.platforms, zone: stage.zone });
+    byId('stage-name').textContent = stage.name;
+  }
   const roundLength = config.stage.roundSeconds;
   // The HUD IDs identify fixed sides. The fighters on each side are selected before a match.
   let hung, mai, phase = 'menu', seconds = roundLength, winsHung = 0, winsMai = 0, round = 1;
@@ -46,6 +54,7 @@ export function startGame(config) {
     hung.characterId = playerId;
     mai.characterId = opponentId;
     seconds = roundLength;
+    stageFrame = 0;
     hitstop = shake = toastClock = 0;
     clearInputs();
     cpu = new CpuController(difficulty, config);
@@ -128,7 +137,8 @@ export function startGame(config) {
     audio.unlock();
   }
 
-  function selectMatch(player, opponent, level) {
+  function selectMatch(player, opponent, level, stageId, hazards) {
+    setStage(stageId, hazards);
     playerId = player;
     const roster = Object.keys(config.characters);
     opponentId = opponent === 'random' ? roster[Math.floor(Math.random() * roster.length)] : opponent;
@@ -136,7 +146,7 @@ export function startGame(config) {
     startMatch();
   }
 
-  const panels = createPanels({ settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings });
+  const panels = createPanels({ characters: config.characters, stages: config.stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings });
 
   const pairing = byId('lan-pairing');
   const address = byId('lan-address');
@@ -226,6 +236,14 @@ export function startGame(config) {
       mai.hp = mai.maxHp;
       updateScore();
     },
+    testAwakening() {
+      if (!canTrain()) return;
+      hung.gainMeter(config.combat.meterMax);
+      hung.awakeningUnlocked = true;
+      hung.awakeningUsed = false;
+      hung.awakeningFrames = 0;
+      canvas.focus({ preventScroll: true });
+    },
     resetMeter() {
       if (!canTrain()) return;
       hung.meter = mai.meter = 0;
@@ -246,7 +264,7 @@ export function startGame(config) {
 
   const secondPlayerKeys = {
     ArrowLeft: 'a', ArrowRight: 'd', ArrowUp: 'w', ArrowDown: 's',
-    KeyZ: 'j', KeyX: 'k', KeyC: 'l', KeyV: 'p', KeyB: 'q',
+    KeyZ: 'j', KeyX: 'k', KeyC: 'l', KeyV: 'p', KeyB: 'q', KeyH: 'r', BracketLeft: 'f', BracketRight: 'g',
     KeyN: 'u', KeyM: 'i', Comma: 'o', Period: 't',
   };
   const keyboardP2 = createKeyboard({
@@ -259,13 +277,14 @@ export function startGame(config) {
     },
   });
   function clearInputs() {
+    hung.chargeFrames = mai.chargeFrames = 0;
     keyboard.clear();
     keyboardP2.clear();
     lanHost.clear();
   }
 
   function useAttack(fighter, target, id) {
-    const skill = fighter.skills[id];
+    const skill = fighter.skillFor(id);
     const started = fighter.startAttack(id, skill ?? fighter.attacks[id], target);
     if (started && skill) toast(skill.label.toLocaleUpperCase('vi'));
     return started;
@@ -273,6 +292,17 @@ export function startGame(config) {
 
   function applyControls(fighter, target, input) {
     fighter.setGuard(input.guard);
+    if (input.action === 'awaken' && fighter.awaken()) {
+      toast(fighter.name + ' · ĐỘT PHÁ!');
+      burst(fighter.x, fighter.y - 16, 26, fighter.glow);
+      return;
+    }
+    const charge = input.charge && !input.guard && !input.jump && !input.attack && !input.action && !input.direction && !input.crouch;
+    fighter.charge(charge);
+    if (fighter.charging) {
+      fighter.crouching = false;
+      return;
+    }
     if (input.jump && fighter.onGround && !fighter.disabled && !fighter.attacking && !fighter.dash && !input.guard) {
       fighter.vy = -config.stage.jumpVelocity;
       fighter.onGround = false;
@@ -280,6 +310,8 @@ export function startGame(config) {
     if (input.action === 'dash' || input.action === 'enhancedDash') {
       const enhanced = input.action === 'enhancedDash';
       if (fighter.startDash(enhanced) && enhanced) toast('LƯỚT CƯỜNG HÓA');
+    } else if (input.action === 'roll') {
+      fighter.startDash(false, input.direction || -fighter.facing);
     } else if (input.action === 'escape' && fighter.escapeFrom(target)) {
       toast(fighter.name.toUpperCase() + ' THOÁT COMBO!');
     }
@@ -319,7 +351,7 @@ export function startGame(config) {
     shake = Math.max(0, shake - dt);
     if (phase === 'round-over') {
       for (const fighter of [hung, mai]) {
-        fighter.updateVertical(dt, world.gravity);
+        fighter.updateVertical(dt, world);
         fighter.flash = Math.max(0, fighter.flash - dt);
         fighter.moving = false;
       }
@@ -371,6 +403,9 @@ export function startGame(config) {
       toast(mai.name.toUpperCase() + ' THOÁT COMBO!');
       return true;
     });
+    stageFrame++;
+    applyStageEffects(world, hung, movementStart[0], stageFrame, dt);
+    applyStageEffects(world, mai, movementStart[1], stageFrame, dt);
     const previousX = [hung.x, mai.x];
     hung.update(dt, world, mai);
     mai.update(dt, world, hung);
@@ -397,6 +432,10 @@ export function startGame(config) {
     }
     separateFighters(hung, mai, world, config.stage.pushboxHeightRatio, startingSide, bodiesTouchingVertically);
     updateFacing(hung, mai);
+    for (const [fighter, target] of [[hung, mai], [mai, hung]]) {
+      if (fighter.characterId === 'vy' && fighter.awakeningWindow
+        && (target.x - fighter.x) * fighter.awakeningSide < -8) fighter.awakeningUnlocked = true;
+    }
     const contacts = [
       findHit(hung, mai), findHit(mai, hung),
       ...updateProjectiles(projectiles, [hung, mai], dt, world),
@@ -415,7 +454,13 @@ export function startGame(config) {
 
   function hitEffects(hit) {
     const { attacker, blocked, broken, combo, damage, x, y } = hit;
-    audio.cue(blocked ? 'block' : hit.attack.id === 'kick' ? 'kick' : hit.attack.id === 'heavy' ? 'heavy' : 'hit');
+    if (hit.inflicted) {
+      const effects = { freeze: ['ĐÓNG BĂNG', '#b1eeff'], shatter: ['VỠ BĂNG', '#a9e4ff'], poisonStun: ['CHOÁNG DO ĐỘC', '#b9f28a'] };
+      const [label, color] = effects[hit.inflicted];
+      toast(label);
+      burst(x, y, 18, color);
+    }
+    audio.cue(blocked ? 'block' : (hit.attack.id === 'kick' || hit.attack.animation === 'kick') ? 'kick' : hit.attack.id === 'heavy' ? 'heavy' : 'hit');
     hitstop = Math.max(hitstop, hit.hitstop);
     shake = Math.max(shake, hit.hitstop ? .14 : .07);
     if (broken) toast('VỠ THẾ THỦ!');
@@ -483,10 +528,11 @@ export function startGame(config) {
     hud.updateMeterUI(hung, 'hung');
     hud.updateMeterUI(mai, 'mai');
     trainingPanel.update(practice && ['countdown', 'fight', 'paused'].includes(phase), mai);
-    render({ fighters: [hung, mai], projectiles, particles, floaters, trails, shake, screenEffect, animationTime, debug: practice && training.debug });
+    render({ stage, stageFrame, fighters: [hung, mai], projectiles, particles, floaters, trails, shake, screenEffect, animationTime, debug: practice && training.debug });
     if (toastClock <= 0) ui.toast.classList.remove('show');
     requestAnimationFrame(frame);
   }
+  setStage('rooftop', true);
   returnToMenu();
   requestAnimationFrame(frame);
 }

@@ -1,6 +1,6 @@
 const attackKeys = { j: 'light', k: 'heavy', l: 'kick', u: 'closeSkill', i: 'rangedSkill', o: 'ultimate' };
 const movementAliases = { ArrowLeft: 'a', ArrowRight: 'd', ArrowUp: 'w', ArrowDown: 's' };
-const gameKeys = new Set(['a', 'd', 'w', 's', 'p', 'q', 't', ...Object.keys(attackKeys)]);
+const gameKeys = new Set(['a', 'd', 'w', 's', 'p', 'q', 'r', 't', 'f', 'g', ...Object.keys(attackKeys)]);
 
 export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, keyFor, allowArrows = () => true }) {
   let queuedAttack = null, queuedAction = null, queuedJump = false;
@@ -52,6 +52,8 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
     if (key === 'w') queuedJump = true;
     if (attackKeys[key]) queuedAttack = attackKeys[key];
     if (key === 'q') queuedAction = event.shiftKey ? 'enhancedDash' : 'dash';
+    if (key === 'r') queuedAction = 'roll';
+    if (key === 'g') queuedAction = 'awaken';
     if (key === 't') queuedAction = 'escape';
   });
   window.addEventListener('keyup', event => {
@@ -74,7 +76,7 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
   function consumeActions() {
     const actions = {
       attack: queuedAttack, action: queuedAction, jump: queuedJump,
-      guard: isHeld('p'), crouch: isHeld('s'), direction: movementDirection(),
+      charge: isHeld('f'), guard: isHeld('p'), crouch: isHeld('s'), direction: movementDirection(),
     };
     queuedAttack = queuedAction = null;
     queuedJump = false;

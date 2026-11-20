@@ -13,18 +13,6 @@
 #difficulty-picker label { margin-right: 8px; color: #d5cbd0; }
 #cpu-difficulty { padding: 4px 8px; border: 1px solid #6c5351; border-radius: 3px; background: #27212a; color: #f1efed; font: inherit; cursor: pointer; }
 #cpu-difficulty:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-#fighter-info { margin-top: 14px; scroll-margin-top: 16px; }
-.fighter-info h2 { margin: 0 0 9px; font-size: 15px; }
-.fighter-info-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-.fighter-info article { padding: 14px 16px; border: 1px solid #2e2c34; border-radius: 6px; background: #17171d; }
-.fighter-info h3 { margin: 0 0 4px; color: #f09569; font-size: 16px; }
-#profile-mai h3 { color: #7bb5f3; }
-.fighter-info p { margin: 0 0 12px; color: #aaa6af; font-size: 12px; }
-.fighter-info dl { display: grid; grid-template-columns: max-content 1fr; gap: 7px 12px; margin: 0; font-size: 12px; line-height: 1.5; }
-.fighter-info dt { color: #aaa6af; }
-.fighter-info dd { margin: 0; }
-.profile-link { display: block; width: max-content; margin: 8px auto 0; color: #ddd0d1; font-size: 11px; }
-@media (max-width: 560px) { .fighter-info-grid { grid-template-columns: 1fr; } }
 .game-panel[hidden], .pause-button[hidden], .fight-banner[hidden], #difficulty-picker[hidden] { display: none; }
 .stage-wrap .game-panel { z-index: 3; max-height: calc(100% - 22px); overflow: auto; padding: 18px; }
 .stage-wrap .setup-panel { width: min(710px, calc(100% - 24px)); }
@@ -35,7 +23,6 @@
 .panel-button:hover { background: #40323a; }
 .game-panel .primary-button { font-size: 12px; letter-spacing: .02em; }
 .game-panel button:focus-visible, .pause-button:focus-visible { outline: 2px solid #ffbf8b; outline-offset: 2px; }
-.setup-panel #fighter-info { margin-top: 0; text-align: left; }
 .setup-options, .panel-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 12px; margin-top: 12px; }
 .setup-options label, .settings-fields label { font-size: 12px; }
 .setup-options select, .settings-fields select { background: #27212a; color: #f1efed; border: 1px solid #6c5351; border-radius: 3px; padding: 4px; }
@@ -72,3 +59,29 @@
 .lan-details { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
 .lan-details summary { cursor: pointer; }
 .lan-details #lan-pairing { text-align: center; }
+
+#setup-roster { display: grid; gap: 10px; }
+#setup-roster fieldset { min-width: 0; margin: 0; padding: 4px 0 0; border: 0; text-align: left; }
+#setup-roster legend { padding: 0; color: #eee2da; font-size: 12px; font-weight: 700; }
+.roster-cards { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
+.roster-card {
+  position: relative; display: grid; place-items: center; align-content: center; gap: 3px;
+  min-width: 0; min-height: 64px; padding: 3px; background: #25212b;
+  border: 1px solid #544953; border-radius: 4px; cursor: pointer;
+  text-align: center; font-size: clamp(8px, 1.5vw, 11px);
+}
+.roster-card:hover { background: #3d303c; }
+.roster-card:has(:checked) { background: #49332e; border-color: #ffbd8c; }
+.roster-card:has(:focus-visible) { outline: 2px solid #ffbd8c; outline-offset: 2px; }
+.roster-card input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.roster-portrait { display: grid; place-items: center; width: min(100%, 54px); aspect-ratio: 1; object-fit: contain; image-rendering: pixelated; font-size: 24px; }
+#setup-roster .roster-detail { margin: 4px 0 0; color: #e1c8bc; min-height: 1.2em; }
+@media (max-width: 560px) {
+  .stage-wrap:has(#setup-panel:not([hidden])) { min-height: 375px; }
+  .roster-card { min-height: 58px; }
+}
+
+.focus-status { color: var(--fighter-color, #f1efed); font-size: 9px; min-height: 1.2em; }
+.player-mai .focus-status { text-align: right; }
+
+@media (max-width: 460px) { .roster-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

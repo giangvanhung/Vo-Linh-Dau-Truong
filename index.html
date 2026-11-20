@@ -26,14 +26,14 @@
           <div class="player-hud player-hung">
             <div class="player-meta"><div><span class="player-side">NGƯỜI CHƠI 1</span><strong>HÙNG</strong></div><span class="wins" id="hung-wins" aria-label="Số hiệp thắng">◇ ◇</span></div>
             <div class="health-track"><div class="health-fill" id="hung-health"></div><span class="health-number" id="hung-hp">100</span></div>
-            <div class="energy-row"><span>Năng lượng</span><div class="energy-track"><div id="hung-meter-fill" class="energy-fill"></div></div><span id="hung-meter-value">0/100</span></div>
+            <div class="energy-row"><span>Năng lượng</span><div class="energy-track"><div id="hung-meter-fill" class="energy-fill"></div></div><span id="hung-meter-value">0/100</span></div><div class="focus-status" id="hung-focus"></div>
             <div class="skill-status" id="hung-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
           <div class="timer-wrap"><div class="timer" id="timer">60</div><div class="timer-caption">THỜI GIAN</div></div>
           <div class="player-hud player-mai">
             <div class="player-meta"><span class="wins" id="mai-wins" aria-label="Số hiệp thắng">◇ ◇</span><div class="align-right"><span class="player-side">CPU · CẤP ĐỘ THƯỜNG</span><strong>MAI</strong></div></div>
             <div class="health-track"><div class="health-fill" id="mai-health"></div><span class="health-number" id="mai-hp">100</span></div>
-            <div class="energy-row"><span>Năng lượng</span><div class="energy-track"><div id="mai-meter-fill" class="energy-fill"></div></div><span id="mai-meter-value">0/100</span></div>
+            <div class="energy-row"><span>Năng lượng</span><div class="energy-track"><div id="mai-meter-fill" class="energy-fill"></div></div><span id="mai-meter-value">0/100</span></div><div class="focus-status" id="mai-focus"></div>
             <div class="skill-status" id="mai-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
         </div>
@@ -62,7 +62,7 @@
                   <label id="lan-address-label" hidden>Địa chỉ mạng <select id="lan-address"></select></label>
                   <a id="lan-link"></a>
                 </div>
-                <p>P1 dùng A/D, W/S và J K L P Q T U I O như thường. P2 dùng phím mũi tên, Z/X/C để đánh, V đỡ, B lướt, Shift+B lướt mạnh, N/M dùng kỹ năng, dấu phẩy dùng ultimate và dấu chấm thoát combo.</p>
+                <p>P1 dùng A/D, W/S và F G J K L P Q R T U I O như thường. P2 dùng phím mũi tên, Z/X/C để đánh, V đỡ, B lướt, Shift+B lướt mạnh, H lộn né, [ tụ khí và ] đột phá, N/M dùng kỹ năng, dấu phẩy dùng ultimate và dấu chấm thoát combo.</p>
               </div>
             </div>
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="lan-start">Chọn nhân vật</button></div>
@@ -71,10 +71,11 @@
             <h2 id="setup-title">Chọn nhân vật</h2>
             <div id="setup-roster"></div>
             <div class="setup-options">
-              <label>Người chơi <select id="player-select"><option value="hung">Hùng</option><option value="mai">Mai</option></select></label>
-              <label>Đối thủ <select id="opponent-select"><option value="random">Ngẫu nhiên</option><option value="hung">Hùng</option><option value="mai">Mai</option></select></label>
+              <label>Sân đấu <select id="stage-select" aria-describedby="stage-description"></select></label>
+              <label><input type="checkbox" id="stage-hazards" checked> Hiệu ứng môi trường</label>
               <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
             </div>
+            <p id="stage-description"></p>
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="start-button">Vào trận</button></div>
           </div>
           <div class="center-callout game-panel" id="settings-panel" hidden>
@@ -108,7 +109,7 @@
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" data-replay>Chơi lại</button></div>
           </div>
           <div class="toast" id="toast" aria-live="polite"></div>
-          <div class="stage-bottom"><span>VÙNG ĐẤU <b>01</b></span><span>LINH GIỚI <i>✦</i></span></div>
+          <div class="stage-bottom"><span>SÂN ĐẤU <b id="stage-name"></b></span><span>LINH GIỚI <i>✦</i></span></div>
         </div>
 
         <div class="arena-footer"><span><i class="status-dot"></i> SẴN SÀNG KHI BẠN</span><span id="status-text">CHỌN THỜI ĐIỂM RA ĐÒN</span><span class="latency"><span id="network-mode">OFFLINE</span> <b>●</b></span></div>
@@ -132,6 +133,7 @@
           <button class="panel-button" id="reset-position">Đặt lại vị trí</button>
           <button class="panel-button" id="reset-health">Hồi máu</button>
           <button class="panel-button" id="reset-meter">Đặt năng lượng về 0</button>
+          <button class="panel-button" id="test-awakening">Nạp đầy để thử Đột phá</button>
           <button class="panel-button" id="record-input">Ghi input</button>
           <button class="panel-button" id="play-input" disabled>Phát cho bù nhìn</button>
           <output id="record-status">Tối đa 10 giây</output>
@@ -148,8 +150,9 @@
       </section>
       <section class="lower-grid">
         <div class="controls-card"><div class="section-heading"><span class="tiny-icon">⌘</span><h2>ĐIỀU KHIỂN</h2><span class="heading-note">HÙNG · NGƯỜI CHƠI</span></div><div class="controls-list">
-          <div class="control-row"><span class="key-group"><kbd>A</kbd><kbd>D</kbd></span><span>Di chuyển</span></div><div class="control-row"><kbd>W</kbd><span>Nhảy</span></div><div class="control-row"><kbd>S</kbd><span>Ngồi</span></div><div class="control-row"><kbd>J</kbd><span>Đấm nhẹ</span><small>NHANH</small></div><div class="control-row"><kbd>K</kbd><span>Đấm nặng</span><small>UY LỰC</small></div><div class="control-row"><kbd>L</kbd><span>Đá</span><small>TẦM TRUNG</small></div><div class="control-row"><kbd>P</kbd><span>Đỡ đòn</span><small>GIỮ ĐỂ BLOCK</small></div>
+          <div class="control-row"><span class="key-group"><kbd>A</kbd><kbd>D</kbd></span><span>Di chuyển</span></div><div class="control-row"><kbd>W</kbd><span>Nhảy</span></div><div class="control-row"><kbd>S</kbd><span>Ngồi</span></div><div class="control-row"><kbd>J</kbd><span>Đấm nhẹ</span><small>NHANH</small></div><div class="control-row"><kbd>K</kbd><span>Đấm nặng</span><small>UY LỰC</small></div><div class="control-row"><kbd>L</kbd><span id="kick-control">Đá</span><small>TẦM TRUNG</small></div><div class="control-row"><kbd>P</kbd><span>Đỡ đòn</span><small>GIỮ ĐỂ BLOCK</small></div>
           <div class="control-row"><kbd>Q</kbd><span>Lướt</span></div>
+          <div class="control-row"><kbd>F</kbd><span>Giữ để tụ khí</span></div><div class="control-row"><kbd>G</kbd><span>Đột phá</span></div><div class="control-row"><kbd>R</kbd><span>Lộn né</span><small>GIỮ A/D ĐỂ CHỌN HƯỚNG</small></div>
           <div class="control-row"><span class="key-group"><kbd>Shift</kbd><kbd>Q</kbd></span><span>Lướt mạnh · 25</span></div>
           <div class="control-row"><kbd>T</kbd><span>Thoát combo · 50</span></div>
           <div class="control-row"><kbd>U</kbd><span id="close-control">Kỹ năng gần</span></div>
@@ -160,30 +163,7 @@
         <div class="guide-card"><div class="section-heading"><span class="tiny-icon guide-icon">✦</span><h2>LUẬT ĐẤU</h2><span class="heading-note">BO3 · THẮNG 2 HIỆP</span></div><div class="guide-body"><div class="guide-stat"><strong>60<span>s</span></strong><span>MỖI HIỆP</span></div><div class="guide-divider"></div><p>Hạ HP đối thủ về <b>0</b>, hoặc còn tỷ lệ máu cao hơn khi hết giờ. Thắng <b>2 hiệp</b> để thắng trận.</p></div><div class="match-score"><span><span class="score-name">HÙNG</span> <b id="score-hung">0</b></span><span class="score-dash">—</span><span><b id="score-mai">0</b> <span class="score-name">MAI</span></span></div></div>
       </section>
       <footer class="page-footer"><span>VÕ LINH ĐẤU TRƯỜNG <b>© 2026</b></span><span>MỘT TRẬN CHIẾN CỦA Ý CHÍ <i>✦</i></span></footer>
-      <section id="fighter-info" class="fighter-info" aria-label="Thông tin nhân vật" hidden>
-        <div class="fighter-info-grid">
-          <article id="profile-hung">
-            <h3>Hùng</h3>
-            <p data-stat="role"></p>
-            <dl>
-              <dt>HP</dt><dd data-stat="hp"></dd>
-              <dt>Tốc độ</dt><dd data-stat="speed"></dd>
-              <dt>Điểm mạnh</dt><dd data-stat="strength"></dd>
-              <dt>Điểm yếu</dt><dd data-stat="weakness"></dd>
-            </dl>
-          </article>
-          <article id="profile-mai">
-            <h3>Mai</h3>
-            <p data-stat="role"></p>
-            <dl>
-              <dt>HP</dt><dd data-stat="hp"></dd>
-              <dt>Tốc độ</dt><dd data-stat="speed"></dd>
-              <dt>Điểm mạnh</dt><dd data-stat="strength"></dd>
-              <dt>Điểm yếu</dt><dd data-stat="weakness"></dd>
-            </dl>
-          </article>
-        </div>
-      </section>
+
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>

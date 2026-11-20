@@ -14,6 +14,7 @@ export function createTrainingPanel(training, controls) {
   });
   byId('reset-position').addEventListener('click', controls.resetPosition);
   byId('reset-health').addEventListener('click', controls.resetHealth);
+  byId('test-awakening').addEventListener('click', controls.testAwakening);
   byId('reset-meter').addEventListener('click', controls.resetMeter);
   record.addEventListener('click', () => { if (controls.canUse()) training.toggleRecord(); });
   play.addEventListener('click', () => { if (controls.canUse()) training.togglePlayback(); });
@@ -23,7 +24,7 @@ export function createTrainingPanel(training, controls) {
     if (!visible) return;
     const { hits, advantage, inputs, recording, recordState } = training;
     const active = controls.canUse();
-    for (const id of ['reset-position', 'reset-health', 'reset-meter']) byId(id).disabled = !active;
+    for (const id of ['reset-position', 'reset-health', 'reset-meter', 'test-awakening']) byId(id).disabled = !active;
     record.disabled = !active || recordState === 'playing';
     play.disabled = !active || recordState === 'recording' || !recording.length;
     record.textContent = recordState === 'recording' ? 'Dừng ghi' : 'Ghi input';
