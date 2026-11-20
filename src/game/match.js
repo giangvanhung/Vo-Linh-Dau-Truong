@@ -278,6 +278,7 @@ export function startGame(config) {
   });
   function clearInputs() {
     hung.chargeFrames = mai.chargeFrames = 0;
+    hung.bufferedAttack = mai.bufferedAttack = null;
     keyboard.clear();
     keyboardP2.clear();
     lanHost.clear();
@@ -292,6 +293,8 @@ export function startGame(config) {
 
   function applyControls(fighter, target, input) {
     fighter.setGuard(input.guard);
+    const canBuffer = !fighter.disabled && !input.guard && !input.action && !input.charge;
+    if (!canBuffer) fighter.bufferedAttack = null;
     if (input.action === 'awaken' && fighter.awaken()) {
       toast(fighter.name + ' · ĐỘT PHÁ!');
       burst(fighter.x, fighter.y - 16, 26, fighter.glow);
@@ -315,7 +318,16 @@ export function startGame(config) {
     } else if (input.action === 'escape' && fighter.escapeFrom(target)) {
       toast(fighter.name.toUpperCase() + ' THOÁT COMBO!');
     }
-    if (input.attack) useAttack(fighter, target, input.attack);
+    if (input.attack) {
+      fighter.bufferedAttack = null;
+      if (!useAttack(fighter, target, input.attack) && canBuffer && fighter.attack && fighter.attacks[input.attack]) {
+        const { startup, active, recovery, elapsed } = fighter.attack;
+        if (startup + active + recovery - elapsed <= 6) fighter.bufferedAttack = input.attack;
+      }
+    } else if (fighter.bufferedAttack && !fighter.attack) {
+      useAttack(fighter, target, fighter.bufferedAttack);
+      fighter.bufferedAttack = null;
+    }
     const canMove = !fighter.disabled && !fighter.dash && !fighter.attacking && !fighter.blocking;
     fighter.crouching = canMove && input.crouch && fighter.onGround;
     if (canMove) fighter.x += input.direction * fighter.moveSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;
@@ -403,6 +415,7 @@ export function startGame(config) {
       toast(mai.name.toUpperCase() + ' THOÁT COMBO!');
       return true;
     });
+    const walkingSteps = [hung.x - movementStart[0], mai.x - movementStart[1]];
     stageFrame++;
     applyStageEffects(world, hung, movementStart[0], stageFrame, dt);
     applyStageEffects(world, mai, movementStart[1], stageFrame, dt);
@@ -410,7 +423,6 @@ export function startGame(config) {
     hung.update(dt, world, mai);
     mai.update(dt, world, hung);
     for (const [index, fighter] of [hung, mai].entries()) {
-      fighter.moving = Math.abs(fighter.x - movementStart[index]) > .1 && !fighter.hitstun;
       if (fighter.dash?.elapsed === 1) audio.cue('dash');
       const attack = fighter.attack;
       if (attack && attack.elapsed === attack.startup) {
@@ -432,6 +444,21 @@ export function startGame(config) {
     }
     separateFighters(hung, mai, world, config.stage.pushboxHeightRatio, startingSide, bodiesTouchingVertically);
     updateFacing(hung, mai);
+    for (const [index, fighter] of [hung, mai].entries()) {
+      const step = fighter.x - movementStart[index];
+      const intended = walkingSteps[index];
+      fighter.moving = Math.abs(step) > .1 && Math.abs(intended) > .1 && step * intended > 0
+        && fighter.onGround && !fighter.disabled
+        && !fighter.attack && !fighter.dash && !fighter.blocking && !fighter.crouching;
+      if (fighter.moving) {
+        const backwards = step * fighter.facing < 0;
+        if (backwards !== fighter.walkBackwards) fighter.walkDistance = 0;
+        fighter.walkBackwards = backwards;
+        fighter.walkDistance += Math.min(Math.abs(step), Math.abs(intended));
+      } else {
+        fighter.walkDistance = 0;
+      }
+    }
     for (const [fighter, target] of [[hung, mai], [mai, hung]]) {
       if (fighter.characterId === 'vy' && fighter.awakeningWindow
         && (target.x - fighter.x) * fighter.awakeningSide < -8) fighter.awakeningUnlocked = true;
@@ -460,13 +487,16 @@ export function startGame(config) {
       toast(label);
       burst(x, y, 18, color);
     }
-    audio.cue(blocked ? 'block' : (hit.attack.id === 'kick' || hit.attack.animation === 'kick') ? 'kick' : hit.attack.id === 'heavy' ? 'heavy' : 'hit');
+    const isKick = hit.attack.id === 'kick' || ['kick', 'sweep'].includes(hit.attack.animation);
+    audio.cue(blocked ? 'block' : isKick ? 'kick' : hit.attack.id === 'heavy' ? 'heavy' : 'hit');
     hitstop = Math.max(hitstop, hit.hitstop);
     shake = Math.max(shake, hit.hitstop ? .14 : .07);
     if (broken) toast('VỠ THẾ THỦ!');
     else if (combo >= 2) toast(attacker.name.toUpperCase() + ' · COMBO ' + combo + ' HIT');
     else if (blocked) toast('ĐỠ ĐÒN!');
-    floaters.push({ x, y: y - 18, contactY: y, life: .75, total: .75, text: '−' + damageFormat.format(damage), blocked });
+    const sparkType = blocked ? 'guard' : isKick ? 'kick' : 'hit';
+    floaters.push({ x, y: y - 18, contactY: y, life: .75, total: .75,
+      text: '−' + damageFormat.format(damage), blocked, sparkType, facing: hit.attack.facing });
     burst(x, y, blocked ? 5 : 11, blocked ? '#a9d9ff' : hit.attack.effect?.color);
   }
 

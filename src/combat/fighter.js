@@ -13,9 +13,13 @@ export class Fighter {
     this.facing = facing;
     this.vy = 0;
     this.onGround = true;
+    this.moving = false;
+    this.walkDistance = 0;
+    this.walkBackwards = false;
     this.crouching = false;
     this.blocking = false;
     this.attack = null;
+    this.bufferedAttack = null;
     this.hitstun = 0;
     this.knockVelocity = 0;
     this.flash = 0;

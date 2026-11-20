@@ -1,4 +1,4 @@
-import { activeZone, zoneRanges } from '../game/stages.js';
+import { activeZone, overlapsSurface, zoneRanges } from '../game/stages.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
 
 export function createArenaRenderer(canvas, config) {
@@ -6,7 +6,9 @@ export function createArenaRenderer(canvas, config) {
 
   const drawSprite = createSpriteRenderer(ctx, config.characters);
   const images = new Map();
+  const sparkSheet = '/assets/effects/combat-sparks.png';
   const paths = new Set(Object.values(config.stages).flatMap(stage => [stage.background, ...stage.parallax]));
+  paths.add(sparkSheet);
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
   function drawStage(stage, w, h, ground, center) {
@@ -51,6 +53,7 @@ export function createArenaRenderer(canvas, config) {
       ctx.fillRect(Math.min(trail.from, trail.to), ground + trail.y - 11, Math.abs(trail.to - trail.from), 11);
     }
     ctx.globalAlpha = 1;
+    for (const f of fighters) drawContactShadow(f, stage, w, ground);
     for (const shot of projectiles) drawProjectile(shot, ground);
     for (const f of fighters) drawAura(f, ground, animationTime);
     for (const f of fighters) {
@@ -92,6 +95,19 @@ export function createArenaRenderer(canvas, config) {
       const spark = Math.max(0, 1 - (f.total - f.life) / .12);
       if (spark > 0) {
         ctx.globalAlpha = spark;
+        const texture = images.get(sparkSheet);
+        if (texture) {
+          const column = f.sparkType === 'guard' ? 2 : f.sparkType === 'kick' ? 1 : 0;
+          const tile = texture.height;
+          const size = Math.round(28 + 18 * (1 - spark) + (f.sparkType === 'kick' ? 8 : 0));
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.translate(Math.round(f.x), Math.round(ground + f.contactY));
+          ctx.scale(f.facing < 0 ? -1 : 1, 1);
+          ctx.drawImage(texture, column * tile, 0, tile, tile, -size / 2, -size / 2, size, size);
+          ctx.restore();
+          continue;
+        }
         ctx.strokeStyle = f.blocked ? '#c5ebff' : '#fff6ce';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -118,6 +134,24 @@ export function createArenaRenderer(canvas, config) {
       drawCollisionBoxes(fighters, projectiles, ground);
       ctx.restore();
     }
+  }
+
+  function drawContactShadow(fighter, stage, width, ground) {
+    let floor = 0;
+    for (const platform of stage.platforms ?? []) {
+      if (fighter.y <= platform.y && overlapsSurface(fighter.x, width, platform.range)) {
+        floor = Math.min(floor, platform.y);
+      }
+    }
+    const proximity = 1 / (1 + (floor - fighter.y) / 56);
+    const radius = fighter.width * (.55 + .25 * proximity);
+    ctx.save();
+    ctx.fillStyle = '#090713';
+    ctx.globalAlpha = .32 * proximity;
+    ctx.beginPath();
+    ctx.ellipse(Math.round(fighter.x), Math.round(ground + floor + 2), radius, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   function applyShake(shake, screenEffect) {

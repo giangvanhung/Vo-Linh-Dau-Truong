@@ -185,10 +185,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 17,
-              "far": 42,
-              "top": 70,
-              "height": 10
+              "near": 27,
+              "far": 51,
+              "top": 85,
+              "height": 11
             }
           ]
         },
@@ -206,10 +206,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 23,
-              "far": 50,
-              "top": 66,
-              "height": 11
+              "near": 18,
+              "far": 51,
+              "top": 86,
+              "height": 13
             }
           ]
         },
@@ -229,22 +229,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 16,
-              "far": 26,
-              "top": 75,
-              "height": 16
-            },
-            {
-              "near": 26,
-              "far": 35,
-              "top": 84,
+              "near": 29,
+              "far": 69,
+              "top": 77,
               "height": 15
-            },
-            {
-              "near": 35,
-              "far": 43,
-              "top": 89,
-              "height": 17
             }
           ],
           "level": "low"
@@ -421,10 +409,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 15,
-              "far": 37,
-              "top": 73,
-              "height": 9
+              "near": 19,
+              "far": 43,
+              "top": 82,
+              "height": 11
             }
           ]
         },
@@ -442,10 +430,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 22,
-              "far": 52,
-              "top": 64,
-              "height": 10
+              "near": 12,
+              "far": 43,
+              "top": 83,
+              "height": 13
             }
           ]
         },
@@ -463,22 +451,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 16,
-              "far": 28,
-              "top": 74,
-              "height": 16
-            },
-            {
-              "near": 28,
-              "far": 40,
-              "top": 79,
-              "height": 16
-            },
-            {
-              "near": 39,
-              "far": 50,
-              "top": 86,
-              "height": 16
+              "near": 18,
+              "far": 58,
+              "top": 77,
+              "height": 15
             }
           ],
           "level": "low"
@@ -679,10 +655,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 15,
-              "far": 37,
-              "top": 73,
-              "height": 9
+              "near": 20,
+              "far": 44,
+              "top": 85,
+              "height": 11
             }
           ]
         },
@@ -700,10 +676,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 22,
-              "far": 52,
-              "top": 64,
-              "height": 10
+              "near": 12,
+              "far": 42,
+              "top": 86,
+              "height": 13
             }
           ]
         },
@@ -723,22 +699,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 16,
-              "far": 28,
-              "top": 74,
-              "height": 16
-            },
-            {
-              "near": 28,
-              "far": 40,
-              "top": 79,
-              "height": 16
-            },
-            {
-              "near": 39,
-              "far": 50,
-              "top": 86,
-              "height": 16
+              "near": 21,
+              "far": 61,
+              "top": 77,
+              "height": 15
             }
           ],
           "level": "low"
@@ -933,10 +897,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 15,
-              "far": 37,
-              "top": 73,
-              "height": 9
+              "near": 18,
+              "far": 42,
+              "top": 81,
+              "height": 11
             }
           ]
         },
@@ -954,10 +918,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 22,
-              "far": 52,
-              "top": 64,
-              "height": 10
+              "near": 12,
+              "far": 42,
+              "top": 82,
+              "height": 13
             }
           ]
         },
@@ -975,22 +939,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 16,
-              "far": 28,
-              "top": 74,
-              "height": 16
-            },
-            {
-              "near": 28,
-              "far": 40,
-              "top": 79,
-              "height": 16
-            },
-            {
-              "near": 39,
-              "far": 50,
-              "top": 86,
-              "height": 16
+              "near": 20,
+              "far": 60,
+              "top": 69,
+              "height": 15
             }
           ],
           "level": "low"
@@ -1040,27 +992,15 @@
           ],
           "limbBoxes": [
             {
-              "near": 16,
-              "far": 28,
-              "top": 74,
-              "height": 16
-            },
-            {
-              "near": 28,
-              "far": 40,
-              "top": 79,
-              "height": 16
-            },
-            {
-              "near": 39,
-              "far": 50,
-              "top": 86,
-              "height": 16
+              "near": 31,
+              "far": 63,
+              "top": 17,
+              "height": 15
             }
           ],
           "level": "low",
-          "animation": "kick",
-          "strikeFrame": 1,
+          "animation": "sweep",
+          "strikeFrame": 2,
           "effect": {
             "color": "#ffd0df",
             "particles": 9,
@@ -1200,10 +1140,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 15,
-              "far": 37,
-              "top": 73,
-              "height": 9
+              "near": 17,
+              "far": 41,
+              "top": 84,
+              "height": 11
             }
           ]
         },
@@ -1221,10 +1161,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 22,
-              "far": 52,
-              "top": 64,
-              "height": 10
+              "near": 14,
+              "far": 47,
+              "top": 94,
+              "height": 13
             }
           ]
         },
@@ -1242,22 +1182,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 16,
-              "far": 28,
-              "top": 74,
-              "height": 16
-            },
-            {
-              "near": 28,
-              "far": 40,
-              "top": 79,
-              "height": 16
-            },
-            {
-              "near": 39,
-              "far": 50,
-              "top": 86,
-              "height": 16
+              "near": 18,
+              "far": 58,
+              "top": 73,
+              "height": 15
             }
           ],
           "level": "low"
@@ -1454,10 +1382,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 17,
-              "far": 42,
-              "top": 70,
-              "height": 10
+              "near": 24,
+              "far": 48,
+              "top": 90,
+              "height": 11
             }
           ]
         },
@@ -1475,10 +1403,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 23,
-              "far": 50,
-              "top": 66,
-              "height": 11
+              "near": 15,
+              "far": 48,
+              "top": 91,
+              "height": 13
             }
           ]
         },
@@ -1498,22 +1426,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 16,
-              "far": 26,
-              "top": 75,
-              "height": 16
-            },
-            {
-              "near": 26,
-              "far": 35,
-              "top": 84,
+              "near": 27,
+              "far": 67,
+              "top": 79,
               "height": 15
-            },
-            {
-              "near": 35,
-              "far": 43,
-              "top": 89,
-              "height": 17
             }
           ],
           "level": "low"
@@ -1708,10 +1624,10 @@
           ],
           "limbBoxes": [
             {
-              "near": 15,
-              "far": 37,
-              "top": 73,
-              "height": 9
+              "near": 19,
+              "far": 43,
+              "top": 87,
+              "height": 11
             }
           ]
         },
@@ -1729,10 +1645,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 22,
-              "far": 52,
-              "top": 64,
-              "height": 10
+              "near": 12,
+              "far": 43,
+              "top": 88,
+              "height": 13
             }
           ]
         },
@@ -1750,22 +1666,10 @@
           "cancelInto": [],
           "limbBoxes": [
             {
-              "near": 16,
-              "far": 28,
-              "top": 74,
-              "height": 16
-            },
-            {
-              "near": 28,
-              "far": 40,
-              "top": 79,
-              "height": 16
-            },
-            {
-              "near": 39,
-              "far": 50,
-              "top": 86,
-              "height": 16
+              "near": 19,
+              "far": 59,
+              "top": 78,
+              "height": 15
             }
           ],
           "level": "low"
