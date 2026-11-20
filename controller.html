@@ -8,20 +8,30 @@
   <link rel="stylesheet" href="/src/ui/controller.css">
 </head>
 <body>
-  <header>
-    <h1>Tay cầm LAN</h1>
-    <p id="connection" role="status">Chọn vị trí để kết nối.</p>
-    <div id="join"><button type="button" data-player="1">Vào P1</button><button type="button" data-player="2">Vào P2</button></div>
-    <div id="qr-reconnect">
-      <button type="button" id="scan-qr">Quét QR mới</button>
-      <button type="button" id="choose-qr">Chọn ảnh QR</button>
-      <input type="file" id="qr-image" accept="image/*" hidden>
+  <header class="controller-header">
+    <div class="controller-hero">
+      <span>Võ Linh Đấu Trường</span>
+      <h1>Tay cầm</h1>
     </div>
-    <section id="qr-scanner" aria-label="Camera quét QR" hidden>
-      <video id="qr-preview" autoplay muted playsinline></video>
-      <button type="button" id="stop-qr">Đóng camera</button>
-    </section>
-    <button type="button" id="leave" hidden>Rời tay cầm</button>
+    <div class="controller-connect">
+      <p id="connection" role="status">Chọn vị trí để kết nối.</p>
+      <div id="join" aria-label="Chọn người chơi">
+        <button type="button" data-player="1"><strong>P1</strong> Người chơi 1</button>
+        <button type="button" data-player="2"><strong>P2</strong> Người chơi 2</button>
+      </div>
+      <div id="qr-reconnect">
+        <button type="button" id="scan-qr">Quét QR mới</button>
+        <label class="qr-file-picker">
+          Chọn ảnh QR
+          <input type="file" id="qr-image" accept="image/*">
+        </label>
+      </div>
+      <section id="qr-scanner" aria-label="Camera quét QR" hidden>
+        <video id="qr-preview" autoplay muted playsinline></video>
+        <button type="button" id="stop-qr">Đóng camera</button>
+      </section>
+      <button type="button" id="leave" hidden>Rời tay cầm</button>
+    </div>
   </header>
   <main id="pad" hidden>
     <div class="pad-tools">

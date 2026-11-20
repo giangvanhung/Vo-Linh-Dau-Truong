@@ -87,7 +87,7 @@ export function attachLan(server) {
       }
       Promise.all(links.map(async option => ({
         ...option,
-        qr: await QRCode.toDataURL(option.link, { width: 180, margin: 2 }),
+        qr: await QRCode.toDataURL(option.link, { scale: 10, margin: 4 }),
       })))
         .then(options => send(socket, { type: 'room', options }))
         .catch(() => send(socket, { type: 'room', options: links }));

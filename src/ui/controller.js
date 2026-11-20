@@ -43,26 +43,26 @@ function showJoin(message, expired = false) {
   setExpanded(false);
   exitFullscreen();
   pad.hidden = leave.hidden = true;
+  document.body.classList.remove('pad-connected');
   join.hidden = !room || expired;
   qrReconnect.hidden = false;
 }
 
 const qrImage = document.querySelector('#qr-image');
 const scanQr = document.querySelector('#scan-qr');
-const chooseQr = document.querySelector('#choose-qr');
 const scanner = document.querySelector('#qr-scanner');
 const preview = document.querySelector('#qr-preview');
 const playerTwo = join.querySelector('[data-player="2"]');
 let scanSession;
 
-function decodeQr(source, width, height, canvas, limit) {
+function decodeQr(source, canvas, limit, x, y, width, height) {
   const scale = Math.min(1, limit / Math.max(width, height));
   const frameWidth = Math.max(1, Math.round(width * scale));
   const frameHeight = Math.max(1, Math.round(height * scale));
   if (canvas.width !== frameWidth) canvas.width = frameWidth;
   if (canvas.height !== frameHeight) canvas.height = frameHeight;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(source, x, y, width, height, 0, 0, canvas.width, canvas.height);
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
   return globalThis.jsQR(pixels.data, pixels.width, pixels.height);
 }
@@ -72,7 +72,9 @@ function openRoomQr(text) {
   try { link = new URL(text); } catch { return false; }
   const nextRoom = link.searchParams.get('room');
   if (!['http:', 'https:'].includes(link.protocol) || link.username || link.password
-      || link.pathname !== '/controller' || !/^[A-Za-z0-9_-]{16}$/.test(nextRoom ?? '')) return false;
+      || !['/controller', '/controller/', '/controller.html'].includes(link.pathname)
+      || !/^[A-Za-z0-9_-]{16}$/.test(nextRoom ?? '')) return false;
+  link.pathname = '/controller';
   stopScan();
   if (link.origin !== location.origin) {
     location.replace(link.href);
@@ -95,7 +97,7 @@ function stopScan() {
   session?.stream?.getTracks().forEach(track => track.stop());
   preview.srcObject = null;
   scanner.hidden = true;
-  scanQr.disabled = chooseQr.disabled = false;
+  scanQr.disabled = qrImage.disabled = false;
 }
 
 scanQr.onclick = async () => {
@@ -104,11 +106,14 @@ scanQr.onclick = async () => {
     return;
   }
   const session = scanSession = {};
-  scanQr.disabled = chooseQr.disabled = true;
+  scanQr.disabled = qrImage.disabled = true;
   scanner.hidden = false;
   label.textContent = 'Cho phép dùng camera rồi đưa mã QR vào khung.';
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false,
+    });
     if (scanSession !== session) {
       stream.getTracks().forEach(track => track.stop());
       return;
@@ -116,12 +121,20 @@ scanQr.onclick = async () => {
     session.stream = stream;
     preview.srcObject = stream;
     await preview.play();
+    if (scanSession !== session) return;
+    label.textContent = 'Đưa trọn mã QR vào giữa khung và giữ điện thoại ổn định. Mã sẽ tự được nhận.';
     const canvas = document.createElement('canvas');
+    let scanCenter = true;
     function scanFrame() {
       if (scanSession !== session) return;
       try {
-        if (preview.readyState >= 2 && preview.videoWidth) {
-          const code = decodeQr(preview, preview.videoWidth, preview.videoHeight, canvas, 960);
+        const { videoWidth, videoHeight } = preview;
+        if (preview.readyState >= 2 && videoWidth && videoHeight) {
+          const side = Math.floor(Math.min(videoWidth, videoHeight) * 0.75);
+          const code = scanCenter
+            ? decodeQr(preview, canvas, 1080, (videoWidth - side) / 2, (videoHeight - side) / 2, side, side)
+            : decodeQr(preview, canvas, 1600, 0, 0, videoWidth, videoHeight);
+          scanCenter = !scanCenter;
           if (code && openRoomQr(code.data)) return;
           if (code) label.textContent = 'Hãy đưa mã QR phòng tay cầm vào khung.';
         }
@@ -144,21 +157,19 @@ document.querySelector('#stop-qr').onclick = () => {
   stopScan();
   label.textContent = 'Đã đóng camera. Bấm Quét QR mới để thử lại.';
 };
-chooseQr.onclick = () => qrImage.click();
-
 async function readRoomQr(event) {
   const input = event.currentTarget;
   const file = input.files[0];
   input.value = '';
   if (!file) return;
-  scanQr.disabled = chooseQr.disabled = true;
+  scanQr.disabled = qrImage.disabled = true;
   label.textContent = 'Đang đọc mã QR…';
   const objectUrl = URL.createObjectURL(file);
   try {
     const image = new Image();
     image.src = objectUrl;
     await image.decode();
-    const code = decodeQr(image, image.naturalWidth, image.naturalHeight, document.createElement('canvas'), 1600);
+    const code = decodeQr(image, document.createElement('canvas'), 1600, 0, 0, image.naturalWidth, image.naturalHeight);
     if (!code) {
       label.textContent = 'Chưa đọc được mã QR. Hãy chụp gần hơn và lấy trọn mã.';
       return;
@@ -170,7 +181,7 @@ async function readRoomQr(event) {
     label.textContent = 'Không đọc được ảnh. Hãy thử chụp lại hoặc chọn ảnh khác.';
   } finally {
     URL.revokeObjectURL(objectUrl);
-    scanQr.disabled = chooseQr.disabled = false;
+    scanQr.disabled = qrImage.disabled = false;
   }
 }
 
@@ -188,6 +199,7 @@ for (const button of join.querySelectorAll('button')) {
       if (socket !== connection || JSON.parse(data).type !== 'joined') return;
       label.textContent = 'Đã kết nối P' + button.dataset.player;
       pad.hidden = leave.hidden = false;
+      document.body.classList.add('pad-connected');
       qrReconnect.hidden = true;
       setExpanded(true);
       setRotated(true);
