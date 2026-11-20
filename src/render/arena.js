@@ -1,22 +1,31 @@
 import { activeZone, overlapsSurface, zoneRanges } from '../game/stages.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
+import { gear } from '../game/pickups.js';
 
 export function createArenaRenderer(canvas, config) {
   const ctx = canvas.getContext('2d');
   const background = document.getElementById('arena-background');
   const backdrop = background.getContext('2d', { alpha: false });
+  const w = canvas.width, h = canvas.height;
 
   const drawSprite = createSpriteRenderer(ctx, config.characters);
   const images = new Map();
   const sparkSheet = '/assets/effects/combat-sparks.png';
   const evolutionFist = '/assets/effects/hung-evolution-fist.png';
-  const paths = new Set(Object.values(config.stages).flatMap(stage => [stage.background, ...stage.parallax]));
+  const advancedAura = '/assets/effects/evolution-level-two.png';
+  const paths = new Set();
+  for (const stage of Object.values(config.stages)) {
+    for (const path of [stage.background, ...stage.parallax]) paths.add(path);
+  }
   paths.add(sparkSheet);
   paths.add(evolutionFist);
+  paths.add(advancedAura);
+  for (const item of Object.values(gear)) if (item.image) paths.add(item.image);
   for (const character of Object.values(config.characters)) {
     const { wings, overlay } = character.awakening?.evolution ?? {};
     if (wings) paths.add(wings);
     if (overlay) paths.add(overlay.image);
+    if (character.weapon) paths.add(character.weapon.image);
   }
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
@@ -25,12 +34,14 @@ export function createArenaRenderer(canvas, config) {
     const composite = images.get(stage.background);
     ctx.fillStyle = '#191922';
     ctx.fillRect(0, 0, w, h);
+    const floor = stage.artGroundRatio ?? .724;
+    // Cover both sides of the floor line so cropping never moves it away from the fighters.
+    const minHeight = Math.max(ground / floor, (h - ground) / (1 - floor));
     const draw = (image, shift = 0, overscan = 1) => {
-      const scale = Math.max(w * overscan / image.width, h / image.height);
+      const scale = Math.max(w * overscan / image.width, minHeight / image.height);
       const width = image.width * scale;
       const height = image.height * scale;
-      const floor = stage.artGroundRatio ?? .724;
-      const top = Math.min(0, Math.max(h - height, ground - height * floor));
+      const top = ground - height * floor;
       ctx.drawImage(image, (w - width) / 2 + shift, top, width, height);
     };
     if (layers.length && layers.every(Boolean)) {
@@ -48,22 +59,40 @@ export function createArenaRenderer(canvas, config) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  function render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime }) {
-    const w = canvas.width, h = canvas.height, ground = h * config.stage.groundRatio;
+  function render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime, drop }) {
+    const ground = h * config.stage.groundRatio;
+    const displayHeight = canvas.clientHeight;
+    const scale = Math.min(canvas.clientWidth / w, displayHeight / h);
+    const pixelScale = Math.min(2, Math.max(1, scale * (window.devicePixelRatio || 1)));
+    const pixelWidth = Math.round(w * pixelScale);
+    const pixelHeight = Math.round(h * pixelScale);
+    if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+    if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
+    ctx.setTransform(pixelWidth / w, 0, 0, pixelHeight / h, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const center = (fighters[0].x + offsets[0][0] + fighters[1].x + offsets[1][0]) / 2;
     const width = background.clientWidth, height = background.clientHeight;
     if (width && height) {
       if (background.width !== width) background.width = width;
       if (background.height !== height) background.height = height;
-      const scale = Math.min(canvas.clientWidth / w, canvas.clientHeight / h);
       const stageTop = canvas.parentElement.offsetTop;
-      const floor = stageTop + (canvas.clientHeight - h * scale) / 2 + ground * scale;
+      const floor = stageTop + (displayHeight - h * scale) / 2 + ground * scale;
       drawStage(backdrop, stage, width, height, floor, center / w * width);
     }
     ctx.save();
     applyShake(shake, screenEffect);
     drawTerrain(stage, stageFrame, w, ground);
+    if (drop) {
+      ctx.fillStyle = '#252420';
+      ctx.fillRect(drop.x - 15, ground + drop.y - 15, 30, 29);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#eac587';
+      ctx.strokeRect(drop.x - 15, ground + drop.y - 15, 30, 29);
+      ctx.fillStyle = '#eac587';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText('?', drop.x, ground + drop.y + 7);
+    }
     for (const trail of trails) {
       ctx.globalAlpha = trail.life / trail.total;
       ctx.fillStyle = trail.color;
@@ -88,6 +117,7 @@ export function createArenaRenderer(canvas, config) {
       ctx.translate(...offsets[index]);
       if (f.evolving && f.hp > 0) drawEvolutionWings(f, ground, animationTime);
       drawEvolutionBody(f, ground, animationTime);
+      drawCombatEffects(f, ground);
       if (f.attack?.evolvedPunch) drawEvolutionFist(f, ground, animationTime);
       if (f.hp <= 0 || (!f.freezeFrames && !f.poisonFrames)) {
         ctx.restore();
@@ -233,13 +263,14 @@ export function createArenaRenderer(canvas, config) {
       ctx.fillStyle = zone.color;
       for (const [start, end] of zoneRanges(zone)) {
         const left = start * w, width = (end - start) * w;
+        const lava = zone.kind === 'lava';
         ctx.globalAlpha = active ? .55 : warning ? .35 : .15;
-        ctx.fillRect(left, ground + 2, width, zone.kind === 'slip' ? 5 : 3);
+        ctx.fillRect(left, ground + (lava ? -3 : 2), width, lava ? 13 : zone.kind === 'slip' ? 5 : 3);
         if (!active || zone.kind === 'slip') continue;
         for (let i = 0; i < 12; i++) {
           const x = left + ((i * 37 + frame * 3) % width);
-          const y = ground - 5 - ((i * 17 + frame * 4) % (zone.kind === 'wind' ? 145 : 72));
-          ctx.fillRect(x, y, zone.kind === 'wind' ? 15 : 3, zone.kind === 'wind' ? 2 : 9);
+          const y = ground - 5 - ((i * 17 + frame * 4) % (zone.kind === 'wind' ? 145 : lava ? 28 : 72));
+          ctx.fillRect(x, y, zone.kind === 'wind' ? 15 : 3, zone.kind === 'wind' || lava ? 2 : 9);
         }
       }
     }
@@ -303,7 +334,7 @@ export function createArenaRenderer(canvas, config) {
     ctx.translate(fighter.x, ground + fighter.y);
     ctx.strokeStyle = ctx.fillStyle = fighter.glow;
     if (fighter.charging || fighter.evolving) {
-      const color = fighter.evolving ? fighter.awakening.evolution.color ?? '#ffcc53' : fighter.glow;
+      const color = fighter.evolving ? fighter.evolution.color ?? '#ffcc53' : fighter.glow;
       if (fighter.evolving) {
         ctx.save();
         ctx.translate(0, -fighter.y);
@@ -317,7 +348,7 @@ export function createArenaRenderer(canvas, config) {
         ctx.restore();
       }
       ctx.strokeStyle = color;
-      drawChargeAura(fighter, time, fighter.evolving ? 1 : Math.min(1, fighter.chargeFrames / 24), color);
+      drawChargeAura(fighter, time, fighter.evolving ? (fighter.awakeningLevel === 2 ? 1.45 : 1) : Math.min(1, fighter.chargeFrames / 24), color);
       ctx.restore();
       return;
     }
@@ -338,7 +369,7 @@ export function createArenaRenderer(canvas, config) {
   }
 
   function drawEvolutionWings(fighter, ground, time) {
-    const image = images.get(fighter.awakening.evolution.wings);
+    const image = images.get(fighter.evolution.wings);
     if (!image) return;
     const pulse = Math.sin(time / 105);
     const progress = Math.min(1, (fighter.awakeningDuration - fighter.awakeningFrames + 1) / 12, fighter.awakeningFrames / 20);
@@ -361,9 +392,19 @@ export function createArenaRenderer(canvas, config) {
 
     const age = fighter.awakeningDuration - fighter.awakeningFrames;
     const blend = Math.min(1, age / 14, fighter.awakeningFrames / 18);
-    const { body, color = '#ffcc53', scale = 1, overlay } = fighter.awakening.evolution;
+    const { body, color = '#ffcc53', scale = 1, overlay } = fighter.evolution;
     const size = 1 + blend * (scale - 1);
     const feet = ground + fighter.y;
+    const aura = fighter.awakeningLevel === 2 && images.get(advancedAura);
+    if (aura && blend > 0) {
+      const width = fighter.height * (1.65 + .1 * Math.sin(time / 160));
+      const height = width * aura.height / aura.width;
+      ctx.save();
+      ctx.globalAlpha = .58 * blend;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(aura, fighter.x - width / 2, feet - height * .89, width, height);
+      ctx.restore();
+    }
     if (overlay?.behind) drawEvolutionOverlay(fighter, ground, time, blend, overlay);
     ctx.save();
     ctx.translate(fighter.x, feet);
@@ -477,13 +518,22 @@ export function createArenaRenderer(canvas, config) {
     ctx.restore();
   }
 
-  function drawProjectile({ x, y, facing, attack }, ground) {
+  function drawProjectile({ x, y, facing, attack, attacker }, ground) {
     const { color, width, height, pierce, shape } = attack.projectile;
     ctx.save();
     ctx.shadowColor = ctx.fillStyle = color;
     ctx.shadowBlur = 10;
     ctx.translate(x, ground + y);
     ctx.scale(facing, 1);
+    const weapon = !attack.pickupWeapon && attacker.weapon?.projectile && images.get(attacker.weapon.image);
+    if (weapon) {
+      const size = width * 1.08;
+      const imageHeight = size * weapon.height / weapon.width;
+      ctx.rotate(.58);
+      ctx.drawImage(weapon, -size / 2, -imageHeight / 2, size, imageHeight);
+      ctx.restore();
+      return;
+    }
     ctx.beginPath();
     const outlines = {
       ice: [[-.5,0], [-.15,-.49], [.38,-.3], [.5,0], [.34,.39], [-.19,.5]],
@@ -506,14 +556,90 @@ export function createArenaRenderer(canvas, config) {
       ctx.ellipse(0, 0, width / 2, height / 2, pierce ? -.22 : 0, 0, Math.PI * 2);
     }
     ctx.fill();
+    if (!['pool', 'embers', 'pillar', 'bloom'].includes(shape) && attack.projectile.speed) {
+      ctx.globalAlpha = .45;
+      ctx.fillRect(-width * .7, -height * .08, width * .8, Math.max(2, height * .16));
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff2d4';
+      ctx.fillRect(-width * .12, -height * .08, width * .33, Math.max(1, height * .13));
+    }
+    ctx.restore();
+  }
+
+  function drawCombatEffects(fighter, ground) {
+    if (fighter.hp <= 0) return;
+    const attack = fighter.attack;
+    const item = gear[attack?.pickupWeapon ?? (fighter.weaponUses ? fighter.pickupWeapon : '')];
+    if (fighter.shieldHp > 0 || item?.image) {
+      const equipment = fighter.shieldHp > 0 ? [gear.shield, item] : [item];
+      ctx.save();
+      ctx.translate(fighter.x, ground + fighter.y);
+      ctx.scale(attack?.facing ?? fighter.facing, 1);
+      for (const [index, entry] of equipment.entries()) {
+        const image = images.get(entry?.image);
+        if (!image) continue;
+        const guard = entry === gear.shield;
+        const size = guard ? 34 : fighter.attackActive && entry === gear.sword ? 83 : 56;
+        const height = size * image.height / image.width;
+        ctx.drawImage(image, (index || !guard ? 18 : -35) - size / 4, -fighter.hurtbox.height * .68 - height / 2, size, height);
+      }
+      ctx.restore();
+    }
+    if (!attack || attack.projectile || (!fighter.skills[attack.id] && !attack.pickupWeapon && !attack.showArc)) return;
+    const pulse = attack.pulses?.some(({from, to}) => attack.elapsed - attack.startup >= from && attack.elapsed - attack.startup < to);
+    const active = fighter.attackActive && (!attack.pulses || pulse);
+    const warning = attack.elapsed < attack.startup && attack.elapsed >= attack.startup - 6;
+    if (!active && !warning) return;
+    ctx.save();
+    ctx.strokeStyle = attack.effect?.color ?? (fighter.evolving ? fighter.evolution.color : fighter.glow);
+    ctx.lineWidth = active ? attack.id === 'ultimate' ? 4 : 2.5 : 1;
+    ctx.globalAlpha = active ? .84 : .32;
+    for (const box of fighter.attackBoxes) {
+      ctx.beginPath();
+      ctx.ellipse(box.x + box.width / 2, ground + box.y + box.height / 2,
+        box.width / 2, box.height / 2, 0, active && !attack.radial ? -.85 : 0,
+        active && !attack.radial ? 2.7 : Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
   function drawFighter(fighter, ground, animationTime) {
-    if (drawSprite(fighter, ground, animationTime)) return;
-    const body = fighter.hurtbox;
-    ctx.fillStyle = fighter.flash > 0 ? '#fff2dc' : fighter.color;
-    ctx.fillRect(body.x, ground + body.y, body.width, body.height);
+    if (!drawSprite(fighter, ground, animationTime)) {
+      const body = fighter.hurtbox;
+      ctx.fillStyle = fighter.flash > 0 ? '#fff2dc' : fighter.color;
+      ctx.fillRect(body.x, ground + body.y, body.width, body.height);
+    }
+    const weapon = fighter.weapon && images.get(fighter.weapon.image);
+    if (!weapon || fighter.hp <= 0 || fighter.weaponUses || fighter.attack?.pickupWeapon) return;
+    const attack = fighter.attack;
+    const swinging = attack && ['heavy', 'closeSkill', 'ultimate'].includes(attack.id);
+    const extension = swinging ? Math.min(1, attack.elapsed / attack.startup,
+      Math.max(0, (attack.startup + attack.active + attack.recovery - attack.elapsed) / attack.recovery)) : 0;
+    const width = fighter.weapon.width;
+    const height = width * weapon.height / weapon.width;
+    const bob = Math.sin(animationTime / 115) * 2;
+    const hand = fighter.hurtbox.height * .64;
+    ctx.save();
+    ctx.translate(fighter.x, ground + fighter.y);
+    ctx.scale(attack?.facing ?? fighter.dash?.facing ?? fighter.facing, 1);
+    if (swinging && fighter.attackActive) {
+      ctx.strokeStyle = fighter.evolving ? fighter.evolution.color : fighter.glow;
+      ctx.globalAlpha = .68;
+      ctx.lineWidth = fighter.evolving && fighter.awakeningLevel === 2 ? 5 : 3;
+      ctx.beginPath();
+      ctx.ellipse(32, -hand, width * .59, height * .45, -.35, -1.1, .84);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.translate(13 + extension * 32, -hand + bob);
+    ctx.rotate(fighter.weapon.tilt + extension * 1.2);
+    if (fighter.evolving) {
+      ctx.shadowColor = fighter.evolution.color;
+      ctx.shadowBlur = fighter.awakeningLevel === 2 ? 21 : 10;
+    }
+    ctx.drawImage(weapon, -width * .37, -height * .61, width, height);
+    ctx.restore();
   }
 
   return render;

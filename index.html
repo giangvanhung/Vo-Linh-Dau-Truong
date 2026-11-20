@@ -66,7 +66,7 @@
                   <button class="panel-button" id="reset-position">Đặt lại vị trí</button>
                   <button class="panel-button" id="reset-health">Hồi máu</button>
                   <button class="panel-button" id="reset-meter">Đặt năng lượng về 0</button>
-                  <button class="panel-button" id="test-awakening">Nạp đầy để thử Tiến hóa</button>
+                  <button class="panel-button" id="test-awakening">Nạp cấp tiến hóa kế tiếp</button>
                   <button class="panel-button" id="record-input">Ghi input</button>
                   <button class="panel-button" id="play-input" disabled>Phát cho bù nhìn</button>
                   <output id="record-status">Tối đa 10 giây</output>
@@ -129,8 +129,10 @@
             </fieldset>
             <div class="setup-options">
               <label class="toggle-field">Hiệu ứng môi trường <input class="toggle-input" type="checkbox" id="stage-hazards" checked></label>
+              <label class="toggle-field">Vui nhộn · Hộp vật phẩm <input class="toggle-input" type="checkbox" id="party-items" aria-describedby="party-items-hint"></label>
               <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
             </div>
+            <p id="party-items-hint">Chạm hộp để nhặt. Bấm Đòn nặng để dùng kiếm hoặc súng.</p>
             <div class="panel-actions">
               <button class="panel-button" data-menu>Về menu</button>
               <button type="button" class="panel-button" id="solo-lan-button" aria-controls="lan-panel">Kết nối tay cầm P1</button>
@@ -189,6 +191,6 @@
       </section>
 
     </main>
-    <script type="module" src="/src/main.js"></script>
+    <script defer src="/src/game.bundle.js"></script>
   </body>
 </html>

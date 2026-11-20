@@ -6,12 +6,13 @@
 #lan-link-box p { margin: 0; max-width: 50ch; }
 #lan-address-hint { font-weight: 600; }
 #lan-link { color: #a1cef4; overflow-wrap: anywhere; }
-#lan-qr { display: block; width: clamp(112px, 28dvh, 160px); height: auto; background: white; border-radius: 4px; }
+#lan-qr { display: block; width: 160px; width: clamp(112px, 28dvh, 160px); height: auto; background: white; border-radius: 4px; }
 .game-panel #lan-status { margin: 0 0 6px; }
 .stage-wrap #lan-panel {
   top: 8px;
   transform: translateX(-50%);
-  width: min(540px, calc(100% - 24px));
+  width: calc(100% - 24px);
+  max-width: 540px;
   max-height: calc(100% - 16px);
   padding: 12px;
 }

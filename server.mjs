@@ -4,11 +4,13 @@ import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { attachLan } from './lan-server.mjs';
+import { bundleGame } from './scripts/game-bundle.mjs';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp' };
 mime['.mp3'] = 'audio/mpeg';
 mime['.ogg'] = 'audio/ogg';
+mime['.jpg'] = 'image/jpeg';
 const server = createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
@@ -16,6 +18,12 @@ const server = createServer(async (req, res) => {
     if (!['/index.html', '/controller.html'].includes(route)
       && !/^\/(src|assets|data|styles)\//.test(route)) throw new Error('Invalid path');
     if (route.split('/').some(part => part.startsWith('.')) || route.includes('\\')) throw new Error('Invalid path');
+    if (route === '/src/game.bundle.js') {
+      const script = await bundleGame();
+      res.writeHead(200, { 'Content-Type': mime['.js'], 'Cache-Control': 'no-cache' });
+      res.end(script);
+      return;
+    }
     const publicRoute = /^\/(assets|styles)\//.test(route);
     const base = publicRoute ? resolve(root, 'public') : root;
     const requested = route === '/src/vendor/jsqr.js'

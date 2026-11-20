@@ -32,6 +32,7 @@ function choiceCard(group, id, name, image, checked, onSelect) {
 
 export function createPanels({ characters, stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings }) {
   const panels = [...document.querySelectorAll('.game-panel')];
+  const stageWrap = panels[0].closest('.stage-wrap');
   enableMenuNavigation();
   const banner = byId('fight-banner');
   const difficultySelect = byId('cpu-difficulty');
@@ -73,7 +74,7 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
         : 'Võ sĩ sẽ được chọn khi vào trận.';
       condition.hidden = !fighter?.awakening;
       condition.textContent = fighter?.awakening
-        ? (fighter.awakening.evolution ? 'Tiến hóa' : 'Đột phá') + ' · ' + fighter.awakening.condition
+        ? 'Cấp 1 · ' + fighter.awakening.condition + (fighter.awakening.levelTwo ? ' · Cấp 2: nạp đầy nộ lần nữa' : '')
         : '';
     }
 
@@ -89,6 +90,7 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
 
   function show(name) {
     for (const panel of panels) panel.hidden = panel.id !== name + '-panel';
+    stageWrap.classList.toggle('panel-open', Boolean(name));
     if (name) {
       const selector = name === 'setup' ? 'input[name="player-fighter"]:checked' : 'button, select';
       byId(name + '-panel').querySelector(selector)?.focus({ preventScroll: true });
@@ -127,7 +129,7 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
   byId('start-button').addEventListener('click', () => selectMatch(
     resolveChoice(selections.player, fighterIds),
     selections.opponent,
-    difficultySelect.value, resolveChoice(selectedStage, stageIds), hazards.checked,
+    difficultySelect.value, resolveChoice(selectedStage, stageIds), hazards.checked, byId('party-items').checked,
   ));
 
   for (const [key, field] of Object.entries({

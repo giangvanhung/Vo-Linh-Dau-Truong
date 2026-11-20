@@ -20,10 +20,24 @@
 .hud .wins { color: #d0c4cb; }
 .hud .health-track {
   height: clamp(18px, 2.4vw, 26px);
-  background: #18131bea;
-  border: 1px solid #fff5;
-  border-radius: 6px;
+  background: #352728;
+  border: 1px solid #cec2b754;
+  border-radius: 3px;
 }
+.hud .health-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--remaining-hp, 100%);
+  background: #e0a15c;
+  transition: width .36s .19s ease-out;
+}
+.hud .player-mai .health-track::before { left: auto; right: 0; }
+.hud .health-fill { position: relative; background: #c95756; box-shadow: none; transition: width .1s linear; }
+.hud .player-mai .health-fill { background: #57958d; }
+.hud .health-fill.critical { background: #d06f53; }
 .hud .health-number {
   font-size: clamp(11px, 1.4vw, 14px);
   font-variant-numeric: tabular-nums;
@@ -38,7 +52,7 @@
   overflow: hidden;
   border: 1px solid #e6b66a80;
   border-radius: 3px;
-  background: #1c1721ee;
+  background: #29271f;
 }
 .energy-track::after {
   position: absolute;
@@ -47,8 +61,8 @@
   content: "";
   pointer-events: none;
 }
-.hud .energy-fill { background: linear-gradient(180deg, #fff0a1, #e89a35); transition: width .15s linear; }
-.hud .energy-track.full { box-shadow: 0 0 10px #ffce61a6; border-color: #ffe4a3; }
+.hud .energy-fill { background: #d4ad63; transition: width .15s linear; }
+.hud .energy-track.full { border-color: #ffe4a3; }
 .player-mai .energy-row { flex-direction: row-reverse; }
 .player-mai .energy-fill { margin-left: auto; }
 .hud .timer-wrap { padding: 7px 2px; background: #151119dc; border: 1px solid #fff4; border-radius: 8px; }
@@ -92,7 +106,7 @@
 }
 .arena-tools summary { cursor: pointer; }
 .arena-tools #training-panel { margin-top: 6px; }
-.stage-wrap:has(.game-panel:not([hidden])) .arena-tools { display: none; }
+.stage-wrap.panel-open .arena-tools { display: none; }
 .game-panel h1, .game-panel h2 { margin: 0 0 12px; line-height: 1.12; }
 .game-panel h1 { font: 700 clamp(30px, 5vw, 50px)/1.02 "Space Grotesk", sans-serif; }
 .menu-buttons { display: grid; gap: 7px; max-width: 230px; margin: auto; }
@@ -143,7 +157,7 @@
 #setup-roster { display: grid; gap: 10px; }
 #setup-roster fieldset { min-width: 0; margin: 0; padding: 4px 0 0; border: 0; text-align: left; }
 #setup-roster legend { padding: 0; color: #eee2da; font-size: 12px; font-weight: 700; }
-.roster-cards { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
+.roster-cards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
 .roster-card {
   position: relative; display: grid; place-items: center; align-content: center; gap: 3px;
   min-width: 0; min-height: 64px; padding: 3px; background: #25212b;
@@ -159,7 +173,9 @@
 #setup-roster .roster-detail { margin: 4px 0 0; color: #e1c8bc; min-height: 1.2em; }
 .stage-picker { min-width: 0; margin: 10px 0 0; padding: 4px 0 0; border: 0; text-align: left; }
 .stage-picker legend { padding: 0; color: #eee2da; font-size: 12px; font-weight: 700; }
-#stage-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+#stage-cards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+#party-items-hint { color: #c5b9ab; font-size: 11px; margin: 6px 0 0; }
+@media (max-width: 510px) { #stage-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 #stage-cards .roster-card { grid-template-rows: auto 1fr; padding: 4px; min-height: 0; }
 #stage-cards .roster-portrait {
   width: 100%;
@@ -233,6 +249,8 @@
 body.game-expanded { overflow: hidden; }
 .game-expanded .game-card {
   position: fixed;
+  top: 0;
+  left: 0;
   inset: 0;
   z-index: 10;
   display: flex;
@@ -256,3 +274,28 @@ body.game-expanded { overflow: hidden; }
 @media (max-width: 430px) {
   .arena-display-controls .best-of { display: none; }
 }
+
+/* Older webOS browsers need explicit dimensions for positioned layers and panels. */
+#arena, #arena-background { top: 0; left: 0; }
+@supports not (width: min(1px, 2px)) {
+  .stage-wrap .game-panel { width: calc(100% - 24px); max-width: 360px; }
+  .stage-wrap .setup-panel { width: calc(100% - 24px); max-width: 710px; }
+  .stage-wrap #guide-panel { width: calc(100% - 24px); max-width: 680px; }
+  .stage-wrap { height: 66vh; }
+  .roster-portrait { width: 54px; height: 54px; max-width: 100%; }
+}
+.tv-layout .page-shell { width: 100%; max-width: none; padding: 0; }
+.tv-layout .arena-topline { min-height: 52px; font-size: 12px; }
+.tv-layout #game-fullscreen,
+.tv-layout .panel-button,
+.tv-layout .game-panel .primary-button,
+.tv-layout .arena-tools summary { min-height: 42px; font-size: 15px; }
+.tv-layout .arena-tools summary { line-height: 42px; }
+.tv-layout .menu-buttons { max-width: 280px; }
+.tv-layout .game-panel h1 { font-size: 42px; }
+.tv-layout .game-panel button:focus,
+.tv-layout .game-panel input:focus,
+.tv-layout .game-panel select:focus,
+.tv-layout .game-panel a:focus,
+.tv-layout .roster-card:focus-within,
+.tv-layout #game-fullscreen:focus { outline: 3px solid #ffbf8b; outline-offset: 2px; }

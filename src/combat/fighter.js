@@ -33,7 +33,7 @@ export class Fighter {
     this.meter = 0;
     this.chargeFrames = 0;
     this.awakeningFrames = 0;
-    this.awakeningUsed = false;
+    this.awakeningLevel = 0;
     this.awakeningUnlocked = false;
     this.awakeningWindow = 0;
     this.lastConfirmedAttack = null;
@@ -43,6 +43,10 @@ export class Fighter {
     this.frostImmunity = 0;
     this.poisonStacks = 0;
     this.poisonFrames = 0;
+    this.shieldHp = 0;
+    this.powerFrames = 0;
+    this.pickupWeapon = null;
+    this.weaponUses = 0;
     this.dash = null;
     this.dashCooldown = 0;
     this.cooldowns = {};
@@ -60,10 +64,16 @@ export class Fighter {
   }
 
   get charging() { return this.chargeFrames > 0; }
-  get awakeningDuration() { return this.awakening?.durationFrames ?? 480; }
-  get evolving() { return this.awakeningFrames > 0 && Boolean(this.awakening?.evolution); }
+  get awakeningForm() { return this.awakeningLevel === 2 ? this.awakening.levelTwo : this.awakening; }
+  get evolution() { return this.awakeningForm?.evolution; }
+  get awakeningDuration() { return this.awakeningForm?.durationFrames ?? 480; }
+  get evolving() { return this.awakeningFrames > 0 && Boolean(this.evolution); }
+  get nextAwakening() {
+    if (!this.awakeningLevel) return this.awakening ? 1 : 0;
+    return this.awakeningLevel === 1 && this.awakening.levelTwo ? 2 : 0;
+  }
   get awakeningReady() {
-    return this.awakening && this.awakeningUnlocked && !this.awakeningUsed && this.meter >= this.rules.meterMax;
+    return Boolean(this.nextAwakening && this.awakeningUnlocked && this.meter >= this.rules.meterMax);
   }
   get canFocus() {
     return this.onGround && !this.disabled && !this.attackLock && !this.attacking
@@ -71,7 +81,7 @@ export class Fighter {
   }
 
   charge(held) {
-    if (!held || !this.canFocus || this.awakeningFrames) {
+    if (!held || !this.canFocus || (this.awakeningFrames && this.nextAwakening !== 2)) {
       this.chargeFrames = 0;
       return;
     }
@@ -83,26 +93,26 @@ export class Fighter {
     if (!this.awakeningReady || !this.canFocus) return false;
     this.meter = 0;
     this.chargeFrames = 0;
-    this.awakeningUsed = true;
+    this.awakeningLevel = this.nextAwakening;
     this.awakeningFrames = this.awakeningDuration;
     this.attackLock = .32;
-    const bonusHp = this.awakening.evolution?.bonusHp;
-    if (bonusHp) {
-      this.maxHp = this.baseHp + bonusHp;
-      this.hp = Math.min(this.maxHp, this.hp + bonusHp);
+    const bonusHp = this.baseHp + (this.evolution?.bonusHp ?? 0) - this.maxHp;
+    if (bonusHp > 0) {
+      this.maxHp += bonusHp;
+      this.hp += bonusHp;
     }
-    delete this.cooldowns[this.awakening.skill];
+    delete this.cooldowns[this.awakeningForm.skill];
     return true;
   }
 
   skillFor(id) {
     const skill = this.skills[id];
-    if (!this.awakeningFrames || this.awakening?.skill !== id) return skill;
-    const { label, changes } = this.awakening;
+    if (!this.awakeningFrames || this.awakeningForm?.skill !== id) return skill;
+    const { label, changes } = this.awakeningForm;
     return {
       ...skill, ...changes, label,
       ...(skill.projectile && { projectile: { ...skill.projectile, ...changes.projectile } }),
-      effect: { color: this.glow, particles: 18, flashSeconds: .12, flashOpacity: .10,
+      effect: { color: this.evolution?.color ?? this.glow, particles: this.awakeningLevel === 2 ? 26 : 18, flashSeconds: .12, flashOpacity: .10,
         shakeSeconds: .14, shakeIntensity: 16, trailSeconds: .20 },
     };
   }
@@ -133,7 +143,9 @@ export class Fighter {
 
     if (!previous) this.combo = 0;
     this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false };
-    if (this.evolving && this.awakening.evolution.punchMultiplier && (id === 'light' || id === 'heavy')) {
+    if (this.powerFrames) this.attack.damage *= 1.22;
+    if (this.evolving && this.evolution.damageMultiplier) this.attack.damage *= this.evolution.damageMultiplier;
+    if (this.evolving && this.evolution.punchMultiplier && (id === 'light' || id === 'heavy')) {
       this.attack.evolvedPunch = true;
     }
     this.crouching = false;
@@ -189,6 +201,7 @@ export class Fighter {
       else if (this.poisonFrames % 30 === 0 && this.hp > 1) this.hp = Math.max(1, Math.round((this.hp - 1) * 100) / 100);
     }
     this.awakeningFrames = Math.max(0, this.awakeningFrames - 1);
+    this.powerFrames = Math.max(0, this.powerFrames - 1);
     this.awakeningWindow = Math.max(0, this.awakeningWindow - 1);
     for (const id of Object.keys(this.cooldowns)) {
       if (--this.cooldowns[id] <= 0) delete this.cooldowns[id];
@@ -337,15 +350,18 @@ export function applyHit(contact) {
   if (!contact.projectile || !attacker.attacking) attacker.combo = combo;
   const scale = rules.comboScaling[Math.min(combo - 1, rules.comboScaling.length - 1)];
   // Apply chip separately from the damage that passes through guard.
-  const evolution = attack.evolvedPunch && !contact.projectile ? attacker.awakening.evolution : null;
+  const evolution = attack.evolvedPunch && !contact.projectile ? attacker.evolution : null;
   const multiplier = blocked ? 1 - rules.blockReduction + rules.chipRate : scale * (evolution?.punchMultiplier ?? 1);
   const previousHP = defender.hp;
-  defender.hp = Math.max(0, Math.round((previousHP - attack.damage * multiplier) * 100) / 100);
+  const incoming = Math.round(attack.damage * multiplier * 100) / 100;
+  const absorbed = Math.min(defender.shieldHp, incoming);
+  defender.shieldHp = Math.round((defender.shieldHp - absorbed) * 100) / 100;
+  defender.hp = Math.max(0, Math.round((previousHP - incoming + absorbed) * 100) / 100);
   defender.knockVelocity = contact.direction * attack.knockback * (blocked ? .16 : 1);
   const damage = Math.round((previousHP - defender.hp) * 100) / 100;
   let inflicted;
   if (!blocked) {
-    if (evolution && attacker.hp > 0) {
+    if (evolution?.lifeSteal && attacker.hp > 0) {
       attacker.hp = Math.min(attacker.maxHp, Math.round((attacker.hp + damage * evolution.lifeSteal) * 100) / 100);
     }
     if (defender.freezeFrames) {
@@ -389,7 +405,8 @@ export function applyHit(contact) {
     }
     if ((attacker.characterId === 'hung' && attacker.awakeningWindow && attack.id === 'heavy')
       || (attacker.characterId === 'mai' && attacker.awakeningWindow)
-      || (attacker.characterId === 'linh' && combo >= 2 && attacker.lastConfirmedAttack === 'kick' && attack.id === 'closeSkill')) {
+      || (attacker.characterId === 'linh' && combo >= 2 && attacker.lastConfirmedAttack === 'kick' && attack.id === 'closeSkill')
+      || attacker.awakening?.unlockAttack === attack.id) {
       attacker.awakeningUnlocked = true;
     }
     if (attacker.characterId === 'vy' && attack.level === 'low' && !contact.projectile) {
@@ -405,6 +422,7 @@ export function applyHit(contact) {
   return {
     ...contact, combo, broken, inflicted,
     damage,
+    absorbed,
     hitstop: blocked ? 0 : attack.hitstop,
   };
 }

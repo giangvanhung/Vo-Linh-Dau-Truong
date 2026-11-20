@@ -28,7 +28,14 @@ export function applyStageEffects(world, fighter, startX, frame, dt) {
   }
   if (inside && activeZone(zone, frame)) {
     if (zone.kind === 'wind' && !fighter.onGround) fighter.x += 105 * dt;
+    if (zone.kind === 'mana' && fighter.onGround && fighter.y === 0) fighter.gainMeter(10 * dt);
     const cycle = Math.floor(frame / zone.cycle);
+    if (zone.kind === 'lava' && fighter.y >= -8 && fighter.lastLavaTick !== Math.floor(frame / 30)) {
+      fighter.lastLavaTick = Math.floor(frame / 30);
+      fighter.hp = Math.max(0, fighter.hp - zone.damage);
+      fighter.flash = .12;
+      fighter.chargeFrames = 0;
+    }
     if (zone.kind === 'vent' && fighter.onGround && fighter.y === 0 && fighter.lastVentCycle !== cycle) {
       fighter.lastVentCycle = cycle;
       fighter.vy = -390;

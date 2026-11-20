@@ -64,9 +64,16 @@ function selectFrame({ frames, strikeFrame }, fighter, name, elapsed) {
 
 export function createSpriteRenderer(ctx, characters) {
   const sheets = new Map();
+  const evolvedStills = new Map();
   const clocks = new WeakMap();
   for (const [id, character] of Object.entries(characters)) {
     const paths = character.sprite;
+    if (paths?.still) {
+      loadImage(paths.still).then(image => sheets.set(id, { still: image })).catch(() => {});
+      const evolved = character.awakening?.levelTwo?.evolution?.sprite;
+      if (evolved) loadImage(evolved).then(image => evolvedStills.set(id, image)).catch(() => {});
+      continue;
+    }
     if (!paths?.atlas) continue;
     loadAtlas(paths.atlas, paths.image)
       .then(sheet => sheets.set(id, sheet))
@@ -81,6 +88,23 @@ export function createSpriteRenderer(ctx, characters) {
       clocks.set(fighter, clock);
     }
     const sheet = sheets.get(fighter.characterId);
+    if (sheet?.still) {
+      const image = (fighter.evolving && fighter.awakeningLevel === 2 && evolvedStills.get(fighter.characterId)) || sheet.still;
+      const height = fighter.sprite.displaySize;
+      const width = height * image.width / image.height;
+      const attack = fighter.attack;
+      const sway = fighter.moving ? Math.sin(fighter.walkDistance / 9) : Math.sin(animationTime / 170) * .35;
+      const effort = fighter.attackActive ? 1 : attack ? -.45 : 0;
+      ctx.save();
+      ctx.translate(fighter.x, ground + fighter.y);
+      ctx.scale(attack?.facing ?? fighter.dash?.facing ?? fighter.facing, 1);
+      if (name === 'ko') ctx.rotate(-Math.PI / 2);
+      else ctx.transform(1, 0, -.12 * effort - .035 * sway, name === 'crouch' ? .71 : 1 + sway * .035, 0, 0);
+      if (fighter.flash > 0) ctx.filter = 'brightness(1.5)';
+      ctx.drawImage(image, -width / 2, -height, width, height);
+      ctx.restore();
+      return true;
+    }
     const clip = sheet?.clips.get(name) ?? (name === 'roll' ? sheet?.clips.get('dash') : undefined);
     if (!clip) return false;
     const elapsed = name === 'run' ? fighter.walkDistance * 1000 / fighter.moveSpeed : animationTime - clock.start;

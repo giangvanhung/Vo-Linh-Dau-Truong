@@ -9,7 +9,7 @@ export function loadSettings() {
     for (const key of ['music', 'effects']) {
       if (Number.isFinite(saved?.[key])) settings[key] = Math.max(0, Math.min(100, saved[key]));
     }
-    if (Object.hasOwn(difficultyLabels, saved?.difficulty)) settings.difficulty = saved.difficulty;
+    if (Object.prototype.hasOwnProperty.call(difficultyLabels, saved?.difficulty)) settings.difficulty = saved.difficulty;
   } catch {
     // Storage may be unavailable in private or embedded sessions.
   }

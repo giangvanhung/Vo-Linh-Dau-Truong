@@ -1,19 +1,24 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
 import { difficultyLabels } from '../platform/settings.js';
+import { gear } from '../game/pickups.js';
 
 export const damageFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
 
 export function createHud(config) {
   const byId = id => document.getElementById(id);
-  const ui = Object.fromEntries(["round-label","hung-wins","mai-wins","hung-health","mai-health","hung-hp","mai-hp","timer","score-hung","score-mai"].map(id => [id, byId(id)]));
-  const meterUI = Object.fromEntries(['hung', 'mai'].map(side => [side, {
+  const ui = {};
+  for (const id of ["round-label","hung-wins","mai-wins","hung-health","mai-health","hung-hp","mai-hp","timer","score-hung","score-mai"]) {
+    ui[id] = byId(id);
+  }
+  const meterUI = {};
+  for (const side of ['hung', 'mai']) meterUI[side] = {
     focus: document.getElementById(side + '-focus'),
     fill: document.getElementById(side + '-meter-fill'),
     value: document.getElementById(side + '-meter-value'),
     dash: document.getElementById(side + '-dash'),
     escape: document.getElementById(side + '-escape'),
     skills: document.getElementById(side + '-skills'),
-  }]));
+  };
 
   function updateRosterUI({ hung, mai, practice, difficulty, lan }) {
     for (const [side, fighter] of [['hung', hung], ['mai', mai]]) {
@@ -30,8 +35,14 @@ export function createHud(config) {
     byId('ultimate-control').textContent = hung.skills.ultimate.label + ' · ' + hung.skills.ultimate.cost;
   }
   function updateUI({ hung, mai, practice, seconds, round, winsHung, winsMai }) {
-    ui['hung-health'].style.width = `${100 * hung.hp / hung.maxHp}%`;
-    ui['mai-health'].style.width = `${100 * mai.hp / mai.maxHp}%`;
+    for (const [side, fighter] of [['hung', hung], ['mai', mai]]) {
+      const bar = ui[side + '-health'];
+      const width = 100 * fighter.hp / fighter.maxHp + '%';
+      if (bar.style.width !== width) {
+        bar.style.width = width;
+        bar.parentElement.style.setProperty('--remaining-hp', width);
+      }
+    }
     ui['hung-health'].classList.toggle('critical', hung.hp <= hung.maxHp * .25);
     ui['mai-health'].classList.toggle('critical', mai.hp <= mai.maxHp * .25);
     ui['hung-hp'].textContent = damageFormat.format(hung.hp);
@@ -61,15 +72,19 @@ export function createHud(config) {
       indicator.classList.toggle('ready', ready);
     }
     const status = [
+      fighter.shieldHp > 0 ? 'Giáp ' + Math.ceil(fighter.shieldHp) : '',
+      fighter.powerFrames ? '+Công ' + Math.ceil(fighter.powerFrames * FRAME_SECONDS) + 's' : '',
+      fighter.weaponUses ? gear[fighter.pickupWeapon].label + ' ×' + fighter.weaponUses : '',
       fighter.freezeFrames ? 'Đóng băng' : fighter.frostStacks ? 'Hàn ' + fighter.frostStacks + '/3' : '',
       fighter.poisonFrames ? 'Trúng độc ' + fighter.poisonStacks + '/3' : '',
     ].filter(Boolean).join(' · ');
-    const transformation = fighter.awakening?.evolution ? 'Tiến hóa' : 'Đột phá';
-    const focus = fighter.awakeningFrames ? transformation + ' · ' + (fighter.awakeningFrames * FRAME_SECONDS).toFixed(1) + 's'
+    const activeForm = fighter.awakeningFrames
+      ? 'Cấp ' + fighter.awakeningLevel + ' · ' + (fighter.awakeningFrames * FRAME_SECONDS).toFixed(1) + 's' : '';
+    const next = fighter.nextAwakening;
+    const focus = fighter.awakeningReady ? 'Cấp ' + next + ' sẵn sàng'
       : fighter.charging ? 'Đang tụ khí'
-      : fighter.awakeningReady ? transformation + ' sẵn sàng'
-      : fighter.awakeningUnlocked && !fighter.awakeningUsed ? 'Đã đạt điều kiện ' + transformation : '';
-    const message = [focus, status].filter(Boolean).join(' · ');
+      : fighter.awakeningUnlocked && next ? 'Nạp đầy để lên cấp ' + next : '';
+    const message = [activeForm, focus, status].filter(Boolean).join(' · ');
     if (meter.focus.textContent !== message) meter.focus.textContent = message;
     if (meter.dash) setText(meter.dash, fighter.dashCooldown
       ? 'Lướt ' + (fighter.dashCooldown * FRAME_SECONDS).toFixed(1) + 's'

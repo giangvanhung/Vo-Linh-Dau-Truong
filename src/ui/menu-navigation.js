@@ -14,7 +14,10 @@ export function enableMenuNavigation() {
     const key = directions[event.key] || event.key === 'Enter'
       ? event.key : remoteKeys[event.keyCode];
     const current = document.activeElement;
-    if (key === 'Enter' && panel.contains(current) && current.matches('input[type="radio"], input[type="checkbox"]')) {
+    const tv = document.body.classList.contains('tv-layout');
+    const fullscreen = document.getElementById('game-fullscreen');
+    if (key === 'Enter' && (panel.contains(current) || current === fullscreen)
+      && current.matches(tv ? 'button, a[href], input[type="radio"], input[type="checkbox"]' : 'input[type="radio"], input[type="checkbox"]')) {
       event.preventDefault();
       if (!event.repeat) current.click();
       return;
@@ -26,7 +29,7 @@ export function enableMenuNavigation() {
     if (current?.matches('input[type="range"]') && direction[0]) return;
 
     const controls = [...panel.querySelectorAll('button, select, input, a[href], summary'),
-      document.getElementById('game-fullscreen')].filter(element => {
+      fullscreen].filter(element => {
       if (!element || element.disabled || element.closest('[hidden]')) return false;
       return element.getClientRects().length > 0;
     });

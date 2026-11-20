@@ -2,6 +2,9 @@ import { startGame } from './game/match.js';
 
 const fullscreenButton = document.querySelector('#game-fullscreen');
 const gameCard = fullscreenButton.closest('.game-card');
+const isTV = /web[o0]s|smart-tv|smarttv|netcast/i.test(navigator.userAgent);
+document.body.classList.toggle('tv-layout', isTV);
+if (isTV) setGameExpanded(true);
 
 function setGameExpanded(expanded) {
   document.body.classList.toggle('game-expanded', expanded);
@@ -47,8 +50,13 @@ for (const eventName of ['fullscreenchange', 'webkitfullscreenchange']) {
   });
 }
 
-const config = await fetch('/data/fighters.json').then(response => {
+fetch('/data/fighters.json').then(response => {
   if (!response.ok) throw new Error('Không tải được cấu hình trận đấu.');
   return response.json();
+}).then(startGame).catch(error => {
+  const message = document.createElement('p');
+  message.setAttribute('role', 'alert');
+  message.textContent = 'Không khởi động được game. Hãy tải lại trang. Nếu lỗi vẫn xảy ra, hãy kiểm tra phiên bản trình duyệt.';
+  document.getElementById('menu-panel').appendChild(message);
+  console.error(error);
 });
-startGame(config);
