@@ -125,7 +125,56 @@
 .roster-card:has(:focus-visible) { outline: 2px solid #ffbd8c; outline-offset: 2px; }
 .roster-card input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .roster-portrait { display: grid; place-items: center; width: min(100%, 54px); aspect-ratio: 1; object-fit: contain; image-rendering: pixelated; font-size: 24px; }
+.roster-card span.roster-portrait { color: #f7bc91; background: #352833; border-radius: 5px; }
 #setup-roster .roster-detail { margin: 4px 0 0; color: #e1c8bc; min-height: 1.2em; }
+.stage-picker { min-width: 0; margin: 10px 0 0; padding: 4px 0 0; border: 0; text-align: left; }
+.stage-picker legend { padding: 0; color: #eee2da; font-size: 12px; font-weight: 700; }
+#stage-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+#stage-cards .roster-card { grid-template-rows: auto 1fr; padding: 4px; min-height: 0; }
+#stage-cards .roster-portrait {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  image-rendering: auto;
+  border-radius: 3px;
+}
+#stage-description { margin: 5px 0 0; color: #e1c8bc; }
+.setup-panel .setup-options { gap: 6px 10px; margin-top: 8px; }
+.setup-panel .setup-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #28212a;
+  border: 1px solid #54434d;
+}
+.setup-panel .panel-actions { gap: 6px; margin-top: 8px; }
+.setup-panel .panel-actions button { border-radius: 5px; padding: 7px 10px; font-size: 11px; }
+.toggle-input {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 19px;
+  margin: 0;
+  cursor: pointer;
+  border: 1px solid #927b89;
+  border-radius: 999px;
+  background: #38303b;
+}
+.toggle-input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #e9dce3;
+}
+.toggle-input:checked { border-color: #ffc19a; background: #e99a70; }
+.toggle-input:checked::before { left: auto; right: 2px; background: #281b22; }
 @media (max-width: 560px) {
   .stage-wrap:has(#setup-panel:not([hidden])) { min-height: 375px; }
   .roster-card { min-height: 58px; }

@@ -2,9 +2,32 @@ import { enableMenuNavigation } from './menu-navigation.js';
 
 const byId = id => document.getElementById(id);
 
-function pickAnother(options, current) {
-  const choices = options.filter(id => id !== current);
-  return choices[Math.floor(Math.random() * choices.length)] ?? current;
+function resolveChoice(id, options) {
+  return id === 'random' ? options[Math.floor(Math.random() * options.length)] : id;
+}
+
+function choiceCard(group, id, name, image, checked, onSelect) {
+  const card = document.createElement('label');
+  card.className = 'roster-card';
+  const radio = document.createElement('input');
+  radio.type = 'radio';
+  radio.name = group;
+  radio.value = id;
+  radio.checked = checked;
+  radio.addEventListener('change', () => onSelect(id));
+  const preview = document.createElement(image ? 'img' : 'span');
+  preview.className = 'roster-portrait';
+  if (image) {
+    preview.src = image;
+    preview.alt = '';
+  } else {
+    preview.textContent = '?';
+    preview.setAttribute('aria-hidden', 'true');
+  }
+  const label = document.createElement('span');
+  label.textContent = name;
+  card.append(radio, preview, label);
+  return card;
 }
 
 export function createPanels({ characters, stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings }) {
@@ -12,24 +35,25 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
   enableMenuNavigation();
   const banner = byId('fight-banner');
   const difficultySelect = byId('cpu-difficulty');
-  const stageSelect = byId('stage-select');
+  const stageCards = byId('stage-cards');
+  const stageIds = Object.keys(stages);
+  let selectedStage = stageIds[0];
   const hazards = byId('stage-hazards');
-  stageSelect.replaceChildren(...Object.entries(stages).map(([id, stage]) => new Option(stage.name, id)));
-  function describeStage() {
-    byId('stage-description').textContent = stages[stageSelect.value].description;
+  function selectStage(id) {
+    selectedStage = id;
+    byId('stage-description').textContent = stages[id]?.description ?? 'Sân đấu sẽ được chọn khi vào trận.';
   }
-  stageSelect.addEventListener('change', describeStage);
-  byId('random-stage').addEventListener('click', () => {
-    stageSelect.value = pickAnother(Object.keys(stages), stageSelect.value);
-    describeStage();
-  });
-  describeStage();
+  for (const [id, stage] of [...Object.entries(stages), ['random', { name: 'Ngẫu nhiên' }]]) {
+    stageCards.append(choiceCard('stage', id, stage.name, stage.background, id === selectedStage, selectStage));
+  }
+  selectStage(selectedStage);
   const pauseButton = byId('pause-button');
   const toggleSound = byId('toggle-sound');
   const soundSetting = byId('sound-setting');
 
   const roster = byId('setup-roster');
   const entries = Object.entries(characters);
+  const fighterIds = Object.keys(characters);
   const selections = { player: 'hung', opponent: 'random' };
   const sideLabels = {};
   for (const side of Object.keys(selections)) {
@@ -46,50 +70,18 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
       const fighter = characters[id];
       detail.textContent = fighter
         ? [fighter.profile.role, ...Object.values(fighter.skills).map(skill => skill.label)].join(' · ')
-        : 'Game chọn đối thủ khi bắt đầu trận.';
+        : 'Võ sĩ sẽ được chọn khi vào trận.';
       condition.hidden = !fighter?.awakening;
       condition.textContent = fighter?.awakening ? 'Đột phá · ' + fighter.awakening.condition : '';
     }
 
-    const options = side === 'player' ? entries : [...entries, ['random', { name: 'Ngẫu nhiên' }]];
+    const options = [...entries, ['random', { name: 'Ngẫu nhiên' }]];
     for (const [id, fighter] of options) {
-      const card = document.createElement('label');
-      card.className = 'roster-card';
-      const radio = document.createElement('input');
-      radio.type = 'radio';
-      radio.name = side + '-fighter';
-      radio.value = id;
-      radio.checked = selections[side] === id;
-      radio.addEventListener('change', () => select(id));
-      const portrait = document.createElement(id === 'random' ? 'span' : 'img');
-      portrait.className = 'roster-portrait';
-      if (id === 'random') {
-        portrait.textContent = '?';
-        portrait.setAttribute('aria-hidden', 'true');
-      } else {
-        portrait.src = `/assets/characters/${id}/avatar.png`;
-        portrait.alt = '';
-      }
-      const name = document.createElement('span');
-      name.textContent = fighter.name;
-      card.append(radio, portrait, name);
-      cards.append(card);
+      const image = id === 'random' ? null : `/assets/characters/${id}/avatar.png`;
+      cards.append(choiceCard(side + '-fighter', id, fighter.name, image, selections[side] === id, select));
     }
     select(selections[side]);
-    group.append(legend, cards);
-    if (side === 'player') {
-      const randomButton = document.createElement('button');
-      randomButton.type = 'button';
-      randomButton.className = 'panel-button';
-      randomButton.textContent = 'Võ sĩ P1 ngẫu nhiên';
-      randomButton.addEventListener('click', () => {
-        const id = pickAnother(Object.keys(characters), selections.player);
-        const radio = [...cards.querySelectorAll('input')].find(input => input.value === id);
-        radio.click();
-      });
-      group.append(randomButton);
-    }
-    group.append(detail, condition);
+    group.append(legend, cards, detail, condition);
     roster.append(group);
   }
 
@@ -131,9 +123,9 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
   for (const button of document.querySelectorAll('[data-menu]')) button.addEventListener('click', returnToMenu);
   for (const button of document.querySelectorAll('[data-replay]')) button.addEventListener('click', startMatch);
   byId('start-button').addEventListener('click', () => selectMatch(
-    selections.player,
+    resolveChoice(selections.player, fighterIds),
     selections.opponent,
-    difficultySelect.value, stageSelect.value, hazards.checked,
+    difficultySelect.value, resolveChoice(selectedStage, stageIds), hazards.checked,
   ));
 
   for (const [key, field] of Object.entries({

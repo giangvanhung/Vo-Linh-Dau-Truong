@@ -84,21 +84,26 @@
           <div class="center-callout game-panel setup-panel" id="setup-panel" hidden>
             <h2 id="setup-title">Chọn nhân vật</h2>
             <div id="setup-roster"></div>
+            <fieldset class="stage-picker">
+              <legend>Sân đấu</legend>
+              <div id="stage-cards" aria-describedby="stage-description"></div>
+              <p id="stage-description"></p>
+            </fieldset>
             <div class="setup-options">
-              <label>Sân đấu <select id="stage-select" aria-describedby="stage-description"></select></label>
-              <button type="button" class="panel-button" id="random-stage">Sân ngẫu nhiên</button>
-              <label><input type="checkbox" id="stage-hazards" checked> Hiệu ứng môi trường</label>
+              <label class="toggle-field">Hiệu ứng môi trường <input class="toggle-input" type="checkbox" id="stage-hazards" checked></label>
               <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
             </div>
-            <p id="stage-description"></p>
             <div id="solo-lan-pairing"></div>
-            <button type="button" class="panel-button" id="solo-lan-button" aria-controls="solo-lan-pairing">Kết nối tay cầm P1</button>
-            <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="start-button">Vào trận</button></div>
+            <div class="panel-actions">
+              <button class="panel-button" data-menu>Về menu</button>
+              <button type="button" class="panel-button" id="solo-lan-button" aria-controls="solo-lan-pairing">Kết nối tay cầm P1</button>
+              <button class="primary-button" id="start-button">Vào trận</button>
+            </div>
           </div>
           <div class="center-callout game-panel" id="settings-panel" hidden>
             <h2>Cài đặt</h2>
             <div class="settings-fields">
-              <label>Âm thanh <input type="checkbox" id="sound-setting"></label>
+              <label>Âm thanh <input class="toggle-input" type="checkbox" id="sound-setting"></label>
               <label>Âm lượng nhạc <input type="range" id="music-setting" min="0" max="100"></label>
               <label>Âm lượng hiệu ứng <input type="range" id="effects-setting" min="0" max="100"></label>
               <label>Độ khó mặc định <select id="default-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>

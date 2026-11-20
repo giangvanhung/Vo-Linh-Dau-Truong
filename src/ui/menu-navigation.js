@@ -14,7 +14,7 @@ export function enableMenuNavigation() {
     const key = directions[event.key] || event.key === 'Enter'
       ? event.key : remoteKeys[event.keyCode];
     const current = document.activeElement;
-    if (key === 'Enter' && current?.matches('.roster-card input')) {
+    if (key === 'Enter' && panel.contains(current) && current.matches('input[type="radio"], input[type="checkbox"]')) {
       event.preventDefault();
       if (!event.repeat) current.click();
       return;
