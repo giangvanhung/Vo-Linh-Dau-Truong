@@ -14,11 +14,6 @@
   </head>
   <body>
     <main class="page-shell">
-      <header class="topbar">
-        <a class="brand" href="#" aria-label="Võ Linh Đấu Trường trang chủ"><span class="brand-mark">V</span><span>VÕ LINH <b>ĐẤU TRƯỜNG</b></span></a>
-        <div class="version"><i></i> PHIÊN BẢN 01 <span>·</span> ĐẤU TẬP</div>
-      </header>
-
       <section class="game-card" aria-label="Sân đấu">
         <div class="arena-topline">
           <span><span class="live-dot"></span> ĐẤU TRƯỜNG LINH GIỚI</span>
@@ -50,6 +45,43 @@
         <div class="stage-wrap">
           <canvas id="arena" tabindex="-1" width="1000" height="500" aria-label="Sân đấu Võ Linh Đấu Trường"></canvas>
           <div class="stage-vignette"></div>
+          <div class="arena-tools">
+            <details class="lan-details" id="lan-details" hidden>
+              <summary>Kết nối tay cầm</summary>
+            </details>
+            <details id="training-tools" hidden>
+              <summary>Luyện tập</summary>
+              <section id="training-panel" class="training-panel" aria-labelledby="training-title" hidden>
+                <h2 id="training-title">Luyện tập</h2>
+                <div class="training-controls">
+                  <label>Bù nhìn <select id="dummy-mode">
+                    <option value="stand">Đứng yên</option>
+                    <option value="block">Đỡ mọi đòn</option>
+                    <option value="low">Ngồi đỡ đòn thấp</option>
+                    <option value="jump">Nhảy định kỳ</option>
+                    <option value="cpu">CPU</option>
+                  </select></label>
+                  <label><input type="checkbox" id="training-debug"> Hiện hitbox / hurtbox</label>
+                  <button class="panel-button" id="reset-position">Đặt lại vị trí</button>
+                  <button class="panel-button" id="reset-health">Hồi máu</button>
+                  <button class="panel-button" id="reset-meter">Đặt năng lượng về 0</button>
+                  <button class="panel-button" id="test-awakening">Nạp đầy để thử Đột phá</button>
+                  <button class="panel-button" id="record-input">Ghi input</button>
+                  <button class="panel-button" id="play-input" disabled>Phát cho bù nhìn</button>
+                  <output id="record-status">Tối đa 10 giây</output>
+                </div>
+                <dl class="training-stats">
+                  <dt>Số hit combo</dt><dd id="training-combo">0</dd>
+                  <dt>Tổng sát thương</dt><dd id="training-damage">0</dd>
+                  <dt>Từng hit</dt><dd id="training-hits">—</dd>
+                  <dt>Hitstun bù nhìn</dt><dd id="training-stun">0f</dd>
+                  <dt>Lợi thế ước tính khi trúng</dt><dd id="training-advantage">—</dd>
+                  <dt>Phím vừa bấm</dt><dd id="training-inputs">—</dd>
+                </dl>
+                <p id="training-legend" hidden><span>Đỏ: hitbox</span> · <span>Xanh: hurtbox</span></p>
+              </section>
+            </details>
+          </div>
           <button id="pause-button" class="panel-button pause-button" hidden>Tạm dừng <kbd>Esc</kbd></button>
           <div class="center-callout game-panel" id="menu-panel">
             <h1>Võ Linh<br><em>Đấu Trường</em></h1>
@@ -62,21 +94,26 @@
             </div>
           </div>
           <div class="center-callout game-panel" id="lan-panel" hidden>
-            <h2>Đấu 2 người qua LAN</h2>
+            <h2 id="lan-title">Kết nối tay cầm</h2>
             <div id="lan-lobby">
               <div id="lan-pairing">
                 <p id="lan-status" role="status">Đang tạo phòng…</p>
                 <div id="lan-link-box" hidden>
-                  <label id="lan-address-label">Mạng máy tính
-                    <select id="lan-address" aria-describedby="lan-network-help"></select>
-                  </label>
-                  <p id="lan-network-help">Điện thoại kết nối Wi‑Fi. Nếu máy tính cũng dùng Wi‑Fi, chọn Wi‑Fi. Nếu máy tính cắm dây vào cùng router phát Wi‑Fi, chọn Ethernet.</p>
-                  <p id="lan-address-hint" aria-live="polite"></p>
-                  <img id="lan-qr" width="126" height="126" alt="Quét để mở tay cầm LAN" hidden>
-                  <a id="lan-link"></a>
-                  <p>Quét mã QR hoặc mở liên kết trên điện thoại. Nếu trang không mở, thử địa chỉ khác hoặc kiểm tra xem điện thoại có đang dùng Wi‑Fi khách không.</p>
+                  <img id="lan-qr" width="160" height="160" alt="Quét để mở tay cầm" hidden>
+                  <div class="lan-link-info">
+                    <p>Quét mã QR bằng điện thoại.</p>
+                    <label id="lan-address-label">Mạng máy tính
+                      <select id="lan-address" aria-describedby="lan-address-hint"></select>
+                    </label>
+                    <details>
+                      <summary>Địa chỉ và hướng dẫn</summary>
+                      <p id="lan-network-help">Điện thoại kết nối Wi‑Fi. Nếu máy tính cũng dùng Wi‑Fi, chọn Wi‑Fi. Nếu máy tính cắm dây vào cùng router phát Wi‑Fi, chọn Ethernet.</p>
+                      <p id="lan-address-hint" aria-live="polite"></p>
+                      <a id="lan-link"></a>
+                    </details>
+                  </div>
                 </div>
-                <p id="lan-keyboard-help">P1 dùng A/D, W/S và F G J K L P Q R T U I O như thường. P2 dùng phím mũi tên, Z/X/C để đánh, V đỡ, B lướt, Shift+B lướt mạnh, H lộn né, [ tụ khí và ] đột phá, N/M dùng kỹ năng, dấu phẩy dùng ultimate và dấu chấm thoát combo.</p>
+                <details id="lan-keyboard-help"><summary>Phím chơi 2 người</summary><p>P1 dùng A/D, W/S và F G J K L P Q R T U I O như thường. P2 dùng phím mũi tên, Z/X/C để đánh, V đỡ, B lướt, Shift+B lướt mạnh, H lộn né, [ tụ khí và ] đột phá, N/M dùng kỹ năng, dấu phẩy dùng ultimate và dấu chấm thoát combo.</p></details>
               </div>
             </div>
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="lan-start">Chọn nhân vật</button></div>
@@ -93,10 +130,9 @@
               <label class="toggle-field">Hiệu ứng môi trường <input class="toggle-input" type="checkbox" id="stage-hazards" checked></label>
               <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
             </div>
-            <div id="solo-lan-pairing"></div>
             <div class="panel-actions">
               <button class="panel-button" data-menu>Về menu</button>
-              <button type="button" class="panel-button" id="solo-lan-button" aria-controls="solo-lan-pairing">Kết nối tay cầm P1</button>
+              <button type="button" class="panel-button" id="solo-lan-button" aria-controls="lan-panel">Kết nối tay cầm P1</button>
               <button class="primary-button" id="start-button">Vào trận</button>
             </div>
           </div>
@@ -112,8 +148,21 @@
           </div>
           <div class="center-callout game-panel" id="guide-panel" hidden>
             <h2>Hướng dẫn</h2>
-            <p>Di chuyển bằng A/D hoặc mũi tên. W để nhảy, S để ngồi, P để đỡ và Esc để tạm dừng. Xem đầy đủ phím ở bảng dưới sân đấu.</p>
-            <p>Thắng hai hiệp để thắng trận. Khi hết 60 giây, bên còn tỷ lệ máu cao hơn thắng hiệp. Hiệp hòa được đấu lại.</p>
+            <p>Dùng phím hướng và OK hoặc Enter để chọn trong menu.</p>
+            <section class="lower-grid">
+              <div class="controls-card"><div class="section-heading"><span class="tiny-icon">⌘</span><h2>ĐIỀU KHIỂN</h2><span class="heading-note">HÙNG · NGƯỜI CHƠI</span></div><div class="controls-list">
+                <div class="control-row"><span class="key-group"><kbd>A</kbd><kbd>D</kbd></span><span>Di chuyển</span></div><div class="control-row"><kbd>W</kbd><span>Nhảy</span></div><div class="control-row"><kbd>S</kbd><span>Ngồi</span></div><div class="control-row"><kbd>J</kbd><span>Đấm nhẹ</span><small>NHANH</small></div><div class="control-row"><kbd>K</kbd><span>Đấm nặng</span><small>UY LỰC</small></div><div class="control-row"><kbd>L</kbd><span id="kick-control">Đá</span><small>TẦM TRUNG</small></div><div class="control-row"><kbd>P</kbd><span>Đỡ đòn</span><small>GIỮ ĐỂ BLOCK</small></div>
+                <div class="control-row"><kbd>Q</kbd><span>Lướt</span></div>
+                <div class="control-row"><kbd>F</kbd><span>Giữ để tụ khí</span></div><div class="control-row"><kbd>G</kbd><span>Đột phá</span></div><div class="control-row"><kbd>R</kbd><span>Lộn né</span><small>GIỮ A/D ĐỂ CHỌN HƯỚNG</small></div>
+                <div class="control-row"><span class="key-group"><kbd>Shift</kbd><kbd>Q</kbd></span><span>Lướt mạnh · 25</span></div>
+                <div class="control-row"><kbd>T</kbd><span>Thoát combo · 50</span></div>
+                <div class="control-row"><kbd>U</kbd><span id="close-control">Kỹ năng gần</span></div>
+                <div class="control-row"><kbd>I</kbd><span id="range-control">Kỹ năng xa</span></div>
+                <div class="control-row"><kbd>O</kbd><span id="ultimate-control">Ultimate · 100</span></div>
+                <div class="control-row"><kbd>Esc</kbd><span>Tạm dừng</span></div>
+              </div><div class="action-status"><span id="hung-dash">Lướt sẵn sàng</span><span id="hung-escape"></span></div></div>
+              <div class="guide-card"><div class="section-heading"><span class="tiny-icon guide-icon">✦</span><h2>LUẬT ĐẤU</h2><span class="heading-note">BO3 · THẮNG 2 HIỆP</span></div><div class="guide-body"><div class="guide-stat"><strong>60<span>s</span></strong><span>MỖI HIỆP</span></div><div class="guide-divider"></div><p>Hạ HP đối thủ về <b>0</b>, hoặc còn tỷ lệ máu cao hơn khi hết giờ. Thắng <b>2 hiệp</b> để thắng trận.</p></div><div class="match-score"><span><span class="score-name">HÙNG</span> <b id="score-hung">0</b></span><span class="score-dash">—</span><span><b id="score-mai">0</b> <span class="score-name">MAI</span></span></div></div>
+            </section>
             <button class="panel-button" data-menu>Về menu</button>
           </div>
           <div class="center-callout game-panel" id="pause-panel" hidden>
@@ -137,55 +186,6 @@
 
         <div class="arena-footer"><span><i class="status-dot"></i> SẴN SÀNG KHI BẠN</span><span id="status-text">CHỌN THỜI ĐIỂM RA ĐÒN</span><span class="latency"><span id="network-mode">OFFLINE</span> <b>●</b></span></div>
       </section>
-
-      <details class="lan-details" id="lan-details" hidden>
-        <summary>Kết nối tay cầm LAN</summary>
-      </details>
-
-      <section id="training-panel" class="training-panel" aria-labelledby="training-title" hidden>
-        <h2 id="training-title">Luyện tập</h2>
-        <div class="training-controls">
-          <label>Bù nhìn <select id="dummy-mode">
-            <option value="stand">Đứng yên</option>
-            <option value="block">Đỡ mọi đòn</option>
-            <option value="low">Ngồi đỡ đòn thấp</option>
-            <option value="jump">Nhảy định kỳ</option>
-            <option value="cpu">CPU</option>
-          </select></label>
-          <label><input type="checkbox" id="training-debug"> Hiện hitbox / hurtbox</label>
-          <button class="panel-button" id="reset-position">Đặt lại vị trí</button>
-          <button class="panel-button" id="reset-health">Hồi máu</button>
-          <button class="panel-button" id="reset-meter">Đặt năng lượng về 0</button>
-          <button class="panel-button" id="test-awakening">Nạp đầy để thử Đột phá</button>
-          <button class="panel-button" id="record-input">Ghi input</button>
-          <button class="panel-button" id="play-input" disabled>Phát cho bù nhìn</button>
-          <output id="record-status">Tối đa 10 giây</output>
-        </div>
-        <dl class="training-stats">
-          <dt>Số hit combo</dt><dd id="training-combo">0</dd>
-          <dt>Tổng sát thương</dt><dd id="training-damage">0</dd>
-          <dt>Từng hit</dt><dd id="training-hits">—</dd>
-          <dt>Hitstun bù nhìn</dt><dd id="training-stun">0f</dd>
-          <dt>Lợi thế ước tính khi trúng</dt><dd id="training-advantage">—</dd>
-          <dt>Phím vừa bấm</dt><dd id="training-inputs">—</dd>
-        </dl>
-        <p id="training-legend" hidden><span>Đỏ: hitbox</span> · <span>Xanh: hurtbox</span></p>
-      </section>
-      <section class="lower-grid">
-        <div class="controls-card"><div class="section-heading"><span class="tiny-icon">⌘</span><h2>ĐIỀU KHIỂN</h2><span class="heading-note">HÙNG · NGƯỜI CHƠI</span></div><div class="controls-list">
-          <div class="control-row"><span class="key-group"><kbd>A</kbd><kbd>D</kbd></span><span>Di chuyển</span></div><div class="control-row"><kbd>W</kbd><span>Nhảy</span></div><div class="control-row"><kbd>S</kbd><span>Ngồi</span></div><div class="control-row"><kbd>J</kbd><span>Đấm nhẹ</span><small>NHANH</small></div><div class="control-row"><kbd>K</kbd><span>Đấm nặng</span><small>UY LỰC</small></div><div class="control-row"><kbd>L</kbd><span id="kick-control">Đá</span><small>TẦM TRUNG</small></div><div class="control-row"><kbd>P</kbd><span>Đỡ đòn</span><small>GIỮ ĐỂ BLOCK</small></div>
-          <div class="control-row"><kbd>Q</kbd><span>Lướt</span></div>
-          <div class="control-row"><kbd>F</kbd><span>Giữ để tụ khí</span></div><div class="control-row"><kbd>G</kbd><span>Đột phá</span></div><div class="control-row"><kbd>R</kbd><span>Lộn né</span><small>GIỮ A/D ĐỂ CHỌN HƯỚNG</small></div>
-          <div class="control-row"><span class="key-group"><kbd>Shift</kbd><kbd>Q</kbd></span><span>Lướt mạnh · 25</span></div>
-          <div class="control-row"><kbd>T</kbd><span>Thoát combo · 50</span></div>
-          <div class="control-row"><kbd>U</kbd><span id="close-control">Kỹ năng gần</span></div>
-          <div class="control-row"><kbd>I</kbd><span id="range-control">Kỹ năng xa</span></div>
-          <div class="control-row"><kbd>O</kbd><span id="ultimate-control">Ultimate · 100</span></div>
-          <div class="control-row"><kbd>Esc</kbd><span>Tạm dừng</span></div>
-        </div><div class="action-status"><span id="hung-dash">Lướt sẵn sàng</span><span id="hung-escape"></span></div></div>
-        <div class="guide-card"><div class="section-heading"><span class="tiny-icon guide-icon">✦</span><h2>LUẬT ĐẤU</h2><span class="heading-note">BO3 · THẮNG 2 HIỆP</span></div><div class="guide-body"><div class="guide-stat"><strong>60<span>s</span></strong><span>MỖI HIỆP</span></div><div class="guide-divider"></div><p>Hạ HP đối thủ về <b>0</b>, hoặc còn tỷ lệ máu cao hơn khi hết giờ. Thắng <b>2 hiệp</b> để thắng trận.</p></div><div class="match-score"><span><span class="score-name">HÙNG</span> <b id="score-hung">0</b></span><span class="score-dash">—</span><span><b id="score-mai">0</b> <span class="score-name">MAI</span></span></div></div>
-      </section>
-      <footer class="page-footer"><span>VÕ LINH ĐẤU TRƯỜNG <b>© 2026</b></span><span>MỘT TRẬN CHIẾN CỦA Ý CHÍ <i>✦</i></span></footer>
 
     </main>
     <script type="module" src="/src/main.js"></script>

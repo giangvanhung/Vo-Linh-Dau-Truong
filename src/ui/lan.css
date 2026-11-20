@@ -6,7 +6,29 @@
 #lan-link-box p { margin: 0; max-width: 50ch; }
 #lan-address-hint { font-weight: 600; }
 #lan-link { color: #a1cef4; overflow-wrap: anywhere; }
-#lan-qr { background: white; border-radius: 4px; }
+#lan-qr { display: block; width: clamp(112px, 28dvh, 160px); height: auto; background: white; border-radius: 4px; }
+.game-panel #lan-status { margin: 0 0 6px; }
+.stage-wrap #lan-panel {
+  top: 8px;
+  transform: translateX(-50%);
+  width: min(540px, calc(100% - 24px));
+  max-height: calc(100% - 16px);
+  padding: 12px;
+}
+#lan-panel h2 { margin-bottom: 6px; }
+#lan-panel .panel-actions { margin-top: 8px; }
+#lan-panel #lan-keyboard-help { margin-top: 4px; }
+.lan-link-info { min-width: 0; display: grid; gap: 4px; }
+.lan-link-info summary, #lan-keyboard-help summary { cursor: pointer; }
+@media (min-width: 420px) {
+  #lan-panel #lan-link-box:has(#lan-qr:not([hidden])) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    justify-items: stretch;
+    gap: 12px;
+    text-align: left;
+  }
+}
 .lan-details { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
 .lan-details summary { cursor: pointer; }
 .lan-details #lan-pairing { text-align: center; }

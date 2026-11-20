@@ -1,18 +1,34 @@
 * { box-sizing: border-box }
 [hidden] { display: none !important }
 body {
-  margin: 0; min-height: 100svh; background: #17151d; color: #fff5ed;
+  --pad-surface: #17151d;
+  --pad-text: #fff5ed;
+  --pad-muted: #ded1e3;
+  --pad-button: #382b42;
+  --pad-border: #8d6f9c;
+  --pad-overlay: rgb(23 21 29 / 50%);
+  margin: 0; min-height: 100svh; background: var(--pad-surface); color: var(--pad-text);
   font: 500 16px system-ui, sans-serif;
   padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
     max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
 }
+.pad-light {
+  --pad-surface: #fff8ed;
+  --pad-text: #302337;
+  --pad-muted: #58475e;
+  --pad-button: #fff7ee;
+  --pad-border: #9a779f;
+  --pad-overlay: rgb(255 248 237 / 38%);
+}
 header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; max-width: 950px; margin: auto }
 #qr-reconnect { display: flex; flex-wrap: wrap; gap: 8px }
 #qr-reconnect button { touch-action: manipulation }
+#qr-scanner { flex-basis: 100%; display: grid; justify-items: center; gap: 8px; }
+#qr-preview { width: min(100%, 480px); max-height: 54svh; background: #141019; border-radius: 10px; object-fit: contain; }
 h1 { font-size: 1.12rem; margin: 0 }
-p { color: #ded1e3; margin: 0 }
+p { color: var(--pad-muted); margin: 0 }
 button {
-  background: #382b42; border: 1px solid #8d6f9c; color: inherit; border-radius: 10px;
+  background: var(--pad-button); border: 1px solid var(--pad-border); color: inherit; border-radius: 10px;
   min-height: 48px; padding: .35rem .65rem; font: inherit; touch-action: none;
   user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
@@ -25,10 +41,10 @@ button.is-down, button:active { background: #f3a368; color: #23151d; border-colo
   gap: 10px;
   max-width: 900px;
   margin: 14px auto;
-  background: #17151d;
+  background: linear-gradient(var(--pad-overlay), var(--pad-overlay)), var(--pad-photo, none) center / cover, var(--pad-surface);
 }
-.pad-tools { grid-column: 1 / -1; display: flex; justify-content: center; gap: 8px }
-.pad-tools button { min-height: 44px; touch-action: manipulation }
+.pad-tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px }
+.pad-tools button { min-height: 40px; padding-inline: 8px; font-size: .8rem; touch-action: manipulation }
 .pad-expanded { overflow: hidden }
 .pad-expanded header { display: none }
 .pad-expanded #pad {
@@ -109,4 +125,21 @@ button.is-down, button:active { background: #f3a368; color: #23151d; border-colo
     align-items: center;
   }
   .pad-expanded .direction, .pad-expanded #stick { margin-top: 0 }
+  .pad-expanded.pad-rotate #pad {
+    inset: 50% auto auto 50%;
+    width: 100dvh;
+    height: 100dvw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    padding-top: max(8px, env(safe-area-inset-right));
+    padding-right: max(10px, env(safe-area-inset-bottom));
+    padding-bottom: max(8px, env(safe-area-inset-left));
+    padding-left: max(10px, env(safe-area-inset-top));
+  }
+  .pad-rotate .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center }
+  .pad-rotate .face { grid-column: 2 }
+  .pad-rotate .skills { grid-column: 1; grid-row: 1 }
+  .pad-rotate #stick { width: min(100%, 57vw, 290px) }
+  .pad-rotate .direction button { min-height: clamp(40px, 12vw, 74px) }
+  .pad-rotate .face button { min-height: clamp(44px, 15vw, 96px) }
+  .pad-rotate .skills button { min-height: clamp(40px, 10vw, 54px) }
 }

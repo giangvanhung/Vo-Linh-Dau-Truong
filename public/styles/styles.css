@@ -63,6 +63,36 @@
 .game-panel[hidden], .pause-button[hidden], .fight-banner[hidden], #difficulty-picker[hidden] { display: none; }
 .stage-wrap .game-panel { z-index: 3; max-height: calc(100% - 22px); overflow: auto; padding: 18px; }
 .stage-wrap .setup-panel { width: min(710px, calc(100% - 24px)); }
+.stage-wrap #guide-panel { width: min(680px, calc(100% - 24px)); }
+#guide-panel .lower-grid { grid-template-columns: 1fr; text-align: left; margin: 0 0 10px; }
+#guide-panel .controls-list { grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); }
+#guide-panel .control-row { font-size: 11px; }
+#guide-panel .control-row small { display: none; }
+.arena-tools {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  width: min(420px, calc(100% - 20px));
+  max-height: calc(100% - 20px);
+  overflow: auto;
+  pointer-events: none;
+}
+.arena-tools > details {
+  width: fit-content;
+  max-width: 100%;
+  background: #1d1923f2;
+  color: #f1efed;
+  border: 1px solid #665258;
+  border-radius: 5px;
+  font-size: 12px;
+  margin: 0 0 4px;
+  padding: 6px 8px;
+  pointer-events: auto;
+}
+.arena-tools summary { cursor: pointer; }
+.arena-tools #training-panel { margin-top: 6px; }
+.stage-wrap:has(.game-panel:not([hidden])) .arena-tools { display: none; }
 .game-panel h1, .game-panel h2 { margin: 0 0 12px; line-height: 1.12; }
 .game-panel h1 { font: 700 clamp(30px, 5vw, 50px)/1.02 "Space Grotesk", sans-serif; }
 .menu-buttons { display: grid; gap: 7px; max-width: 230px; margin: auto; }

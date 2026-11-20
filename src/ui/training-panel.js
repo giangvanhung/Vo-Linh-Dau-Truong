@@ -3,6 +3,7 @@ import { FRAME_SECONDS } from '../combat/fighter.js';
 export function createTrainingPanel(training, controls) {
   const byId = id => document.getElementById(id);
   const panel = byId('training-panel');
+  const tools = byId('training-tools');
   const record = byId('record-input');
   const play = byId('play-input');
   const format = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
@@ -20,8 +21,12 @@ export function createTrainingPanel(training, controls) {
   play.addEventListener('click', () => { if (controls.canUse()) training.togglePlayback(); });
 
   function update(visible, dummy) {
+    tools.hidden = !visible;
     panel.hidden = !visible;
-    if (!visible) return;
+    if (!visible) {
+      tools.open = false;
+      return;
+    }
     const { hits, advantage, inputs, recording, recordState } = training;
     const active = controls.canUse();
     for (const id of ['reset-position', 'reset-health', 'reset-meter', 'test-awakening']) byId(id).disabled = !active;

@@ -91,6 +91,7 @@ export function startGame(config) {
     practice = isPractice;
     phase = 'setup';
     soloLanButton.hidden = lan;
+    soloLanButton.textContent = soloLan ? 'Mã QR tay cầm P1' : 'Kết nối tay cầm P1';
     panels.showSetup(practice, lan);
   }
 
@@ -99,6 +100,7 @@ export function startGame(config) {
     phase = 'menu';
     practice = lan = false;
     soloLan = false;
+    roomReady = false;
     lanHost.close();
     byId('lan-details').hidden = true;
     byId('lan-details').open = false;
@@ -196,6 +198,7 @@ export function startGame(config) {
         const adapter = name && name.toLowerCase() !== type ? ` (${name})` : '';
         return new Option(`${label}${adapter} · ${new URL(link).host}`, index);
       }));
+      byId('lan-address-label').hidden = options.length < 2;
       roomReady = true;
       updateLanAddress();
       updateLanStatus();
@@ -216,14 +219,13 @@ export function startGame(config) {
   address.addEventListener('change', updateLanAddress);
   soloLanButton.addEventListener('click', () => {
     soloLan = true;
-    soloLanButton.hidden = true;
-    byId('solo-lan-pairing').append(pairing);
-    openControllerRoom();
+    showControllerRoom();
+    if (!roomReady) openControllerRoom();
   });
   byId('lan-start').addEventListener('click', () => {
     byId('lan-details').append(pairing);
     byId('lan-details').hidden = false;
-    openSetup(false);
+    openSetup(practice);
   });
   function openControllerRoom() {
     addresses = [];
@@ -236,12 +238,20 @@ export function startGame(config) {
     lanHost.open({ solo: soloLan });
   }
 
+  function showControllerRoom() {
+    byId('lan-title').textContent = soloLan ? 'Kết nối tay cầm P1' : 'Đấu 2 người qua LAN';
+    byId('lan-lobby').append(pairing);
+    pairing.querySelectorAll('details').forEach(details => { details.open = false; });
+    panels.show('lan');
+    byId('lan-start').focus({ preventScroll: true });
+    byId('lan-panel').scrollTop = 0;
+  }
+
   function openLan() {
     lan = true;
     practice = false;
     phase = 'lan';
-    byId('lan-lobby').append(pairing);
-    panels.show('lan');
+    showControllerRoom();
     openControllerRoom();
   }
 

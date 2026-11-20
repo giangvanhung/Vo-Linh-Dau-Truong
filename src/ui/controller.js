@@ -1,7 +1,7 @@
 import { lanSocket } from '../platform/lan.js';
 
 const query = new URLSearchParams(location.search);
-const room = query.get('room');
+let room = query.get('room');
 const label = document.querySelector('#connection');
 const join = document.querySelector('#join');
 const leave = document.querySelector('#leave');
@@ -11,6 +11,12 @@ const stick = document.querySelector('#stick');
 const arrows = pad.querySelector('.direction');
 const directionMode = document.querySelector('#direction-mode');
 const expand = document.querySelector('#expand-pad');
+const rotate = document.querySelector('#rotate-pad');
+const light = document.querySelector('#light-pad');
+const chooseBackground = document.querySelector('#choose-pad-bg');
+const clearBackground = document.querySelector('#clear-pad-bg');
+const backgroundFile = document.querySelector('#pad-bg-file');
+const portrait = matchMedia('(orientation: portrait)');
 const fullscreenRoot = document.documentElement;
 const directions = new Set();
 let stickPointer = null;
@@ -41,11 +47,103 @@ function showJoin(message, expired = false) {
   qrReconnect.hidden = false;
 }
 
-const qrCamera = document.querySelector('#qr-camera');
 const qrImage = document.querySelector('#qr-image');
 const scanQr = document.querySelector('#scan-qr');
 const chooseQr = document.querySelector('#choose-qr');
-scanQr.onclick = () => qrCamera.click();
+const scanner = document.querySelector('#qr-scanner');
+const preview = document.querySelector('#qr-preview');
+const playerTwo = join.querySelector('[data-player="2"]');
+let scanSession;
+
+function decodeQr(source, width, height, canvas, limit) {
+  const scale = Math.min(1, limit / Math.max(width, height));
+  const frameWidth = Math.max(1, Math.round(width * scale));
+  const frameHeight = Math.max(1, Math.round(height * scale));
+  if (canvas.width !== frameWidth) canvas.width = frameWidth;
+  if (canvas.height !== frameHeight) canvas.height = frameHeight;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  return globalThis.jsQR(pixels.data, pixels.width, pixels.height);
+}
+
+function openRoomQr(text) {
+  let link;
+  try { link = new URL(text); } catch { return false; }
+  const nextRoom = link.searchParams.get('room');
+  if (!['http:', 'https:'].includes(link.protocol) || link.username || link.password
+      || link.pathname !== '/controller' || !/^[A-Za-z0-9_-]{16}$/.test(nextRoom ?? '')) return false;
+  stopScan();
+  if (link.origin !== location.origin) {
+    location.replace(link.href);
+    return true;
+  }
+  const previous = socket;
+  socket = undefined;
+  previous?.close();
+  history.replaceState(null, '', link.pathname + link.search);
+  room = nextRoom;
+  playerTwo.hidden = link.searchParams.get('solo') === '1';
+  showJoin('Đã nhận mã phòng. Chọn vị trí để kết nối.');
+  return true;
+}
+
+function stopScan() {
+  const session = scanSession;
+  scanSession = undefined;
+  clearTimeout(session?.timer);
+  session?.stream?.getTracks().forEach(track => track.stop());
+  preview.srcObject = null;
+  scanner.hidden = true;
+  scanQr.disabled = chooseQr.disabled = false;
+}
+
+scanQr.onclick = async () => {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    label.textContent = 'Camera trực tiếp cần trang HTTPS. Bạn có thể dùng Chọn ảnh QR.';
+    return;
+  }
+  const session = scanSession = {};
+  scanQr.disabled = chooseQr.disabled = true;
+  scanner.hidden = false;
+  label.textContent = 'Cho phép dùng camera rồi đưa mã QR vào khung.';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    if (scanSession !== session) {
+      stream.getTracks().forEach(track => track.stop());
+      return;
+    }
+    session.stream = stream;
+    preview.srcObject = stream;
+    await preview.play();
+    const canvas = document.createElement('canvas');
+    function scanFrame() {
+      if (scanSession !== session) return;
+      try {
+        if (preview.readyState >= 2 && preview.videoWidth) {
+          const code = decodeQr(preview, preview.videoWidth, preview.videoHeight, canvas, 960);
+          if (code && openRoomQr(code.data)) return;
+          if (code) label.textContent = 'Hãy đưa mã QR phòng tay cầm vào khung.';
+        }
+      } catch {
+        stopScan();
+        label.textContent = 'Không đọc được hình từ camera. Hãy thử Chọn ảnh QR.';
+        return;
+      }
+      session.timer = setTimeout(scanFrame, 180);
+    }
+    scanFrame();
+  } catch {
+    if (scanSession !== session) return;
+    stopScan();
+    label.textContent = 'Không mở được camera. Hãy kiểm tra quyền camera hoặc chọn ảnh QR.';
+  }
+};
+
+document.querySelector('#stop-qr').onclick = () => {
+  stopScan();
+  label.textContent = 'Đã đóng camera. Bấm Quét QR mới để thử lại.';
+};
 chooseQr.onclick = () => qrImage.click();
 
 async function readRoomQr(event) {
@@ -60,25 +158,14 @@ async function readRoomQr(event) {
     const image = new Image();
     image.src = objectUrl;
     await image.decode();
-    const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = globalThis.jsQR(pixels.data, pixels.width, pixels.height);
+    const code = decodeQr(image, image.naturalWidth, image.naturalHeight, document.createElement('canvas'), 1600);
     if (!code) {
       label.textContent = 'Chưa đọc được mã QR. Hãy chụp gần hơn và lấy trọn mã.';
       return;
     }
-    const link = URL.canParse(code.data) ? new URL(code.data) : null;
-    if (!link || !['http:', 'https:'].includes(link.protocol) || link.username || link.password
-        || link.pathname !== '/controller' || !/^[A-Za-z0-9_-]{16}$/.test(link.searchParams.get('room') ?? '')) {
+    if (!openRoomQr(code.data)) {
       label.textContent = 'Mã này không phải mã QR phòng tay cầm.';
-      return;
     }
-    location.assign(link.href);
   } catch {
     label.textContent = 'Không đọc được ảnh. Hãy thử chụp lại hoặc chọn ảnh khác.';
   } finally {
@@ -87,13 +174,13 @@ async function readRoomQr(event) {
   }
 }
 
-qrCamera.addEventListener('change', readRoomQr);
 qrImage.addEventListener('change', readRoomQr);
 
-if (query.get('solo') === '1') join.querySelector('[data-player="2"]').hidden = true;
+playerTwo.hidden = query.get('solo') === '1';
 
 for (const button of join.querySelectorAll('button')) {
   button.onclick = () => {
+    stopScan();
     join.hidden = true;
     label.textContent = 'Đang kết nối…';
     const connection = socket = lanSocket({ room, player: button.dataset.player });
@@ -102,6 +189,8 @@ for (const button of join.querySelectorAll('button')) {
       label.textContent = 'Đã kết nối P' + button.dataset.player;
       pad.hidden = leave.hidden = false;
       qrReconnect.hidden = true;
+      setExpanded(true);
+      setRotated(true);
       heartbeat = setInterval(() => send({ type: 'heartbeat' }), 750);
     };
     connection.onclose = event => {
@@ -114,18 +203,28 @@ for (const button of join.querySelectorAll('button')) {
   };
 }
 
-leave.onclick = () => {
+function leaveRoom() {
   reset();
   const connection = socket;
   socket = undefined;
   connection?.close();
   showJoin('Đã rời tay cầm.');
-};
+}
+
+leave.onclick = leaveRoom;
+document.querySelector('#leave-pad').onclick = leaveRoom;
 
 function setExpanded(enabled) {
+  if (!enabled) setRotated(false);
   document.body.classList.toggle('pad-expanded', enabled);
   expand.setAttribute('aria-pressed', String(enabled));
   expand.textContent = enabled ? 'Thu nhỏ' : 'Toàn màn hình';
+}
+
+function setRotated(enabled) {
+  document.body.classList.toggle('pad-rotate', enabled);
+  rotate.setAttribute('aria-pressed', String(enabled));
+  rotate.textContent = enabled ? 'Bỏ xoay ngang' : 'Xoay ngang';
 }
 
 function fullscreenElement() {
@@ -142,8 +241,7 @@ async function exitFullscreen() {
   }
 }
 
-expand.onclick = async () => {
-  const enabled = !document.body.classList.contains('pad-expanded');
+async function toggleExpanded(enabled) {
   setExpanded(enabled);
   if (!enabled) {
     await exitFullscreen();
@@ -156,7 +254,44 @@ expand.onclick = async () => {
   } catch {
     // Keep the controller expanded within the browser viewport.
   }
+}
+
+expand.onclick = () => {
+  reset();
+  void toggleExpanded(!document.body.classList.contains('pad-expanded'));
 };
+rotate.onclick = () => {
+  reset();
+  const enabled = !document.body.classList.contains('pad-rotate');
+  setRotated(enabled);
+  if (enabled && !document.body.classList.contains('pad-expanded')) void toggleExpanded(true);
+};
+portrait.addEventListener?.('change', reset);
+
+light.onclick = () => {
+  const enabled = document.body.classList.toggle('pad-light');
+  light.setAttribute('aria-pressed', String(enabled));
+  light.textContent = enabled ? 'Màu tối' : 'Màu sáng';
+};
+
+let backgroundUrl;
+chooseBackground.onclick = () => backgroundFile.click();
+function removeBackground() {
+  if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
+  backgroundUrl = undefined;
+  pad.style.removeProperty('--pad-photo');
+  clearBackground.hidden = true;
+}
+clearBackground.onclick = removeBackground;
+backgroundFile.addEventListener('change', () => {
+  const file = backgroundFile.files[0];
+  backgroundFile.value = '';
+  if (!file) return;
+  removeBackground();
+  backgroundUrl = URL.createObjectURL(file);
+  pad.style.setProperty('--pad-photo', `url("${backgroundUrl}")`);
+  clearBackground.hidden = false;
+});
 
 for (const eventName of ['fullscreenchange', 'webkitfullscreenchange']) {
   document.addEventListener(eventName, () => {
@@ -192,8 +327,11 @@ function updateDirections(next) {
 function moveStick(event) {
   if (event.pointerId !== stickPointer) return;
   const rect = stick.getBoundingClientRect();
-  const x = event.clientX - rect.left - rect.width / 2;
-  const y = event.clientY - rect.top - rect.height / 2;
+  const screenX = event.clientX - rect.left - rect.width / 2;
+  const screenY = event.clientY - rect.top - rect.height / 2;
+  const rotated = portrait.matches && document.body.classList.contains('pad-rotate');
+  const x = rotated ? screenY : screenX;
+  const y = rotated ? -screenX : screenY;
   const travel = rect.width * 0.28;
   const scale = Math.min(1, travel / Math.max(1, Math.hypot(x, y)));
   stick.style.setProperty('--stick-x', x * scale + 'px');
@@ -246,6 +384,7 @@ for (const event of ['pointerup','pointercancel','lostpointercapture']) pad.addE
 pad.addEventListener('contextmenu', event => event.preventDefault());
 window.addEventListener('blur', reset);
 window.addEventListener('pagehide', () => {
+  stopScan();
   reset();
   socket?.close();
 });
