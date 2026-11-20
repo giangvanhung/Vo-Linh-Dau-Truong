@@ -191,7 +191,7 @@
 .lan-details summary { cursor: pointer; }
 .lan-details #lan-pairing { text-align: center; }
 
-#setup-roster { display: grid; gap: 10px; }
+#setup-roster:not([hidden]) { display: grid; gap: 10px; }
 #setup-roster fieldset { min-width: 0; margin: 0; padding: 4px 0 0; border: 0; text-align: left; }
 #setup-roster legend { padding: 0; color: #eee2da; font-size: 12px; font-weight: 700; }
 .roster-cards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
