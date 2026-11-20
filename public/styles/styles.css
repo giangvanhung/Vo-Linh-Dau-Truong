@@ -69,7 +69,7 @@
 .panel-button { border: 1px solid #665258; border-radius: 3px; background: #2a242d; color: #f1efed; padding: 8px 12px; cursor: pointer; }
 .panel-button:hover { background: #40323a; }
 .game-panel .primary-button { font-size: 12px; letter-spacing: .02em; }
-.game-panel button:focus-visible, .pause-button:focus-visible { outline: 2px solid #ffbf8b; outline-offset: 2px; }
+.game-panel :is(button, select, input, a):focus-visible, .pause-button:focus-visible { outline: 2px solid #ffbf8b; outline-offset: 2px; }
 .setup-options, .panel-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 12px; margin-top: 12px; }
 .setup-options label, .settings-fields label { font-size: 12px; }
 .setup-options select, .settings-fields select { background: #27212a; color: #f1efed; border: 1px solid #6c5351; border-radius: 3px; padding: 4px; }

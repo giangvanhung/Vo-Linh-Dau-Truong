@@ -1,3 +1,5 @@
+import { enableMenuNavigation } from './menu-navigation.js';
+
 const byId = id => document.getElementById(id);
 
 function pickAnother(options, current) {
@@ -7,6 +9,7 @@ function pickAnother(options, current) {
 
 export function createPanels({ characters, stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings }) {
   const panels = [...document.querySelectorAll('.game-panel')];
+  enableMenuNavigation();
   const banner = byId('fight-banner');
   const difficultySelect = byId('cpu-difficulty');
   const stageSelect = byId('stage-select');
