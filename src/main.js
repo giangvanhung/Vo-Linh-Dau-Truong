@@ -9,9 +9,14 @@ function setGameExpanded(expanded) {
   fullscreenButton.textContent = expanded ? 'Thu nhỏ' : 'Toàn màn hình';
 }
 
-fullscreenButton.addEventListener('click', async () => {
-  if (document.fullscreenElement === gameCard) {
-    await document.exitFullscreen();
+function fullscreenElement() {
+  return document.fullscreenElement ?? document.webkitFullscreenElement;
+}
+
+async function toggleGameFullscreen() {
+  const exit = document.exitFullscreen ?? document.webkitExitFullscreen;
+  if (fullscreenElement() === gameCard) {
+    await exit?.call(document);
     return;
   }
 
@@ -19,19 +24,28 @@ fullscreenButton.addEventListener('click', async () => {
   setGameExpanded(expanded);
   if (expanded) {
     try {
-      await gameCard.requestFullscreen?.();
-      if (document.fullscreenElement === gameCard && !document.body.classList.contains('game-expanded')) {
-        await document.exitFullscreen();
+      const request = gameCard.requestFullscreen ?? gameCard.webkitRequestFullscreen;
+      await request?.call(gameCard);
+      if (fullscreenElement() === gameCard && !document.body.classList.contains('game-expanded')) {
+        await exit?.call(document);
       }
     } catch {
       // Keep the arena expanded within the browser viewport.
     }
   }
-});
+}
 
-document.addEventListener('fullscreenchange', () => {
-  setGameExpanded(document.fullscreenElement === gameCard);
+fullscreenButton.addEventListener('click', toggleGameFullscreen);
+window.addEventListener('keydown', event => {
+  if (event.key !== 'F12') return;
+  event.preventDefault();
+  if (!event.repeat) void toggleGameFullscreen();
 });
+for (const eventName of ['fullscreenchange', 'webkitfullscreenchange']) {
+  document.addEventListener(eventName, () => {
+    setGameExpanded(fullscreenElement() === gameCard);
+  });
+}
 
 const config = await fetch('/data/fighters.json').then(response => {
   if (!response.ok) throw new Error('Không tải được cấu hình trận đấu.');

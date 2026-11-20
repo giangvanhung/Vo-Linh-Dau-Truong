@@ -25,22 +25,24 @@
           <span class="round-label" id="round-label">HIỆP 01</span>
           <div class="arena-display-controls">
             <span class="best-of">BO3 <span>·</span> THẮNG 2</span>
-            <button type="button" class="panel-button" id="game-fullscreen" aria-pressed="false">Toàn màn hình</button>
+            <button type="button" class="panel-button" id="game-fullscreen" aria-pressed="false" aria-keyshortcuts="F12" title="Toàn màn hình · F12">Toàn màn hình</button>
           </div>
         </div>
 
+        <div class="arena-scene">
+        <canvas id="arena-background" aria-hidden="true"></canvas>
         <div class="hud">
           <div class="player-hud player-hung">
             <div class="player-meta"><div><span class="player-side">NGƯỜI CHƠI 1</span><strong>HÙNG</strong></div><span class="wins" id="hung-wins" aria-label="Số hiệp thắng">◇ ◇</span></div>
             <div class="health-track"><div class="health-fill" id="hung-health"></div><span class="health-number" id="hung-hp">100</span></div>
-            <div class="energy-row"><span>Năng lượng</span><div class="energy-track"><div id="hung-meter-fill" class="energy-fill"></div></div><span id="hung-meter-value">0/100</span></div><div class="focus-status" id="hung-focus"></div>
+            <div class="energy-row"><span>NỘ</span><div class="energy-track"><div id="hung-meter-fill" class="energy-fill"></div></div><span id="hung-meter-value">0/100</span></div><div class="focus-status" id="hung-focus"></div>
             <div class="skill-status" id="hung-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
           <div class="timer-wrap"><div class="timer" id="timer">60</div><div class="timer-caption">THỜI GIAN</div></div>
           <div class="player-hud player-mai">
             <div class="player-meta"><span class="wins" id="mai-wins" aria-label="Số hiệp thắng">◇ ◇</span><div class="align-right"><span class="player-side">CPU · CẤP ĐỘ THƯỜNG</span><strong>MAI</strong></div></div>
             <div class="health-track"><div class="health-fill" id="mai-health"></div><span class="health-number" id="mai-hp">100</span></div>
-            <div class="energy-row"><span>Năng lượng</span><div class="energy-track"><div id="mai-meter-fill" class="energy-fill"></div></div><span id="mai-meter-value">0/100</span></div><div class="focus-status" id="mai-focus"></div>
+            <div class="energy-row"><span>NỘ</span><div class="energy-track"><div id="mai-meter-fill" class="energy-fill"></div></div><span id="mai-meter-value">0/100</span></div><div class="focus-status" id="mai-focus"></div>
             <div class="skill-status" id="mai-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
         </div>
@@ -84,6 +86,7 @@
             <div id="setup-roster"></div>
             <div class="setup-options">
               <label>Sân đấu <select id="stage-select" aria-describedby="stage-description"></select></label>
+              <button type="button" class="panel-button" id="random-stage">Sân ngẫu nhiên</button>
               <label><input type="checkbox" id="stage-hazards" checked> Hiệu ứng môi trường</label>
               <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
             </div>
@@ -124,6 +127,7 @@
           </div>
           <div class="toast" id="toast" aria-live="polite"></div>
           <div class="stage-bottom"><span>SÂN ĐẤU <b id="stage-name"></b></span><span>LINH GIỚI <i>✦</i></span></div>
+        </div>
         </div>
 
         <div class="arena-footer"><span><i class="status-dot"></i> SẴN SÀNG KHI BẠN</span><span id="status-text">CHỌN THỜI ĐIỂM RA ĐÒN</span><span class="latency"><span id="network-mode">OFFLINE</span> <b>●</b></span></div>

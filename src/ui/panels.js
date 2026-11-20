@@ -1,5 +1,10 @@
 const byId = id => document.getElementById(id);
 
+function pickAnother(options, current) {
+  const choices = options.filter(id => id !== current);
+  return choices[Math.floor(Math.random() * choices.length)] ?? current;
+}
+
 export function createPanels({ characters, stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings }) {
   const panels = [...document.querySelectorAll('.game-panel')];
   const banner = byId('fight-banner');
@@ -11,6 +16,10 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
     byId('stage-description').textContent = stages[stageSelect.value].description;
   }
   stageSelect.addEventListener('change', describeStage);
+  byId('random-stage').addEventListener('click', () => {
+    stageSelect.value = pickAnother(Object.keys(stages), stageSelect.value);
+    describeStage();
+  });
   describeStage();
   const pauseButton = byId('pause-button');
   const toggleSound = byId('toggle-sound');
@@ -64,7 +73,20 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
       cards.append(card);
     }
     select(selections[side]);
-    group.append(legend, cards, detail, condition);
+    group.append(legend, cards);
+    if (side === 'player') {
+      const randomButton = document.createElement('button');
+      randomButton.type = 'button';
+      randomButton.className = 'panel-button';
+      randomButton.textContent = 'Võ sĩ P1 ngẫu nhiên';
+      randomButton.addEventListener('click', () => {
+        const id = pickAnother(Object.keys(characters), selections.player);
+        const radio = [...cards.querySelectorAll('input')].find(input => input.value === id);
+        radio.click();
+      });
+      group.append(randomButton);
+    }
+    group.append(detail, condition);
     roster.append(group);
   }
 

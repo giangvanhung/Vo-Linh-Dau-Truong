@@ -1,5 +1,7 @@
 # Local dependencies and logs
 node_modules/
+dist/
+.vercel/
 *.log
 
 # Local environment configuration

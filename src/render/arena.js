@@ -3,15 +3,19 @@ import { createSpriteRenderer, loadImage } from './sprites.js';
 
 export function createArenaRenderer(canvas, config) {
   const ctx = canvas.getContext('2d');
+  const background = document.getElementById('arena-background');
+  const backdrop = background.getContext('2d', { alpha: false });
 
   const drawSprite = createSpriteRenderer(ctx, config.characters);
   const images = new Map();
   const sparkSheet = '/assets/effects/combat-sparks.png';
+  const evolutionFist = '/assets/effects/hung-evolution-fist.png';
   const paths = new Set(Object.values(config.stages).flatMap(stage => [stage.background, ...stage.parallax]));
   paths.add(sparkSheet);
+  paths.add(evolutionFist);
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
-  function drawStage(stage, w, h, ground, center) {
+  function drawStage(ctx, stage, w, h, ground, center) {
     const layers = stage.parallax.map(path => images.get(path));
     const composite = images.get(stage.background);
     ctx.fillStyle = '#191922';
@@ -43,7 +47,15 @@ export function createArenaRenderer(canvas, config) {
     const w = canvas.width, h = canvas.height, ground = h * config.stage.groundRatio;
     ctx.clearRect(0, 0, w, h);
     const center = (fighters[0].x + fighters[1].x) / 2;
-    drawStage(stage, w, h, ground, center);
+    const width = background.clientWidth, height = background.clientHeight;
+    if (width && height) {
+      if (background.width !== width) background.width = width;
+      if (background.height !== height) background.height = height;
+      const scale = Math.min(canvas.clientWidth / w, canvas.clientHeight / h);
+      const stageTop = canvas.parentElement.offsetTop;
+      const floor = stageTop + (canvas.clientHeight - h * scale) / 2 + ground * scale;
+      drawStage(backdrop, stage, width, height, floor, center / w * width);
+    }
     ctx.save();
     applyShake(shake, screenEffect);
     drawTerrain(stage, stageFrame, w, ground);
@@ -58,6 +70,7 @@ export function createArenaRenderer(canvas, config) {
     for (const f of fighters) drawAura(f, ground, animationTime);
     for (const f of fighters) {
       drawFighter(f, ground, animationTime);
+      if (f.attack?.evolvedPunch) drawEvolutionFist(f, ground, animationTime);
       if (f.hp <= 0 || (!f.freezeFrames && !f.poisonFrames)) continue;
       ctx.save();
       ctx.strokeStyle = f.freezeFrames ? '#a7f0ff' : '#ace781';
@@ -211,14 +224,13 @@ export function createArenaRenderer(canvas, config) {
     ctx.restore();
   }
 
-  function drawChargeAura(fighter, time) {
-    const build = Math.min(1, fighter.chargeFrames / 24);
+  function drawChargeAura(fighter, time, build, color) {
     const height = fighter.height * (.85 + build * .72);
     const width = fighter.hurtbox.width * (.65 + build * .48);
     const pulse = Math.sin(time / 42);
     const light = ctx.createLinearGradient(0, -height, 0, 0);
     light.addColorStop(0, 'transparent');
-    light.addColorStop(.45, fighter.glow);
+    light.addColorStop(.45, color);
     light.addColorStop(1, '#fff3cb');
 
     const ripple = (time / 480) % 1;
@@ -248,7 +260,7 @@ export function createArenaRenderer(canvas, config) {
       const x = side * width * (.65 + (i % 4) * .14 - rise * .28);
       const y = -rise * height;
       ctx.globalAlpha = (1 - rise) * (.45 + build * .4);
-      ctx.fillStyle = i % 3 ? fighter.glow : '#fff3cb';
+      ctx.fillStyle = i % 3 ? color : '#fff3cb';
       ctx.fillRect(x, y, 2, 6 + build * 9);
     }
 
@@ -268,8 +280,10 @@ export function createArenaRenderer(canvas, config) {
     ctx.save();
     ctx.translate(fighter.x, ground + fighter.y);
     ctx.strokeStyle = ctx.fillStyle = fighter.glow;
-    if (fighter.charging) {
-      drawChargeAura(fighter, time);
+    if (fighter.charging || fighter.evolving) {
+      const color = fighter.evolving ? '#ffcc53' : fighter.glow;
+      ctx.strokeStyle = color;
+      drawChargeAura(fighter, time, fighter.evolving ? 1 : Math.min(1, fighter.chargeFrames / 24), color);
       ctx.restore();
       return;
     }
@@ -286,6 +300,22 @@ export function createArenaRenderer(canvas, config) {
         ctx.fillRect(Math.round(Math.cos(angle) * 34), Math.round(-height), 3, 3);
       }
     }
+    ctx.restore();
+  }
+
+  function drawEvolutionFist(fighter, ground, time) {
+    const image = images.get(evolutionFist);
+    if (!image) return;
+    const { attack } = fighter;
+    const box = fighter.attackBoxFor(attack, attack.facing);
+    const reach = Math.min(1, attack.elapsed / Math.max(1, attack.startup));
+    const handX = attack.facing > 0 ? box.x + box.width : box.x;
+    const size = (attack.id === 'heavy' ? 62 : 48) + Math.sin(time / 34) * 4;
+    ctx.save();
+    ctx.translate(fighter.x + (handX - fighter.x) * reach, ground + box.y + box.height / 2);
+    ctx.rotate(time / 115 * attack.facing);
+    ctx.globalAlpha = fighter.attackActive ? 1 : .7;
+    ctx.drawImage(image, -size / 2, -size / 2, size, size);
     ctx.restore();
   }
 

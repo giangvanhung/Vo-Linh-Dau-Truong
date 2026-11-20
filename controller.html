@@ -12,6 +12,12 @@
     <h1>Tay cầm LAN</h1>
     <p id="connection" role="status">Chọn vị trí để kết nối.</p>
     <div id="join"><button type="button" data-player="1">Vào P1</button><button type="button" data-player="2">Vào P2</button></div>
+    <div id="qr-reconnect">
+      <button type="button" id="scan-qr">Quét QR mới</button>
+      <button type="button" id="choose-qr">Chọn ảnh QR</button>
+      <input type="file" id="qr-camera" accept="image/*" capture="environment" hidden>
+      <input type="file" id="qr-image" accept="image/*" hidden>
+    </div>
     <button type="button" id="leave" hidden>Rời tay cầm</button>
   </header>
   <main id="pad" hidden>
@@ -34,11 +40,12 @@
       <div class="skills">
       <button data-key="q">Lướt</button><button data-key="r" title="Giữ trái hoặc phải để chọn hướng">Lộn né</button><button data-key="enhanced">Lướt mạnh</button>
       <button data-key="u">Kỹ năng 1</button><button data-key="i">Kỹ năng 2</button><button data-key="o">Ultimate</button>
-      <button data-key="f">Tụ khí</button><button data-key="g">Đột phá</button>
+      <button data-key="f">Tụ khí</button><button data-key="g" title="Cần đủ nộ và đạt điều kiện Đột phá của võ sĩ">Tiến hóa</button>
       <button data-key="t">Thoát combo</button>
       </div>
     </section>
   </main>
+  <script defer src="/src/vendor/jsqr.js"></script>
   <script type="module" src="/src/ui/controller.js"></script>
 </body>
 </html>

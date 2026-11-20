@@ -5,7 +5,54 @@
 .energy-fill { width: 0; height: 100%; background: #f0c079; }
 .action-status { display: flex; gap: 12px; color: #c8b9a4; font-size: 8px; margin-top: 10px; }
 
-.hud { height: auto; min-height: 112px; }
+.arena-scene { position: relative; isolation: isolate; background: #17151c; }
+#arena-background { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.arena-scene .stage-wrap { background: transparent; }
+.hud {
+  position: relative;
+  height: auto;
+  grid-template-columns: minmax(0, 1fr) clamp(44px, 8vw, 74px) minmax(0, 1fr);
+  align-items: start;
+  background: linear-gradient(180deg, #101016e8, #1010168c 82%, transparent);
+  text-shadow: 0 1px 4px #000;
+}
+.hud .player-side { color: #e0dbe1; font-size: 9px; }
+.hud .wins { color: #d0c4cb; }
+.hud .health-track {
+  height: clamp(18px, 2.4vw, 26px);
+  background: #18131bea;
+  border: 1px solid #fff5;
+  border-radius: 6px;
+}
+.hud .health-number {
+  font-size: clamp(11px, 1.4vw, 14px);
+  font-variant-numeric: tabular-nums;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #151018b8;
+}
+.hud .energy-row { color: #fff0c7; font-size: clamp(9px, 1.2vw, 12px); font-weight: 700; }
+.hud .energy-track {
+  position: relative;
+  height: 9px;
+  overflow: hidden;
+  border: 1px solid #e6b66a80;
+  border-radius: 3px;
+  background: #1c1721ee;
+}
+.energy-track::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent calc(100% - 1px), #201525b0 0) 0 0 / 25% 100%;
+  content: "";
+  pointer-events: none;
+}
+.hud .energy-fill { background: linear-gradient(180deg, #fff0a1, #e89a35); transition: width .15s linear; }
+.hud .energy-track.full { box-shadow: 0 0 10px #ffce61a6; border-color: #ffe4a3; }
+.player-mai .energy-row { flex-direction: row-reverse; }
+.player-mai .energy-fill { margin-left: auto; }
+.hud .timer-wrap { padding: 7px 2px; background: #151119dc; border: 1px solid #fff4; border-radius: 8px; }
+.hud .timer-caption { color: #e0dbe1; }
 .skill-status { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 5px; color: #a19aa6; font-size: 8px; }
 .player-mai .skill-status { justify-content: flex-end; }
 .skill-status .ready { color: #f3c096; }
@@ -35,7 +82,10 @@
 @keyframes knockout { from { opacity: .35; transform: scale(1.13); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .fight-banner.finish { animation: none; } }
 .hud .player-hud strong { color: var(--fighter-color, #f1efed); }
-.hud .player-hud .health-fill { background: var(--fighter-color, #eb9265); }
+.hud .player-hud .health-fill {
+  background: linear-gradient(180deg, #ffffff58, transparent 50%, #0005), var(--fighter-color, #eb9265);
+}
+.hud .player-hud .health-fill.critical { background: linear-gradient(180deg, #ff9c86, #d5424a); }
 .training-panel { margin-top: 12px; padding: 14px 16px; border: 1px solid #35313b; border-radius: 6px; background: #17171d; }
 .training-panel h2 { margin: 0 0 10px; font-size: 16px; }
 .training-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; }
@@ -99,6 +149,7 @@
   letter-spacing: normal;
   white-space: nowrap;
 }
+#game-fullscreen:focus-visible { outline: 2px solid #ffbf8b; outline-offset: 2px; }
 
 body.game-expanded { overflow: hidden; }
 .game-expanded .game-card {
@@ -114,7 +165,9 @@ body.game-expanded { overflow: hidden; }
   border-radius: 0;
 }
 
-.game-expanded .game-card > :not(.stage-wrap) { flex: none; }
+.game-expanded .game-card > :not(.arena-scene) { flex: none; }
+.game-expanded .arena-scene { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.game-expanded .hud { flex: none; }
 .game-expanded .game-card .stage-wrap {
   flex: 1;
   height: auto;

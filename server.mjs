@@ -16,7 +16,9 @@ const server = createServer(async (req, res) => {
     if (route.split('/').some(part => part.startsWith('.')) || route.includes('\\')) throw new Error('Invalid path');
     const publicRoute = /^\/(assets|styles)\//.test(route);
     const base = publicRoute ? resolve(root, 'public') : root;
-    const requested = resolve(base, '.' + route);
+    const requested = route === '/src/vendor/jsqr.js'
+      ? resolve(root, 'node_modules/jsqr/dist/jsQR.js')
+      : resolve(base, '.' + route);
     if (!requested.startsWith(root + sep)) throw new Error('Invalid path');
     const info = await stat(requested);
     if (!info.isFile()) throw new Error('Not a file');

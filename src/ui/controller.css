@@ -7,6 +7,8 @@ body {
     max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
 }
 header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; max-width: 950px; margin: auto }
+#qr-reconnect { display: flex; flex-wrap: wrap; gap: 8px }
+#qr-reconnect button { touch-action: manipulation }
 h1 { font-size: 1.12rem; margin: 0 }
 p { color: #ded1e3; margin: 0 }
 button {
@@ -88,6 +90,12 @@ button.is-down, button:active { background: #f3a368; color: #23151d; border-colo
 .face button:nth-child(3) { grid-column: 3; grid-row: 2 }
 .face button:nth-child(4) { grid-column: 2; grid-row: 3 }
 .skills button { min-height: clamp(40px, 10dvh, 54px) }
+.skills [data-key="g"]:not(.is-down):not(:active) {
+  background: linear-gradient(155deg, #633422, #352338);
+  border-color: #eab16c;
+  color: #fff0bf;
+  font-weight: 700;
+}
 @media (orientation: landscape) {
   .actions { grid-template-columns: minmax(125px, 1fr) minmax(126px, 1fr); align-items: center }
   .face { grid-column: 2 }

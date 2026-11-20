@@ -19,6 +19,11 @@
     "hung": {
       "awakening": {
         "condition": "Đỡ đòn rồi đấm nặng trúng",
+        "evolution": {
+          "bonusHp": 20,
+          "punchMultiplier": 1.3,
+          "lifeSteal": 0.1
+        },
         "skill": "rangedSkill",
         "label": "Hỏa Cầu · Tàn Hỏa",
         "changes": {
@@ -162,9 +167,9 @@
       },
       "dashCooldownFrames": 78,
       "profile": {
-        "role": "Chi?n Binh L?a",
-        "strength": "?p s?t, combo ng?n, ??m n?ng ??y l?i m?nh v? ch?n ??i th? nh?y v?o.",
-        "weakness": "L??t ng?n, kh? truy ?u?i v? H?a C?u ch? y?u d?ng ?? th?m d?."
+        "role": "Chiến Binh Lửa",
+        "strength": "Áp sát, combo ngắn, đấm nặng đẩy lùi mạnh và chặn đối thủ nhảy vào.",
+        "weakness": "Lướt ngắn, khó truy đuổi và Hỏa Cầu chủ yếu dùng để thăm dò."
       },
       "attacks": {
         "light": {
@@ -388,9 +393,9 @@
       },
       "dashCooldownFrames": 51,
       "profile": {
-        "role": "S?t Th? Phong",
-        "strength": "Di chuy?n nhanh, l??t xa, c?u r?a b?ng ?? t?m trung v? Phong Ki?m.",
-        "weakness": "M?u th?p, ??m n?ng y?u h?n v? d? b? ph?t khi lao v?o ho?c nh?y v?o."
+        "role": "Sát Thủ Phong",
+        "strength": "Di chuyển nhanh, lướt xa, cấu rỉa bằng đòn tầm trung và Phong Kiếm.",
+        "weakness": "Máu thấp, đấm nặng yếu hơn và dễ bị phạt khi lao vào hoặc nhảy vào."
       },
       "attacks": {
         "light": {

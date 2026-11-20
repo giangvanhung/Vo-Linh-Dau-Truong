@@ -1,8 +1,11 @@
+import { relayUrl } from './relay-url.js';
+
 const attacks = { j: 'light', k: 'heavy', l: 'kick', u: 'closeSkill', i: 'rangedSkill', o: 'ultimate' };
 
 export function lanSocket(query) {
-  const url = new URL('/lan', location.href);
-  url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = new URL('/lan', relayUrl || location.href);
+  if (url.protocol === 'https:') url.protocol = 'wss:';
+  if (url.protocol === 'http:') url.protocol = 'ws:';
   url.search = new URLSearchParams(query);
   return new WebSocket(url);
 }

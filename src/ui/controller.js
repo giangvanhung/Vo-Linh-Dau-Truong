@@ -5,6 +5,7 @@ const room = query.get('room');
 const label = document.querySelector('#connection');
 const join = document.querySelector('#join');
 const leave = document.querySelector('#leave');
+const qrReconnect = document.querySelector('#qr-reconnect');
 const pad = document.querySelector('#pad');
 const stick = document.querySelector('#stick');
 const arrows = pad.querySelector('.direction');
@@ -29,15 +30,65 @@ function reset() {
   send({ type: 'reset' });
 }
 
-function showJoin(message) {
+function showJoin(message, expired = false) {
   reset();
   clearInterval(heartbeat);
   label.textContent = message;
   setExpanded(false);
   exitFullscreen();
   pad.hidden = leave.hidden = true;
-  join.hidden = !room;
+  join.hidden = !room || expired;
+  qrReconnect.hidden = false;
 }
+
+const qrCamera = document.querySelector('#qr-camera');
+const qrImage = document.querySelector('#qr-image');
+const scanQr = document.querySelector('#scan-qr');
+const chooseQr = document.querySelector('#choose-qr');
+scanQr.onclick = () => qrCamera.click();
+chooseQr.onclick = () => qrImage.click();
+
+async function readRoomQr(event) {
+  const input = event.currentTarget;
+  const file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  scanQr.disabled = chooseQr.disabled = true;
+  label.textContent = 'Đang đọc mã QR…';
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = globalThis.jsQR(pixels.data, pixels.width, pixels.height);
+    if (!code) {
+      label.textContent = 'Chưa đọc được mã QR. Hãy chụp gần hơn và lấy trọn mã.';
+      return;
+    }
+    const link = URL.canParse(code.data) ? new URL(code.data) : null;
+    if (!link || !['http:', 'https:'].includes(link.protocol) || link.username || link.password
+        || link.pathname !== '/controller' || !/^[A-Za-z0-9_-]{16}$/.test(link.searchParams.get('room') ?? '')) {
+      label.textContent = 'Mã này không phải mã QR phòng tay cầm.';
+      return;
+    }
+    location.assign(link.href);
+  } catch {
+    label.textContent = 'Không đọc được ảnh. Hãy thử chụp lại hoặc chọn ảnh khác.';
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+    scanQr.disabled = chooseQr.disabled = false;
+  }
+}
+
+qrCamera.addEventListener('change', readRoomQr);
+qrImage.addEventListener('change', readRoomQr);
 
 if (query.get('solo') === '1') join.querySelector('[data-player="2"]').hidden = true;
 
@@ -50,14 +101,15 @@ for (const button of join.querySelectorAll('button')) {
       if (socket !== connection || JSON.parse(data).type !== 'joined') return;
       label.textContent = 'Đã kết nối P' + button.dataset.player;
       pad.hidden = leave.hidden = false;
+      qrReconnect.hidden = true;
       heartbeat = setInterval(() => send({ type: 'heartbeat' }), 750);
     };
     connection.onclose = event => {
       if (socket !== connection) return;
       socket = undefined;
       showJoin(event.code === 4003 ? 'Vị trí này đang được dùng. Hãy chọn vị trí khác.'
-        : event.code === 4002 ? 'Phòng đã đóng hoặc liên kết đã hết hạn.'
-        : 'Mất kết nối. Chọn lại vị trí để thử lại.');
+        : event.code === 4002 ? 'Liên kết đã hết hạn. Mở phòng trên máy tính rồi bấm Quét QR mới.'
+        : 'Mất kết nối. Thử vào lại hoặc quét mã QR mới.', event.code === 4002);
     };
   };
 }

@@ -18,6 +18,7 @@ function networkType(name) {
 }
 
 export function attachLan(server) {
+  const allowedOrigins = new Set((process.env.LAN_ALLOWED_ORIGINS ?? '').split(',').map(origin => origin.trim()).filter(Boolean));
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 512 });
   const rooms = new Map();
 
@@ -27,7 +28,7 @@ export function attachLan(server) {
     let path;
     try {
       const url = new URL(request.url, 'http://' + host);
-      if (url.pathname !== '/lan' || !origin || new URL(origin).host !== host) throw new Error();
+      if (url.pathname !== '/lan' || !origin || (new URL(origin).host !== host && !allowedOrigins.has(origin))) throw new Error();
       path = url;
     } catch {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
@@ -57,15 +58,19 @@ export function attachLan(server) {
         for (const player of room.players) player?.close(4002, 'Room closed');
       });
       const origin = new URL(request.headers.origin);
-      const addresses = Object.entries(networkInterfaces()).flatMap(([name, entries]) =>
+      const online = allowedOrigins.has(origin.origin);
+      const addresses = online ? [{ address: origin.hostname, name: '', type: 'online' }]
+        : Object.entries(networkInterfaces()).flatMap(([name, entries]) =>
         entries.filter(entry => entry.family === 'IPv4' && !entry.internal && !entry.address.startsWith('169.254.'))
           .map(entry => ({ address: entry.address, name, type: networkType(name) })));
       if (!['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)
           && !addresses.some(entry => entry.address === origin.hostname)) {
         addresses.push({ address: origin.hostname, name: '', type: 'other' });
       }
-      addresses.sort((a, b) => networkPriority[a.type] - networkPriority[b.type]
-        || Number(b.address === origin.hostname) - Number(a.address === origin.hostname));
+      if (!online) {
+        addresses.sort((a, b) => networkPriority[a.type] - networkPriority[b.type]
+          || Number(b.address === origin.hostname) - Number(a.address === origin.hostname));
+      }
       const controllerLink = address => {
         const link = new URL('/controller', origin);
         link.hostname = address;

@@ -32,6 +32,8 @@ export function createHud(config) {
   function updateUI({ hung, mai, practice, seconds, round, winsHung, winsMai }) {
     ui['hung-health'].style.width = `${100 * hung.hp / hung.maxHp}%`;
     ui['mai-health'].style.width = `${100 * mai.hp / mai.maxHp}%`;
+    ui['hung-health'].classList.toggle('critical', hung.hp <= hung.maxHp * .25);
+    ui['mai-health'].classList.toggle('critical', mai.hp <= mai.maxHp * .25);
     ui['hung-hp'].textContent = damageFormat.format(hung.hp);
     ui['mai-hp'].textContent = damageFormat.format(mai.hp);
     ui.timer.textContent = practice ? '∞' : String(Math.ceil(seconds)).padStart(2, '0');
@@ -47,6 +49,7 @@ export function createHud(config) {
     const meter = meterUI[side];
     const value = Math.floor(fighter.meter);
     if (meter.fill) meter.fill.style.width = fighter.meter / config.combat.meterMax * 100 + '%';
+    meter.fill?.parentElement.classList.toggle('full', fighter.meter >= config.combat.meterMax);
     if (meter.value) meter.value.textContent = value + '/' + config.combat.meterMax;
     for (const indicator of meter.skills.children) {
       const id = indicator.dataset.skill;
@@ -61,7 +64,7 @@ export function createHud(config) {
       fighter.freezeFrames ? 'Đóng băng' : fighter.frostStacks ? 'Hàn ' + fighter.frostStacks + '/3' : '',
       fighter.poisonFrames ? 'Trúng độc ' + fighter.poisonStacks + '/3' : '',
     ].filter(Boolean).join(' · ');
-    const focus = fighter.awakeningFrames ? 'Đột phá · ' + (fighter.awakeningFrames * FRAME_SECONDS).toFixed(1) + 's'
+    const focus = fighter.awakeningFrames ? (fighter.evolving ? 'Tiến hóa' : 'Đột phá') + ' · ' + (fighter.awakeningFrames * FRAME_SECONDS).toFixed(1) + 's'
       : fighter.charging ? 'Đang tụ khí'
       : fighter.awakeningReady ? 'Đột phá sẵn sàng'
       : fighter.awakeningUnlocked && !fighter.awakeningUsed ? 'Đã đạt điều kiện Đột phá' : '';

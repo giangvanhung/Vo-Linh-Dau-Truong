@@ -6,6 +6,7 @@ export class Fighter {
   constructor(config, x, facing, rules) {
     Object.assign(this, config);
     this.maxHp = config.hp;
+    this.baseHp = config.hp;
     this.dashOptions = { normal: config.dash, enhanced: config.enhancedDash };
     this.rules = rules;
     this.x = x;
@@ -59,6 +60,7 @@ export class Fighter {
   }
 
   get charging() { return this.chargeFrames > 0; }
+  get evolving() { return this.awakeningFrames > 0 && Boolean(this.awakening?.evolution); }
   get awakeningReady() {
     return this.awakening && this.awakeningUnlocked && !this.awakeningUsed && this.meter >= this.rules.meterMax;
   }
@@ -83,6 +85,11 @@ export class Fighter {
     this.awakeningUsed = true;
     this.awakeningFrames = 480;
     this.attackLock = .32;
+    if (this.evolving) {
+      const { bonusHp } = this.awakening.evolution;
+      this.maxHp = this.baseHp + bonusHp;
+      this.hp = Math.min(this.maxHp, this.hp + bonusHp);
+    }
     delete this.cooldowns[this.awakening.skill];
     return true;
   }
@@ -125,6 +132,9 @@ export class Fighter {
 
     if (!previous) this.combo = 0;
     this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false };
+    if (this.evolving && (id === 'light' || id === 'heavy')) {
+      this.attack.evolvedPunch = true;
+    }
     this.crouching = false;
     this.meter -= cost;
     if (definition.cooldownFrames) this.cooldowns[id] = definition.cooldownFrames;
@@ -326,13 +336,17 @@ export function applyHit(contact) {
   if (!contact.projectile || !attacker.attacking) attacker.combo = combo;
   const scale = rules.comboScaling[Math.min(combo - 1, rules.comboScaling.length - 1)];
   // Apply chip separately from the damage that passes through guard.
-  const multiplier = blocked ? 1 - rules.blockReduction + rules.chipRate : scale;
+  const evolution = attack.evolvedPunch && !contact.projectile ? attacker.awakening.evolution : null;
+  const multiplier = blocked ? 1 - rules.blockReduction + rules.chipRate : scale * (evolution?.punchMultiplier ?? 1);
   const previousHP = defender.hp;
   defender.hp = Math.max(0, Math.round((previousHP - attack.damage * multiplier) * 100) / 100);
   defender.knockVelocity = contact.direction * attack.knockback * (blocked ? .16 : 1);
   const damage = Math.round((previousHP - defender.hp) * 100) / 100;
   let inflicted;
   if (!blocked) {
+    if (evolution && attacker.hp > 0) {
+      attacker.hp = Math.min(attacker.maxHp, Math.round((attacker.hp + damage * evolution.lifeSteal) * 100) / 100);
+    }
     if (defender.freezeFrames) {
       defender.freezeFrames = 0;
       inflicted = 'shatter';

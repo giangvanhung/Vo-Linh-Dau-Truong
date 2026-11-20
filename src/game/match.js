@@ -156,12 +156,13 @@ export function startGame(config) {
 
   const pairing = byId('lan-pairing');
   const address = byId('lan-address');
-  const networkLabels = { wifi: 'Wi‑Fi', ethernet: 'Ethernet (cắm dây)', virtual: 'VPN / mạng ảo', other: 'Mạng khác' };
+  const networkLabels = { wifi: 'Wi‑Fi', ethernet: 'Ethernet (cắm dây)', virtual: 'VPN / mạng ảo', other: 'Mạng khác', online: 'Internet' };
   const networkHints = {
     wifi: 'Dùng địa chỉ này khi điện thoại và máy tính kết nối cùng Wi‑Fi.',
     ethernet: 'Dùng địa chỉ này khi dây mạng máy tính nối vào cùng router phát Wi‑Fi cho điện thoại.',
     virtual: 'Địa chỉ VPN hoặc mạng ảo. Nếu điện thoại chỉ dùng Wi‑Fi, hãy chọn địa chỉ Wi‑Fi hoặc Ethernet.',
     other: 'Nếu chưa rõ đây là mạng nào, xem tên bộ điều hợp trong cài đặt mạng của máy tính.',
+    online: 'Quét mã QR bằng điện thoại có kết nối Internet. TV và điện thoại có thể dùng hai mạng khác nhau.',
   };
   const soloLanButton = byId('solo-lan-button');
   let soloLan = false;
@@ -178,6 +179,7 @@ export function startGame(config) {
     const option = addresses[Number(address.value)];
     byId('lan-link-box').hidden = !option;
     if (!option) return;
+    byId('lan-network-help').hidden = option.type === 'online';
     const link = byId('lan-link');
     link.href = link.textContent = option.link;
     byId('lan-address-hint').textContent = networkHints[option.type] ?? networkHints.other;
@@ -328,8 +330,9 @@ export function startGame(config) {
     const canBuffer = !fighter.disabled && !input.guard && !input.action && !input.charge;
     if (!canBuffer) fighter.bufferedAttack = null;
     if (input.action === 'awaken' && fighter.awaken()) {
-      toast(fighter.name + ' · ĐỘT PHÁ!');
-      burst(fighter.x, fighter.y - 16, 26, fighter.glow);
+      toast(fighter.name + (fighter.evolving ? ' · TIẾN HÓA!' : ' · ĐỘT PHÁ!'));
+      burst(fighter.x, fighter.y - 16, fighter.evolving ? 42 : 26, fighter.evolving ? '#ffcc53' : fighter.glow);
+      if (fighter.evolving) shake = Math.max(shake, .24);
       return;
     }
     const charge = input.charge && !input.guard && !input.jump && !input.attack && !input.action && !input.direction && !input.crouch;
@@ -529,7 +532,9 @@ export function startGame(config) {
     const sparkType = blocked ? 'guard' : isKick ? 'kick' : 'hit';
     floaters.push({ x, y: y - 18, contactY: y, life: .75, total: .75,
       text: '−' + damageFormat.format(damage), blocked, sparkType, facing: hit.attack.facing });
-    burst(x, y, blocked ? 5 : 11, blocked ? '#a9d9ff' : hit.attack.effect?.color);
+    const evolvedPunch = hit.attack.evolvedPunch && !blocked;
+    burst(x, y, evolvedPunch ? 22 : blocked ? 5 : 11,
+      evolvedPunch ? '#ffcc53' : blocked ? '#a9d9ff' : hit.attack.effect?.color);
   }
 
   function burst(x, y, count, color) {
