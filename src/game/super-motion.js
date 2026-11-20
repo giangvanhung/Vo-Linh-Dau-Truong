@@ -31,13 +31,11 @@ export const superAttack = {
 export function readSuperMotion(fighter, input) {
   if (!fighter.onGround || fighter.disabled || input.guard || input.action || input.charge) {
     fighter.superMotionFrames = 0;
-  } else if (input.downPressed && fighter.lastControlDirection !== fighter.facing) {
+  } else if (input.downPressed) {
     fighter.superMotionFrames = motionFrames;
   } else if (fighter.superMotionFrames > 0) {
     fighter.superMotionFrames--;
   }
-  fighter.lastControlDirection = input.direction;
-
   if (!input.attack) return false;
   const matched = fighter.superMotionFrames > 0 &&
     input.attack === 'light' && input.direction === fighter.facing;

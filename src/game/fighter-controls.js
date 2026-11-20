@@ -2,6 +2,9 @@ import { FRAME_SECONDS } from '../combat/fighter.js';
 import { readSuperMotion, SUPER_COST } from './super-motion.js';
 
 export function applyControls(fighter, target, input, { jumpVelocity, useAttack, activateAwakening, toast }) {
+  if (input.direction && !input.guard && !fighter.disabled && !fighter.attacking && !fighter.dash) {
+    fighter.facing = input.direction;
+  }
   fighter.setGuard(input.guard);
   const canBuffer = !fighter.disabled && !input.guard && !input.action && !input.charge;
   if (!canBuffer) fighter.bufferedAttack = null;

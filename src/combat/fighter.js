@@ -15,7 +15,6 @@ export class Fighter {
     this.vy = 0;
     this.airDirection = 0;
     this.superMotionFrames = 0;
-    this.lastControlDirection = 0;
     this.onGround = true;
     this.moving = false;
     this.walkDistance = 0;
@@ -107,6 +106,13 @@ export class Fighter {
     }
     delete this.cooldowns[this.awakeningForm.skill];
     return true;
+  }
+
+  endAwakening() {
+    this.awakeningFrames = 0;
+    this.awakeningLevel = 0;
+    this.maxHp = this.baseHp;
+    this.hp = Math.min(this.hp, this.maxHp);
   }
 
   skillFor(id) {
@@ -224,7 +230,7 @@ export class Fighter {
       if (--this.poisonFrames === 0) this.poisonStacks = 0;
       else if (this.poisonFrames % 30 === 0 && this.hp > 1) this.hp = Math.max(1, Math.round((this.hp - 1) * 100) / 100);
     }
-    this.awakeningFrames = Math.max(0, this.awakeningFrames - 1);
+    if (this.awakeningFrames > 0 && --this.awakeningFrames === 0) this.endAwakening();
     this.powerFrames = Math.max(0, this.powerFrames - 1);
     this.awakeningWindow = Math.max(0, this.awakeningWindow - 1);
     for (const id of Object.keys(this.cooldowns)) {

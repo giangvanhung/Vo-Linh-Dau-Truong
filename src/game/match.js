@@ -1,5 +1,5 @@
 import { FRAME_SECONDS, Fighter, findHit, applyHit, updateProjectiles } from '../combat/fighter.js';
-import { updateFacing } from '../combat/positioning.js';
+import { faceOpponent } from '../combat/positioning.js';
 import { CpuController } from '../combat/cpu.js';
 import { GameAudio } from '../platform/audio.js';
 import { createKeyboard, defaultBindings, keyCode } from '../platform/keyboard.js';
@@ -326,12 +326,7 @@ export function startGame(config) {
       if (!canTrain()) return;
       hung.gainMeter(config.combat.meterMax);
       hung.awakeningUnlocked = true;
-      if (!hung.nextAwakening) {
-        hung.awakeningLevel = 0;
-        hung.awakeningFrames = 0;
-        hung.maxHp = hung.baseHp;
-        hung.hp = Math.min(hung.hp, hung.maxHp);
-      }
+      if (!hung.nextAwakening) hung.endAwakening();
       updateScore();
       canvas.focus({ preventScroll: true });
     },
@@ -365,7 +360,7 @@ export function startGame(config) {
     onInput: label => { if (canTrain()) training.noteInput(label); },
     onClear: () => {
       hung.crouching = false;
-      hung.superMotionFrames = hung.lastControlDirection = hung.airDirection = 0;
+      hung.superMotionFrames = hung.airDirection = 0;
       hung.setGuard(false);
     },
   });
@@ -377,7 +372,7 @@ export function startGame(config) {
     keyFor: event => boundAction(event, 1),
     onClear: () => {
       mai.crouching = false;
-      mai.superMotionFrames = mai.lastControlDirection = mai.airDirection = 0;
+      mai.superMotionFrames = mai.airDirection = 0;
       mai.setGuard(false);
     },
   });
@@ -480,11 +475,12 @@ export function startGame(config) {
       if (phaseTime <= 0) panels.showBanner('');
     }
     const movementStart = [hung.x, mai.x];
-    updateFacing(hung, mai);
     const local = keyboard.consumeActions();
     const second = keyboardP2.consumeActions();
     const input = lan || soloLan ? mergeInputs(local, lanHost.consume(0)) : local;
     const replay = practice ? training.step(input) : null;
+    const autoFaceOpponent = !lan && localMode !== 'versus' && !replay;
+    if (autoFaceOpponent) faceOpponent(mai, hung);
     applyControls(hung, mai, localMode === 'team' && activePlayer ? second : input, controlRules);
     if (lan) {
       applyControls(mai, hung, mergeInputs(second, lanHost.consume(1)), controlRules);
@@ -537,7 +533,7 @@ export function startGame(config) {
         });
       }
     }
-    updateFacing(hung, mai);
+    if (autoFaceOpponent) faceOpponent(mai, hung);
     for (const [index, fighter] of [hung, mai].entries()) {
       const step = fighter.x - movementStart[index];
       const intended = walkingSteps[index];
@@ -592,7 +588,6 @@ export function startGame(config) {
     }
     hung.x = fighterX('hung');
     mai.x = fighterX('mai');
-    updateFacing(hung, mai);
     clearInputs();
     projectiles.length = 0;
     updateRoster();
