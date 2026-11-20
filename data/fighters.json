@@ -3,7 +3,6 @@
     "groundRatio": 0.79,
     "playerStartRatio": 0.31,
     "cpuStartRatio": 0.69,
-    "moveSpeed": 285,
     "jumpVelocity": 590,
     "gravity": 1500,
     "pushboxHeightRatio": 0.65,
@@ -13,7 +12,7 @@
   "characters": {
     "hung": {
       "name": "Hùng",
-      "hp": 100,
+      "hp": 110,
       "width": 42,
       "height": 104,
       "color": "#ed7955",
@@ -42,25 +41,25 @@
         },
         "rangedSkill": {
           "label": "Hỏa Cầu",
-          "damage": 13,
+          "damage": 8,
           "startup": 18,
           "active": 1,
-          "recovery": 27,
+          "recovery": 30,
           "range": 30,
-          "knockback": 145,
+          "knockback": 100,
           "hitstun": 20,
           "hitstop": 2,
           "guardDamage": 18,
-          "cooldownFrames": 390,
+          "cooldownFrames": 420,
           "cancelInto": [],
           "projectile": {
-            "speed": 430,
+            "speed": 390,
             "width": 30,
             "height": 32,
             "pierce": false,
             "color": "#ff783e",
             "yOffset": 58,
-            "lifetimeFrames": 100
+            "lifetimeFrames": 64
           }
         },
         "ultimate": {
@@ -113,13 +112,89 @@
             "trailSeconds": 0
           }
         }
+      },
+      "moveSpeed": 270,
+      "hurtboxSize": {
+        "width": 46,
+        "height": 106
+      },
+      "dash": {
+        "frames": 10,
+        "distance": 84,
+        "invulnerableFrames": 5
+      },
+      "enhancedDash": {
+        "cost": 25,
+        "frames": 13,
+        "distance": 150,
+        "invulnerableFrames": 8
+      },
+      "dashCooldownFrames": 78,
+      "profile": {
+        "role": "Chi?n Binh L?a",
+        "strength": "?p s?t, combo ng?n, ??m n?ng ??y l?i m?nh v? ch?n ??i th? nh?y v?o.",
+        "weakness": "L??t ng?n, kh? truy ?u?i v? H?a C?u ch? y?u d?ng ?? th?m d?."
+      },
+      "attacks": {
+        "light": {
+          "label": "ĐẤM NHẸ",
+          "damage": 8,
+          "startup": 5,
+          "active": 4,
+          "recovery": 10,
+          "range": 57,
+          "height": 38,
+          "yOffset": 37,
+          "knockback": 65,
+          "hitstun": 26,
+          "hitstop": 0,
+          "guardDamage": 15,
+          "cancelInto": [
+            "heavy",
+            "kick",
+            "closeSkill"
+          ]
+        },
+        "heavy": {
+          "label": "ĐẤM NẶNG",
+          "damage": 19,
+          "startup": 12,
+          "active": 5,
+          "recovery": 29,
+          "range": 76,
+          "height": 76,
+          "yOffset": 4,
+          "knockback": 325,
+          "hitstun": 25,
+          "hitstop": 5,
+          "guardDamage": 34,
+          "cancelInto": []
+        },
+        "kick": {
+          "label": "ĐÁ",
+          "level": "low",
+          "damage": 11,
+          "startup": 9,
+          "active": 5,
+          "recovery": 15,
+          "range": 79,
+          "height": 35,
+          "yOffset": 56,
+          "knockback": 135,
+          "hitstun": 21,
+          "hitstop": 0,
+          "guardDamage": 22,
+          "cancelInto": [
+            "closeSkill"
+          ]
+        }
       }
     },
     "mai": {
       "name": "Mai",
-      "hp": 100,
-      "width": 42,
-      "height": 104,
+      "hp": 90,
+      "width": 38,
+      "height": 100,
       "color": "#6398e8",
       "glow": "#9bd3ff",
       "cpu": true,
@@ -149,22 +224,22 @@
           "damage": 12,
           "startup": 15,
           "active": 1,
-          "recovery": 27,
+          "recovery": 22,
           "range": 53,
-          "knockback": 145,
+          "knockback": 150,
           "hitstun": 20,
           "hitstop": 2,
           "guardDamage": 18,
-          "cooldownFrames": 360,
+          "cooldownFrames": 324,
           "cancelInto": [],
           "projectile": {
-            "speed": 530,
+            "speed": 565,
             "width": 53,
             "height": 16,
             "pierce": true,
             "color": "#8defff",
             "yOffset": 58,
-            "lifetimeFrames": 100
+            "lifetimeFrames": 96
           }
         },
         "ultimate": {
@@ -219,63 +294,79 @@
           },
           "radial": true
         }
+      },
+      "moveSpeed": 335,
+      "hurtboxSize": {
+        "width": 37,
+        "height": 102
+      },
+      "dash": {
+        "frames": 10,
+        "distance": 132,
+        "invulnerableFrames": 5
+      },
+      "enhancedDash": {
+        "cost": 25,
+        "frames": 13,
+        "distance": 204,
+        "invulnerableFrames": 8
+      },
+      "dashCooldownFrames": 51,
+      "profile": {
+        "role": "S?t Th? Phong",
+        "strength": "Di chuy?n nhanh, l??t xa, c?u r?a b?ng ?? t?m trung v? Phong Ki?m.",
+        "weakness": "M?u th?p, ??m n?ng y?u h?n v? d? b? ph?t khi lao v?o ho?c nh?y v?o."
+      },
+      "attacks": {
+        "light": {
+          "label": "ĐẤM NHẸ",
+          "damage": 6,
+          "startup": 4,
+          "active": 4,
+          "recovery": 9,
+          "range": 61,
+          "height": 34,
+          "yOffset": 39,
+          "knockback": 83,
+          "hitstun": 17,
+          "hitstop": 0,
+          "guardDamage": 15,
+          "cancelInto": [
+            "kick"
+          ]
+        },
+        "heavy": {
+          "label": "ĐẤM NẶNG",
+          "damage": 12,
+          "startup": 10,
+          "active": 5,
+          "recovery": 22,
+          "range": 70,
+          "height": 46,
+          "yOffset": 31,
+          "knockback": 165,
+          "hitstun": 19,
+          "hitstop": 5,
+          "guardDamage": 23,
+          "cancelInto": []
+        },
+        "kick": {
+          "label": "ĐÁ",
+          "level": "low",
+          "damage": 9,
+          "startup": 8,
+          "active": 5,
+          "recovery": 12,
+          "range": 103,
+          "height": 31,
+          "yOffset": 55,
+          "knockback": 123,
+          "hitstun": 16,
+          "hitstop": 0,
+          "guardDamage": 17,
+          "cancelInto": []
+        }
       }
-    }
-  },
-  "attacks": {
-    "light": {
-      "label": "ĐẤM NHẸ",
-      "damage": 7,
-      "startup": 5,
-      "active": 4,
-      "recovery": 10,
-      "range": 63,
-      "height": 38,
-      "yOffset": 37,
-      "knockback": 105,
-      "hitstun": 22,
-      "hitstop": 0,
-      "guardDamage": 15,
-      "cancelInto": [
-        "heavy",
-        "kick",
-        "closeSkill"
-      ]
-    },
-    "heavy": {
-      "label": "ĐẤM NẶNG",
-      "damage": 15,
-      "startup": 13,
-      "active": 5,
-      "recovery": 24,
-      "range": 81,
-      "height": 57,
-      "yOffset": 25,
-      "knockback": 235,
-      "hitstun": 25,
-      "hitstop": 5,
-      "guardDamage": 30,
-      "cancelInto": [
-        "kick",
-        "closeSkill"
-      ]
-    },
-    "kick": {
-      "label": "ĐÁ",
-      "damage": 11,
-      "startup": 9,
-      "active": 5,
-      "recovery": 15,
-      "range": 84,
-      "height": 35,
-      "yOffset": 56,
-      "knockback": 175,
-      "hitstun": 19,
-      "hitstop": 0,
-      "guardDamage": 22,
-      "cancelInto": [
-        "closeSkill"
-      ]
     }
   },
   "combat": {
@@ -297,18 +388,6 @@
     "meterOnDeal": 0.7,
     "meterOnReceive": 1.5,
     "meterOnBlock": 5,
-    "dashCooldownFrames": 75,
-    "dash": {
-      "frames": 10,
-      "distance": 90,
-      "invulnerableFrames": 5
-    },
-    "enhancedDash": {
-      "cost": 25,
-      "frames": 13,
-      "distance": 160,
-      "invulnerableFrames": 8
-    },
     "escape": {
       "cost": 50,
       "minCombo": 2,

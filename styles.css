@@ -10,3 +10,55 @@
 .player-mai .skill-status { justify-content: flex-end; }
 .skill-status .ready { color: #f3c096; }
 .player-mai .skill-status .ready { color: #a4d7ff; }
+#difficulty-picker label { margin-right: 8px; color: #d5cbd0; }
+#cpu-difficulty { padding: 4px 8px; border: 1px solid #6c5351; border-radius: 3px; background: #27212a; color: #f1efed; font: inherit; cursor: pointer; }
+#cpu-difficulty:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+#fighter-info { margin-top: 14px; scroll-margin-top: 16px; }
+.fighter-info h2 { margin: 0 0 9px; font-size: 15px; }
+.fighter-info-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.fighter-info article { padding: 14px 16px; border: 1px solid #2e2c34; border-radius: 6px; background: #17171d; }
+.fighter-info h3 { margin: 0 0 4px; color: #f09569; font-size: 16px; }
+#profile-mai h3 { color: #7bb5f3; }
+.fighter-info p { margin: 0 0 12px; color: #aaa6af; font-size: 12px; }
+.fighter-info dl { display: grid; grid-template-columns: max-content 1fr; gap: 7px 12px; margin: 0; font-size: 12px; line-height: 1.5; }
+.fighter-info dt { color: #aaa6af; }
+.fighter-info dd { margin: 0; }
+.profile-link { display: block; width: max-content; margin: 8px auto 0; color: #ddd0d1; font-size: 11px; }
+@media (max-width: 560px) { .fighter-info-grid { grid-template-columns: 1fr; } }
+.game-panel[hidden], .pause-button[hidden], .fight-banner[hidden], #difficulty-picker[hidden] { display: none; }
+.stage-wrap .game-panel { z-index: 3; max-height: calc(100% - 22px); overflow: auto; padding: 18px; }
+.stage-wrap .setup-panel { width: min(710px, calc(100% - 24px)); }
+.game-panel h1, .game-panel h2 { margin: 0 0 12px; line-height: 1.12; }
+.game-panel h1 { font: 700 clamp(30px, 5vw, 50px)/1.02 "Space Grotesk", sans-serif; }
+.menu-buttons { display: grid; gap: 7px; max-width: 230px; margin: auto; }
+.panel-button { border: 1px solid #665258; border-radius: 3px; background: #2a242d; color: #f1efed; padding: 8px 12px; cursor: pointer; }
+.panel-button:hover { background: #40323a; }
+.game-panel .primary-button { font-size: 12px; letter-spacing: .02em; }
+.game-panel button:focus-visible, .pause-button:focus-visible { outline: 2px solid #ffbf8b; outline-offset: 2px; }
+.setup-panel #fighter-info { margin-top: 0; text-align: left; }
+.setup-options, .panel-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.setup-options label, .settings-fields label { font-size: 12px; }
+.setup-options select, .settings-fields select { background: #27212a; color: #f1efed; border: 1px solid #6c5351; border-radius: 3px; padding: 4px; }
+.settings-fields { display: grid; gap: 10px; margin: 15px 0; }
+.settings-fields label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.settings-fields input { accent-color: #eb9265; }
+.pause-button { position: absolute; z-index: 2; top: 10px; right: 10px; }
+.fight-banner { position: absolute; z-index: 2; inset: 0; display: grid; place-items: center; pointer-events: none; font: 700 clamp(56px, 12vw, 126px)/1 "Space Grotesk", sans-serif; color: #fff0d8; text-shadow: 0 3px 0 #9f4029, 0 0 35px #f58d53; background: #19131c36; }
+.fight-banner.finish { color: #ffc47f; animation: knockout .25s ease-out both; }
+@keyframes knockout { from { opacity: .35; transform: scale(1.13); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .fight-banner.finish { animation: none; } }
+.hud .player-hud strong { color: var(--fighter-color, #f1efed); }
+.hud .player-hud .health-fill { background: var(--fighter-color, #eb9265); }
+.training-panel { margin-top: 12px; padding: 14px 16px; border: 1px solid #35313b; border-radius: 6px; background: #17171d; }
+.training-panel h2 { margin: 0 0 10px; font-size: 16px; }
+.training-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+.training-controls select { padding: 5px; border: 1px solid #6c5351; border-radius: 3px; background: #27212a; color: #f1efed; }
+.training-controls label { display: flex; align-items: center; gap: 5px; }
+.training-controls input { accent-color: #eb9265; }
+.training-controls button:disabled { opacity: .55; cursor: default; }
+.training-stats { display: grid; grid-template-columns: max-content 1fr; gap: 5px 12px; margin: 14px 0 0; font-size: 12px; }
+.training-stats dt { color: #bbb1bd; }
+.training-stats dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+#training-legend { font-size: 12px; }
+#training-legend span:first-child { color: #ff8185; }
+#training-legend span:last-child { color: #62eac0; }

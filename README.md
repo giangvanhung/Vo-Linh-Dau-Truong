@@ -1,6 +1,6 @@
 # Võ Linh Đấu Trường
 
-Game đối kháng arcade fantasy 2D, chơi trực tiếp trên trình duyệt. Bản đầu tiên có trận 1v1 giữa Hùng và Mai (CPU), ba hiệp thắng hai, các đòn đánh có khung khởi động/đang đánh/hồi chiêu, block, hitbox và phản hồi trúng đòn.
+Game đối kháng arcade fantasy 2D, chơi trực tiếp trên trình duyệt. Chọn Hùng hoặc Mai để đấu với CPU theo thể thức ba hiệp thắng hai, hoặc vào chế độ luyện tập.
 
 ## Chạy trên máy
 
@@ -17,8 +17,8 @@ Mở địa chỉ `http://localhost:5173` trong trình duyệt. Không cần cà
 | Phím | Hành động |
 | --- | --- |
 | A / D hoặc ← / → | Di chuyển trái / phải |
-| W | Nhảy |
-| S | Ngồi |
+| W hoặc ↑ | Nhảy |
+| S hoặc ↓ | Ngồi |
 | J | Đấm nhẹ |
 | K | Đấm nặng |
 | L | Đá |
@@ -26,16 +26,47 @@ Mở địa chỉ `http://localhost:5173` trong trình duyệt. Không cần cà
 | Q | Lướt tới |
 | Shift + Q | Lướt mạnh (25 năng lượng) |
 | T | Thoát khi đang chịu combo từ 2 hit (50 năng lượng) |
-| U | Uy Lực Trảm |
-| I | Hỏa Cầu |
-| O | Sóng Đấm Thép (100 năng lượng) |
-
-Mai (CPU) sử dụng Vũ Đao Xoáy, Phong Kiếm và Vũ Điệu Lửa.
+| U / I | Kỹ năng gần / xa của nhân vật đã chọn |
+| O | Tuyệt kỹ (100 năng lượng) |
+| Esc | Tạm dừng hoặc tiếp tục |
 
 ## Cấu trúc
 
-- `src/combat.js`: trạng thái nhân vật và phân xử đòn đánh.
-- `src/main.js`: vòng lặp trận đấu, CPU và vẽ sân đấu.
-- `data/fighters.json`: chỉ số nhân vật, sân đấu và thông số đòn đánh.
-- `styles.css`, `index.html`: giao diện.
-- `prompt.md`: bản prompt/kế hoạch gốc, được giữ nguyên.
+```text
+src/
+  main.js             Nạp cấu hình và khởi động game
+  game/match.js       Điều phối trận, tính hiệp, pause và cập nhật 60 Hz
+  game/training.js    Chế độ bù nhìn, số liệu combo và bản ghi input
+  combat/fighter.js   Trạng thái võ sĩ, đòn đánh, hitbox và projectile
+  combat/positioning.js  Hướng nhìn và va chạm thân người
+  combat/cpu.js       Quyết định và độ khó CPU
+  platform/keyboard.js  Trạng thái phím giữ và lệnh bấm một lần
+  platform/settings.js  Mặc định và lưu vào localStorage
+  platform/audio.js     Nhạc và hiệu ứng âm thanh
+  render/arena.js     Vẽ sân đấu, nhân vật và hiệu ứng lên Canvas
+  ui/hud.js           Thanh máu, năng lượng, tỷ số và hồ sơ nhân vật
+  ui/panels.js        Menu, chọn nhân vật, cài đặt, pause và kết quả
+  ui/training-panel.js   Điều khiển và số liệu luyện tập
+data/fighters.json    Chỉ số nhân vật, sân đấu và thông số đòn
+index.html            Cấu trúc giao diện
+styles.css            Kiểu hiển thị
+server.mjs            Máy chủ tệp tĩnh cho môi trường phát triển
+```
+
+Mỗi bước mô phỏng đọc lệnh bàn phím, cập nhật quyết định CPU, xử lý vị trí và phân xử đòn đánh. Sau đó Canvas và HUD đọc trạng thái để hiển thị. Các mô-đun trong `combat/` chạy được với Node mà không cần DOM.
+
+| Triệu chứng | Chỗ bắt đầu debug |
+| --- | --- |
+| Kẹt phím, nhả phím nhưng vẫn di chuyển | `platform/keyboard.js`, kiểm tra `keydown`, `keyup` và mất tiêu điểm |
+| Nhảy qua CPU rồi kẹt hoặc quay sai hướng | `combat/positioning.js`, kiểm tra va chạm khi tiếp đất |
+| Đòn đánh hụt, sai sát thương hoặc sai thời gian hồi | `combat/fighter.js` và `data/fighters.json` |
+| CPU đỡ hoặc phản đòn sai | `combat/cpu.js`, kiểm tra trạng thái và thời gian quan sát |
+| Đồng hồ, chuyển hiệp, pause hoặc chơi lại sai | `game/match.js`, kiểm tra chuyển `phase` |
+| Nút, bảng thông tin hay hình vẽ hiển thị sai | `ui/panels.js`, `ui/hud.js` hoặc `render/arena.js` |
+| Âm lượng hay độ khó mặc định không được nhớ | `platform/settings.js`, xem khóa `vo-linh-settings` trong DevTools |
+
+## Luyện tập
+
+Vào **Luyện tập** từ menu và dùng bảng dưới sân đấu để chọn bù nhìn, đặt lại vị trí, hồi máu hoặc đưa năng lượng về 0. Chế độ **Ngồi đỡ đòn thấp** đỡ đòn đá (L). Debug vẽ hurtbox xanh và hitbox đang hoạt động màu đỏ.
+
+**Ghi input** lưu tối đa 10 giây mô phỏng. **Phát cho bù nhìn** chạy lại chuỗi lệnh bằng bộ chiêu của bù nhìn và đảo hướng trái/phải để tập đối kháng từ phía đối diện. Trong lúc phát, người chơi vẫn điều khiển nhân vật bình thường. Lợi thế khi trúng được ước tính bằng số frame hitstun còn lại của bù nhìn trừ số frame người đánh còn bị khóa.

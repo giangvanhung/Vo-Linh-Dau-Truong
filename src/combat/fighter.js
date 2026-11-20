@@ -3,6 +3,8 @@ export const FRAME_SECONDS = 1 / 60;
 export class Fighter {
   constructor(config, x, facing, rules) {
     Object.assign(this, config);
+    this.maxHp = config.hp;
+    this.dashOptions = { normal: config.dash, enhanced: config.enhancedDash };
     this.rules = rules;
     this.x = x;
     this.y = 0;
@@ -75,13 +77,13 @@ export class Fighter {
   }
 
   startDash(enhanced) {
-    const dash = enhanced ? this.rules.enhancedDash : this.rules.dash;
+    const dash = this.dashOptions[enhanced ? 'enhanced' : 'normal'];
     const cost = dash.cost ?? 0;
     if (this.disabled || this.attackLock > 0 || !this.onGround || this.attacking
       || this.blocking || this.dash || this.dashCooldown > 0 || this.meter < cost) return false;
 
     this.meter -= cost;
-    this.dashCooldown = this.rules.dashCooldownFrames;
+    this.dashCooldown = this.dashCooldownFrames;
     this.dash = { ...dash, facing: this.facing, elapsed: 0 };
     this.crouching = false;
     this.knockVelocity = 0;
@@ -163,15 +165,19 @@ export class Fighter {
   }
 
   get hurtbox() {
-    const height = this.height * (this.crouching ? .66 : 1);
-    return { x: this.x - this.width / 2, y: this.y - height, width: this.width, height };
+    const { width, height: standingHeight } = this.hurtboxSize;
+    const height = standingHeight * (this.crouching ? .66 : 1);
+    return { x: this.x - width / 2, y: this.y - height, width, height };
   }
 
   get attackBox() {
-    const attack = this.attack;
-    const edge = this.x + attack.facing * this.width * .18;
+    return this.attackBoxFor(this.attack, this.attack.facing);
+  }
+
+  attackBoxFor(attack, facing = this.facing) {
+    const edge = this.x + facing * this.width * .18;
     return {
-      x: attack.radial ? this.x - attack.range : attack.facing > 0 ? edge : edge - attack.range,
+      x: attack.radial ? this.x - attack.range : facing > 0 ? edge : edge - attack.range,
       y: this.y - this.height + attack.yOffset,
       width: attack.range * (attack.radial ? 2 : 1),
       height: attack.height,
@@ -204,7 +210,8 @@ function findContact(attacker, defender, attack, box, sourceX, direction) {
   if (left >= right || top >= bottom) return null;
   return {
     attacker, defender, attack,
-    blocked: defender.blocking && (direction ?? (Math.sign(sourceX - defender.x) || -attack.facing)) * defender.facing > 0,
+    blocked: defender.blocking && (!defender.lowGuardOnly || attack.level === 'low')
+      && (direction ?? (Math.sign(sourceX - defender.x) || -attack.facing)) * defender.facing > 0,
     direction: direction ? -direction : attack.radial ? Math.sign(defender.x - sourceX) || attack.facing : attack.facing,
     x: (left + right) / 2,
     y: (top + bottom) / 2,
@@ -264,8 +271,8 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
     const oldX = shot.x;
     shot.x += attack.facing * speed * dt;
     shot.frames--;
+    const defender = fighters.find(fighter => fighter !== attacker);
     if (!shot.hit) {
-      const defender = fighters.find(fighter => fighter !== attacker);
       const hit = findContact(attacker, defender, attack, {
         x: Math.min(oldX, shot.x) - width / 2, y: shot.y - height / 2,
         width: width + Math.abs(shot.x - oldX), height,
@@ -276,7 +283,11 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
         if (hit.blocked || !pierce) shot.frames = 0;
       }
     }
-    if (shot.frames <= 0 || shot.x < -width || shot.x > world.width + width) projectiles.splice(i, 1);
+    const expired = shot.frames <= 0 || shot.x < -width || shot.x > world.width + width;
+    if (!shot.hit && (expired || (shot.x - defender.x) * attack.facing > (width + defender.width) / 2)) {
+      attack.projectileMissed = true;
+    }
+    if (expired) projectiles.splice(i, 1);
   }
   return contacts;
 }
