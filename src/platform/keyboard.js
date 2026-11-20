@@ -26,6 +26,7 @@ const gameKeys = new Set(['a', 'd', 'w', 's', 'p', 'q', 'r', 't', 'f', 'g', ...O
 
 export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, keyFor, allowArrows = () => true }) {
   let queuedAttack = null, queuedAction = null, queuedJump = false;
+  let downPressed = false;
   const heldInputs = new Map();
 
   function gameKey(event) {
@@ -72,6 +73,7 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
     onInput?.(keyFor ? (key === 'q' && event.shiftKey ? 'Shift+' : '') + keyLabel(keyCode(event)) : key === 'q' && event.shiftKey ? 'Shift+Q' : (event.key?.startsWith('Arrow')
       ? { a: '←', d: '→', w: '↑', s: '↓' }[key] : key.toUpperCase()));
     if (key === 'w') queuedJump = true;
+    if (key === 's') downPressed = true;
     if (attackKeys[key]) queuedAttack = attackKeys[key];
     if (key === 'q') queuedAction = event.shiftKey ? 'enhancedDash' : 'dash';
     if (key === 'r') queuedAction = 'roll';
@@ -91,17 +93,17 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
   function clearInputs() {
     heldInputs.clear();
     queuedAttack = queuedAction = null;
-    queuedJump = false;
+    queuedJump = downPressed = false;
     onClear();
   }
 
   function consumeActions() {
     const actions = {
-      attack: queuedAttack, action: queuedAction, jump: queuedJump,
+      attack: queuedAttack, action: queuedAction, jump: queuedJump, downPressed,
       charge: isHeld('f'), guard: isHeld('p'), crouch: isHeld('s'), direction: movementDirection(),
     };
     queuedAttack = queuedAction = null;
-    queuedJump = false;
+    queuedJump = downPressed = false;
     return actions;
   }
 

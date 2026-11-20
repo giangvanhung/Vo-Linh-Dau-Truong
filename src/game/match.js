@@ -11,6 +11,7 @@ import { createPanels } from '../ui/panels.js';
 import { createTrainingPanel } from '../ui/training-panel.js';
 import { applyStageEffects, stageForMatch } from './stages.js';
 import { TrainingSession } from './training.js';
+import { superAttack } from './super-motion.js';
 import { applyControls } from './fighter-controls.js';
 import { createPickups, equippedHeavy, gear } from './pickups.js';
 import { createStageBall, updateStageBall } from './stage-ball.js';
@@ -350,6 +351,7 @@ export function startGame(config) {
     onInput: label => { if (canTrain()) training.noteInput(label); },
     onClear: () => {
       hung.crouching = false;
+      hung.superMotionFrames = hung.lastControlDirection = hung.airDirection = 0;
       hung.setGuard(false);
     },
   });
@@ -360,6 +362,7 @@ export function startGame(config) {
     keyFor: event => boundAction(event, 1),
     onClear: () => {
       mai.crouching = false;
+      mai.superMotionFrames = mai.lastControlDirection = mai.airDirection = 0;
       mai.setGuard(false);
     },
   });
@@ -372,7 +375,7 @@ export function startGame(config) {
   }
 
   function useAttack(fighter, target, id) {
-    const skill = fighter.skillFor(id);
+    const skill = id === 'motionSuper' ? superAttack : fighter.skillFor(id);
     const equipment = id === 'heavy' ? equippedHeavy(fighter) : null;
     const started = fighter.startAttack(id, equipment ?? skill ?? fighter.attacks[id], target);
     if (started && equipment) {
@@ -493,7 +496,7 @@ export function startGame(config) {
       if (fighter.dash?.elapsed === 1) audio.cue('dash');
       const attack = fighter.attack;
       if (attack && attack.elapsed === attack.startup) {
-        if (attack.id === 'ultimate') audio.cue('ultimate');
+        if (attack.id === 'ultimate' || attack.id === 'motionSuper') audio.cue('ultimate');
         else if (fighter.skills[attack.id]) audio.cue('skill');
       }
       const effect = attack?.effect;

@@ -1,9 +1,12 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
+import { readSuperMotion, SUPER_COST } from './super-motion.js';
 
 export function applyControls(fighter, target, input, { jumpVelocity, useAttack, activateAwakening, toast }) {
   fighter.setGuard(input.guard);
   const canBuffer = !fighter.disabled && !input.guard && !input.action && !input.charge;
   if (!canBuffer) fighter.bufferedAttack = null;
+  const superMotion = readSuperMotion(fighter, input);
+  if (fighter.disabled) fighter.airDirection = 0;
   if (input.action === 'awaken' && activateAwakening(fighter)) return;
   const charge = input.charge && !input.guard && !input.jump && !input.attack && !input.action && !input.direction && !input.crouch;
   fighter.charge(charge);
@@ -13,6 +16,8 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
   }
   if (input.jump && fighter.onGround && !fighter.disabled && !fighter.attacking && !fighter.dash && !input.guard) {
     fighter.vy = -jumpVelocity;
+    fighter.airDirection = input.direction;
+    fighter.superMotionFrames = 0;
     fighter.onGround = false;
   }
   if (input.action === 'dash' || input.action === 'enhancedDash') {
@@ -25,6 +30,12 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
   }
   if (input.attack) {
     fighter.bufferedAttack = null;
+    if (superMotion && !input.jump) {
+      if (useAttack(fighter, target, 'motionSuper')) return;
+      if (!fighter.disabled && !fighter.attacking && fighter.meter < SUPER_COST) {
+        toast(`Cần ${SUPER_COST} nộ để tung Long Quyền Khí Pháo`);
+      }
+    }
     if (!useAttack(fighter, target, input.attack) && canBuffer && fighter.attack && fighter.attacks[input.attack]) {
       const { startup, active, recovery, elapsed } = fighter.attack;
       if (startup + active + recovery - elapsed <= 8) fighter.bufferedAttack = input.attack;
@@ -35,5 +46,9 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
   }
   const canMove = !fighter.disabled && !fighter.dash && !fighter.attacking && !fighter.blocking;
   fighter.crouching = canMove && input.crouch && fighter.onGround;
-  if (canMove) fighter.x += input.direction * fighter.moveSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;
+  if (canMove) {
+    if (!fighter.onGround && input.direction) fighter.airDirection = input.direction;
+    const direction = fighter.onGround ? input.direction : fighter.airDirection;
+    fighter.x += direction * fighter.moveSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;
+  }
 }

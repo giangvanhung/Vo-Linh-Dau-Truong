@@ -12,7 +12,7 @@ export function lanSocket(query) {
 
 function inputState() {
   const held = new Set();
-  let attack, action, jump;
+  let attack, action, jump, downPressed;
   return {
     set(button, down) {
       if (!down) {
@@ -23,6 +23,7 @@ function inputState() {
       held.add(button);
       if (attacks[button]) attack = attacks[button];
       if (button === 'w') jump = true;
+      if (button === 's') downPressed = true;
       if (button === 'q') action = 'dash';
       if (button === 'enhanced') action = 'enhancedDash';
       if (button === 'r') action = 'roll';
@@ -32,13 +33,13 @@ function inputState() {
     clear() {
       held.clear();
       attack = action = undefined;
-      jump = false;
+      jump = downPressed = false;
     },
     consume() {
       const input = { direction: Number(held.has('d')) - Number(held.has('a')),
-        charge: held.has('f'), crouch: held.has('s'), guard: held.has('p'), jump, attack, action };
+        charge: held.has('f'), crouch: held.has('s'), guard: held.has('p'), jump, downPressed, attack, action };
       attack = action = undefined;
-      jump = false;
+      jump = downPressed = false;
       return input;
     },
   };
@@ -51,6 +52,7 @@ export function mergeInputs(local, remote) {
     crouch: local.crouch || remote.crouch,
     guard: local.guard || remote.guard,
     jump: local.jump || remote.jump,
+    downPressed: local.downPressed || remote.downPressed,
     attack: local.attack ?? remote.attack,
     action: local.action ?? remote.action,
   };

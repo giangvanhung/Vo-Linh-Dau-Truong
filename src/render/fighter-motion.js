@@ -23,7 +23,8 @@ export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
     ctx.transform(1, 0, -.18 * lean, 1 - .07 * lean, 0, 0);
   } else if (name === 'jump') {
     const rise = Math.max(-1, Math.min(1, -fighter.vy / 590));
-    ctx.transform(1 - rise * .035, 0, -.045 * rise, 1 + rise * .06, 0, 0);
+    const drift = fighter.airDirection * fighter.facing;
+    ctx.transform(1 - rise * .035, 0, -.045 * rise - .09 * drift, 1 + rise * .06, 0, 0);
   } else if (name === 'charge') {
     const tension = clamp(fighter.chargeFrames / 18);
     ctx.scale(1 + tension * .045, 1 - tension * .055);

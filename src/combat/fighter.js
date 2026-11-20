@@ -13,6 +13,9 @@ export class Fighter {
     this.y = 0;
     this.facing = facing;
     this.vy = 0;
+    this.airDirection = 0;
+    this.superMotionFrames = 0;
+    this.lastControlDirection = 0;
     this.onGround = true;
     this.moving = false;
     this.walkDistance = 0;
@@ -142,7 +145,7 @@ export class Fighter {
 
     if (!previous) this.combo = 0;
     this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false,
-      usesNativeWeapon: !this.weaponUses && !definition.pickupWeapon };
+      usesNativeWeapon: !this.weaponUses && !definition.pickupWeapon && !definition.unarmed };
     const equipment = this.equipmentStats;
     if (equipment) {
       this.attack.equipmentAttack = 1 + equipment.attack / 100;
@@ -272,7 +275,10 @@ export class Fighter {
     this.vy += world.gravity * dt;
     this.y = Math.min(floor, this.y + this.vy * dt);
     this.onGround = this.y === floor;
-    if (this.onGround) this.vy = 0;
+    if (this.onGround) {
+      this.vy = 0;
+      this.airDirection = 0;
+    }
   }
 
   clampX(world) {
@@ -449,9 +455,9 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
   for (const attacker of fighters) {
     const attack = attacker.attack;
     if (!attack?.projectile || attack.elapsed !== attack.startup) continue;
-    const { width, yOffset, lifetimeFrames } = attack.projectile;
+    const { width, yOffset, lifetimeFrames, spawnOffset = attacker.width / 2 } = attack.projectile;
     projectiles.push({
-      attacker, attack, x: attacker.x + attack.facing * (attacker.width + width) / 2,
+      attacker, attack, x: attacker.x + attack.facing * (spawnOffset + width / 2),
       y: attacker.y - yOffset, frames: lifetimeFrames, age: 0, facing: attack.facing, hit: false,
     });
   }

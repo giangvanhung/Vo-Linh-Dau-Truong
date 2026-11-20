@@ -20,7 +20,7 @@ export function heldWeapon(fighter) {
 }
 
 export function drawHeldWeapon(ctx, images, fighter, ground, animationTime) {
-  if (fighter.hp <= 0 || fighter.dash?.roll) return;
+  if (fighter.hp <= 0 || fighter.dash?.roll || fighter.attack?.unarmed) return;
   const weapon = heldWeapon(fighter);
   if (!weapon) return;
   const image = images.get(weapon.image);
