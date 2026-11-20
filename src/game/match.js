@@ -27,7 +27,7 @@ export function startGame(config) {
   const equipment = loadEquipment();
   const training = new TrainingSession();
   const canTrain = () => practice && phase === 'fight';
-  const controlRules = { jumpVelocity: config.stage.jumpVelocity, useAttack, activateAwakening, toast };
+  const controlRules = { jumpVelocity: config.stage.jumpVelocity, useAttack, activateAwakening: requestAwakening, toast };
   const audio = new GameAudio();
   audio.configure(settings);
   for (const event of ['click', 'keydown']) {
@@ -81,6 +81,7 @@ export function startGame(config) {
     activePlayer = activeCpu = 0;
     hung = makeFighter(playerId, 'hung');
     mai = makeFighter(localMode === 'team' ? teamCpuIds[0] : opponentId, 'mai');
+    if (practice) hung.awakeningUnlocked = true;
     seconds = roundLength;
     stageFrame = 0;
     ball = createStageBall(stage, world.width);
@@ -147,6 +148,10 @@ export function startGame(config) {
 
   function togglePause() {
     if (phase === 'paused') {
+      if (!byId('guide-panel').hidden) {
+        panels.show('pause');
+        return;
+      }
       phase = pausedPhase;
       panels.show('');
       canvas.focus({ preventScroll: true });
@@ -397,6 +402,16 @@ export function startGame(config) {
     return true;
   }
 
+  function requestAwakening(fighter) {
+    if (activateAwakening(fighter)) return true;
+    if (practice && fighter === mai) return false;
+    if (!fighter.nextAwakening) toast('Đã đạt cấp tiến hóa tối đa', 2);
+    else if (!fighter.awakeningUnlocked) toast(fighter.awakening.condition, 2.5);
+    else if (fighter.meter < fighter.rules.meterMax) toast('Cần đầy nộ để tiến hóa', 2);
+    else toast('Đứng vững và kết thúc đòn đang dùng để tiến hóa', 2);
+    return false;
+  }
+
   function update(dt) {
     if (phase === 'paused') return;
     if (hitstop === 0 || phase !== 'fight') animationTime += dt * 1000;
@@ -518,7 +533,7 @@ export function startGame(config) {
       const intended = walkingSteps[index];
       fighter.moving = Math.abs(step) > .1 && Math.abs(intended) > .1 && step * intended > 0
         && fighter.onGround && !fighter.disabled
-        && !fighter.attack && !fighter.dash && !fighter.blocking && !fighter.crouching;
+        && !fighter.attack && !fighter.dash && !fighter.blocking;
       if (fighter.moving) {
         fighter.walkDistance += Math.sign(step) * fighter.facing * Math.min(Math.abs(step), Math.abs(intended));
       } else {
@@ -616,7 +631,7 @@ export function startGame(config) {
     }
   }
 
-  function toast(text) { ui.toast.textContent = text; ui.toast.classList.add('show'); toastClock = .65; }
+  function toast(text, duration = .65) { ui.toast.textContent = text; ui.toast.classList.add('show'); toastClock = duration; }
   function finishRound() {
     phase = 'round-over';
     phaseTime = 1.35;

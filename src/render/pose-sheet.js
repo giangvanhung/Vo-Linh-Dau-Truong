@@ -1,4 +1,4 @@
-import { strikePose } from './fighter-motion.js';
+import { drawLowStride, strikePose } from './fighter-motion.js';
 
 const basePoses = {
   idle: 0, run: 1, crouch: 2, jump: 3, light_punch: 4, heavy_punch: 5, kick: 6, roll: 7,
@@ -28,6 +28,7 @@ export function poseName(fighter, name, extras) {
     const progress = fighter.dash.elapsed / fighter.dash.frames;
     if (progress < .12 || progress > .88) return 'crouch';
   }
+  if (name === 'crouchWalk') return Math.floor(Math.abs(fighter.walkDistance) / 15) % 2 ? 'run_step' : 'run';
   if (name === 'run' && Math.floor(Math.abs(fighter.walkDistance) / 24) % 2) return 'run_step';
   return name;
 }
@@ -42,6 +43,9 @@ export function drawPoseSheet(ctx, sheet, extras, fighter, name, height) {
   const index = useExtra ? extraPoses[pose] : basePoses[fallback[pose] ?? pose] ?? 0;
   const cell = image.width / 4;
   const size = height * 256 / 210;
-  ctx.drawImage(image, (index % 4) * cell, Math.floor(index / 4) * cell, cell, cell,
-    -size / 2, -size * 244 / 256, size, size);
+  const sx = (index % 4) * cell, sy = Math.floor(index / 4) * cell;
+  const x = -size / 2, y = -size * 244 / 256;
+  if (name === 'crouchWalk' && !extras) {
+    drawLowStride(ctx, image, sx, sy, cell, cell, x, y, size, size, fighter.walkDistance);
+  } else ctx.drawImage(image, sx, sy, cell, cell, x, y, size, size);
 }

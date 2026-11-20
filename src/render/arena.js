@@ -1,6 +1,7 @@
 import { activeZone, overlapsSurface, zoneRanges } from '../game/stages.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
 import { createCombatEffects } from './combat-effects.js';
+import { drawChargeVariant } from './charge-effects.js';
 import { createStageBackground } from './stage-background.js';
 import { drawStrikeTrail } from './fighter-motion.js';
 import { drawHeldWeapon } from './held-weapon.js';
@@ -323,7 +324,8 @@ export function createArenaRenderer(canvas, config) {
         ctx.restore();
       }
       ctx.strokeStyle = color;
-      drawChargeAura(fighter, time, fighter.evolving ? (fighter.awakeningLevel === 2 ? 1.45 : 1) : Math.min(1, fighter.chargeFrames / 24), color);
+      const build = fighter.evolving ? (fighter.awakeningLevel === 2 ? 1.45 : 1) : Math.min(1, fighter.chargeFrames / 24);
+      if (!drawChargeVariant(ctx, fighter, time, build, color)) drawChargeAura(fighter, time, build, color);
       ctx.restore();
       return;
     }

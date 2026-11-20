@@ -218,7 +218,16 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
   byId('lan-button').addEventListener('click', openLan);
   byId('practice-button').addEventListener('click', () => openSetup(true));
   byId('settings-button').addEventListener('click', () => show('settings'));
-  byId('guide-button').addEventListener('click', () => show('guide'));
+  function showGuide(fromPause) {
+    byId('guide-menu-button').hidden = fromPause;
+    byId('guide-pause-back').hidden = !fromPause;
+    show('guide');
+    byId(fromPause ? 'guide-pause-back' : 'guide-menu-button').focus({ preventScroll: true });
+    byId('guide-panel').scrollTop = 0;
+  }
+  byId('guide-button').addEventListener('click', () => showGuide(false));
+  byId('pause-guide-button').addEventListener('click', () => showGuide(true));
+  byId('guide-pause-back').addEventListener('click', () => show('pause'));
   pauseButton.addEventListener('click', togglePause);
   byId('resume-button').addEventListener('click', togglePause);
   for (const button of document.querySelectorAll('[data-menu]')) button.addEventListener('click', returnToMenu);

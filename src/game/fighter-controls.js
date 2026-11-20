@@ -6,7 +6,7 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
   const canBuffer = !fighter.disabled && !input.guard && !input.action && !input.charge;
   if (!canBuffer) fighter.bufferedAttack = null;
   const superMotion = readSuperMotion(fighter, input);
-  if (fighter.disabled) fighter.airDirection = 0;
+  fighter.airDirection = !fighter.onGround && !fighter.disabled ? input.direction : 0;
   if (input.action === 'awaken' && activateAwakening(fighter)) return;
   const charge = input.charge && !input.guard && !input.jump && !input.attack && !input.action && !input.direction && !input.crouch;
   fighter.charge(charge);
@@ -47,7 +47,6 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
   const canMove = !fighter.disabled && !fighter.dash && !fighter.attacking && !fighter.blocking;
   fighter.crouching = canMove && input.crouch && fighter.onGround;
   if (canMove) {
-    if (!fighter.onGround && input.direction) fighter.airDirection = input.direction;
     const direction = fighter.onGround ? input.direction : fighter.airDirection;
     fighter.x += direction * fighter.moveSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;
   }

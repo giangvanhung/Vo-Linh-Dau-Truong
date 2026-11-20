@@ -40,12 +40,7 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
   }
 
   function movementDirection() {
-    let direction = 0;
-    for (const key of heldInputs.values()) {
-      if (key === 'd') direction = 1;
-      if (key === 'a') direction = -1;
-    }
-    return direction;
+    return Number(isHeld('d')) - Number(isHeld('a'));
   }
 
   function physicalKey(event) {
@@ -82,12 +77,17 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
   });
   window.addEventListener('keyup', event => {
     const code = physicalKey(event);
+    if (code && heldInputs.delete(code)) return;
     const key = gameKey(event);
-    if (!heldInputs.delete(code ?? key)) {
-      // IMEs can report a different or missing physical code on release.
-      for (const [input, heldKey] of heldInputs) {
-        if (heldKey === key) heldInputs.delete(input);
-      }
+    if (!code) {
+      const legacyCode = event.keyCode >= 65 && event.keyCode <= 90
+        ? 'Key' + String.fromCharCode(event.keyCode)
+        : ({ 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown' })[event.keyCode];
+      if (heldInputs.delete(legacyCode)) return;
+    }
+    // IMEs can report a different or missing physical code on release.
+    for (const [input, heldKey] of heldInputs) {
+      if (heldKey === key) heldInputs.delete(input);
     }
   }, { capture: true });
   function clearInputs() {

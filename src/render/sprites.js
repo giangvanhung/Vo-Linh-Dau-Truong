@@ -1,5 +1,5 @@
 import { drawStillAttack } from './still-attacks.js';
-import { applyFighterMotion } from './fighter-motion.js';
+import { applyFighterMotion, drawLowStride } from './fighter-motion.js';
 import { drawPoseSheet } from './pose-sheet.js';
 
 const attackClips = {
@@ -41,7 +41,7 @@ export function animationName(fighter) {
   if (!fighter.onGround) return 'jump';
   if (fighter.blocking) return 'block';
   if (fighter.charging) return 'charge';
-  if (fighter.crouching) return 'crouch';
+  if (fighter.crouching) return fighter.moving ? 'crouchWalk' : 'crouch';
   return fighter.moving ? 'run' : 'idle';
 }
 
@@ -104,7 +104,9 @@ export function createSpriteRenderer(ctx, characters) {
     }
     const delta = Math.max(0, animationTime - clock.last);
     clock.last = animationTime;
-    clock.crouch += ((name === 'crouch' ? 1 : 0) - clock.crouch) * Math.min(1, delta / 55);
+    clock.crouch = name === 'crouch'
+      ? Math.min(1, clock.crouch + delta / 55)
+      : 0;
     const sheet = sheets.get(fighter.characterId);
     if (sheet?.posePath) {
       loadImage(sheet.posePath).then(image => { sheet.poses = image; }).catch(() => {});
@@ -140,17 +142,21 @@ export function createSpriteRenderer(ctx, characters) {
         const width = height * image.width / image.height;
         const articulated = image === sheet.still && name !== 'hit' && name !== 'ko'
           && drawStillAttack(ctx, image, width, height, fighter);
-        if (!articulated) ctx.drawImage(image, -width / 2, -height, width, height);
+        if (name === 'crouchWalk') {
+          drawLowStride(ctx, image, 0, 0, image.width, image.height, -width / 2, -height, width, height, fighter.walkDistance);
+        } else if (!articulated) ctx.drawImage(image, -width / 2, -height, width, height);
       }
       ctx.restore();
       return true;
     }
     const clips = sheet?.clips;
     const fallback = name === 'roll' ? 'dash' : name === 'charge' ? 'block' : attackClips[fighter.attack?.id]?.[0];
-    const clip = clips?.get(name) ?? clips?.get(fallback) ?? clips?.get('idle');
+    const walk = name === 'crouchWalk' ? 'run' : name;
+    const clip = clips?.get(walk) ?? clips?.get(fallback) ?? clips?.get('idle');
     if (!clip) return false;
-    const elapsed = name === 'run' ? fighter.walkDistance * 1000 / fighter.moveSpeed : animationTime - clock.start;
-    const entry = selectFrame(clip, fighter, name, elapsed);
+    const elapsed = walk === 'run' ? fighter.walkDistance * (name === 'crouchWalk' ? 16 : 1000 / fighter.moveSpeed)
+      : animationTime - clock.start;
+    const entry = selectFrame(clip, fighter, walk, elapsed);
     const { x, y, w, h } = entry.frame;
     const source = entry.sourceSize ?? { w, h };
     const trim = entry.spriteSourceSize ?? { x: 0, y: 0 };

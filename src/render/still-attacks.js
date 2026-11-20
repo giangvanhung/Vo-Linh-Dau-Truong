@@ -45,8 +45,9 @@ export function drawStillAttack(ctx, image, width, height, fighter) {
   ctx.drawImage(image, 0, 0, 96, imageHeight);
   ctx.restore();
   ctx.translate(pivotX, pivotY);
-  const angle = kick ? -1.15 : heavy ? .42 : .23;
-  const reach = kick ? .13 : heavy ? .48 : .32;
+  const rear = attack.limbSide === 'right';
+  const angle = kick ? (rear ? -1.28 : -.94) : (rear ? -.19 : heavy ? .42 : .23);
+  const reach = (kick ? .13 : heavy ? .48 : .32) + (rear ? .08 : 0);
   ctx.rotate(angle * extension);
   ctx.scale(1 + reach * extension, 1);
   ctx.translate(-pivotX, -pivotY);

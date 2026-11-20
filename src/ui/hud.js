@@ -97,7 +97,8 @@ export function createHud(config) {
     const next = fighter.nextAwakening;
     const focus = fighter.awakeningReady ? 'Cấp ' + next + ' sẵn sàng'
       : fighter.charging ? 'Đang tụ khí'
-      : fighter.awakeningUnlocked && next ? 'Nạp đầy để lên cấp ' + next : '';
+      : fighter.awakeningUnlocked && next ? 'Nạp đầy để lên cấp ' + next
+      : next && fighter.meter >= fighter.rules.meterMax ? fighter.awakening.condition : '';
     const message = [activeForm, focus, status].filter(Boolean).join(' · ');
     if (meter.focus.textContent !== message) meter.focus.textContent = message;
     if (meter.dash) setText(meter.dash, fighter.dashCooldown

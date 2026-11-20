@@ -22,6 +22,8 @@ export class Fighter {
     this.crouching = false;
     this.blocking = false;
     this.attack = null;
+    this.nextPunchSide = 'left';
+    this.nextKickSide = 'left';
     this.bufferedAttack = null;
     this.hitstun = 0;
     this.knockVelocity = 0;
@@ -146,6 +148,15 @@ export class Fighter {
     if (!previous) this.combo = 0;
     this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false,
       usesNativeWeapon: !this.weaponUses && !definition.pickupWeapon && !definition.unarmed };
+    if (!definition.projectile && !definition.pickupWeapon) {
+      if (id === 'light' || id === 'heavy') {
+        this.attack.limbSide = this.nextPunchSide;
+        this.nextPunchSide = this.nextPunchSide === 'left' ? 'right' : 'left';
+      } else if (id === 'kick') {
+        this.attack.limbSide = this.nextKickSide;
+        this.nextKickSide = this.nextKickSide === 'left' ? 'right' : 'left';
+      }
+    }
     const equipment = this.equipmentStats;
     if (equipment) {
       this.attack.equipmentAttack = 1 + equipment.attack / 100;
