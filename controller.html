@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17151d">
+  <title>Tay cầm LAN | Võ Linh Đấu Trường</title>
+  <link rel="stylesheet" href="/src/ui/controller.css">
+</head>
+<body>
+  <header>
+    <h1>Tay cầm LAN</h1>
+    <p id="connection" role="status">Chọn vị trí để kết nối.</p>
+    <div id="join"><button type="button" data-player="1">Vào P1</button><button type="button" data-player="2">Vào P2</button></div>
+    <button type="button" id="leave" hidden>Rời tay cầm</button>
+  </header>
+  <main id="pad" hidden>
+    <section class="direction" aria-label="Di chuyển">
+      <button data-key="w" aria-label="Nhảy">↑</button>
+      <button data-key="a" aria-label="Trái">←</button>
+      <button data-key="s" aria-label="Ngồi">↓</button>
+      <button data-key="d" aria-label="Phải">→</button>
+    </section>
+    <section class="actions" aria-label="Chiến đấu">
+      <button data-key="j">Đấm nhẹ</button><button data-key="k">Đấm nặng</button><button data-key="l">Đá</button>
+      <button data-key="p">Đỡ</button><button data-key="q">Lướt</button><button data-key="enhanced">Lướt mạnh</button>
+      <button data-key="u">Kỹ năng 1</button><button data-key="i">Kỹ năng 2</button><button data-key="o">Ultimate</button>
+      <button data-key="t">Thoát combo</button>
+    </section>
+  </main>
+  <script type="module" src="/src/ui/controller.js"></script>
+</body>
+</html>

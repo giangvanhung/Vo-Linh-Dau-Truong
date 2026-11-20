@@ -121,11 +121,12 @@ export class CpuController {
     const recoveryLeft = recovering ? attack.startup + attack.active + attack.recovery - attack.elapsed : 0;
     const move = id => cpu.skills[id] ?? cpu.attacks[id];
     const inRange = id => {
-      const hit = cpu.attackBoxFor(move(id), towards);
       const hurt = player.hurtbox;
-      return hit.x < hurt.x + hurt.width && hit.x + hit.width > hurt.x
-        && hit.y < hurt.y + hurt.height && hit.y + hit.height > hurt.y;
+      return cpu.attackBoxesFor(move(id), towards).some(hit =>
+        hit.x < hurt.x + hurt.width && hit.x + hit.width > hurt.x
+        && hit.y < hurt.y + hurt.height && hit.y + hit.height > hurt.y);
     };
+    const approachRange = Math.min(this.profile.spacing, cpu.attacks.light.range + player.hurtbox.width / 2 - 6);
     const normals = ['light', 'heavy', 'kick'].filter(id => id !== this.lastMove && inRange(id));
     const ultimate = cpu.skills.ultimate;
     if (punishReady) {
@@ -165,15 +166,15 @@ export class CpuController {
         if (this.startMove(skill, 'Attack', useAttack)) return;
       }
       if (this.startMove(normals[Math.floor(this.random() * normals.length)], 'Attack', useAttack)) return;
-      if (distance < this.profile.spacing - 18) {
+      if (distance < approachRange - 18) {
         this.setState('Retreat', .20);
-      } else if (!shot && distance > this.profile.spacing + 14) {
-        this.approachDistance = this.profile.spacing;
+      } else if (!shot && distance > approachRange + 4) {
+        this.approachDistance = approachRange;
         this.setState('Approach', delay);
         if (!attack && distance >= this.profile.spacing + cpu.dashOptions.normal.distance
           && this.random() < this.profile.evade && cpu.startDash(false)) return;
       } else if (!shot && player.onGround && distance >= this.profile.spacing && this.random() < .45) {
-        this.approachDistance = Math.min(this.profile.spacing, cpu.attacks.kick.range);
+        this.approachDistance = approachRange;
         this.setState('Approach', delay);
       } else {
         this.setState('Neutral', delay);

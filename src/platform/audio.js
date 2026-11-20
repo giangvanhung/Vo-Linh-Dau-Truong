@@ -23,13 +23,14 @@ export class GameAudio {
     }
   }
 
-  tone(output, frequency, duration, volume, type = 'sine') {
+  tone(output, frequency, duration, volume, type = 'sine', end = frequency, delay = 0) {
     if (this.context?.state !== 'running') return;
     const note = this.context.createOscillator();
     const envelope = this.context.createGain();
-    const now = this.context.currentTime;
+    const now = this.context.currentTime + delay;
     note.type = type;
-    note.frequency.value = frequency;
+    note.frequency.setValueAtTime(frequency, now);
+    note.frequency.exponentialRampToValueAtTime(end, now + duration);
     envelope.gain.setValueAtTime(volume, now);
     envelope.gain.exponentialRampToValueAtTime(.0001, now + duration);
     note.connect(envelope).connect(output);
@@ -41,19 +42,30 @@ export class GameAudio {
     this.playing = playing;
     clearInterval(this.loop);
     if (playing) {
-      const notes = [110, 165, 130.81, 146.83, 110, 196, 130.81, 98];
+      const bass = [110, 110, 130.81, 98];
+      const melody = [440, 523.25, 659.25, 0, 392, 523.25, 587.33, 0];
       let beat = 0;
-      this.loop = setInterval(() => this.tone(this.music, notes[beat++ % notes.length], .24, .13, 'triangle'), 260);
+      this.loop = setInterval(() => {
+        if (beat % 2 === 0) this.tone(this.music, bass[Math.floor(beat / 2) % bass.length], .24, .095, 'triangle');
+        const note = melody[beat++ % melody.length];
+        if (note) this.tone(this.music, note, .11, .032, 'triangle');
+      }, 240);
     }
     this.configure(this.settings);
   }
 
   cue(name) {
     if (!this.settings.sound) return;
-    const [frequency, duration, volume] = {
-      countdown: [440, .14, .14], fight: [740, .28, .17], hit: [120, .12, .19],
-      block: [290, .09, .12], ko: [70, .55, .22], time: [350, .27, .14],
+    const sound = {
+      countdown: [440, .14, .14], fight: [740, .28, .17],
+      hit: [185, .11, .18, 'triangle', 65], heavy: [130, .19, .22, 'triangle', 43],
+      kick: [300, .15, .17, 'sawtooth', 70], block: [740, .10, .09, 'square', 265],
+      dash: [410, .12, .07, 'triangle', 96], skill: [225, .24, .13, 'triangle', 620],
+      ultimate: [125, .45, .17, 'triangle', 63], ko: [280, .52, .18, 'triangle', 55],
+      time: [350, .27, .14],
     }[name];
-    this.tone(this.effects, frequency, duration, volume, 'triangle');
+    if (!sound) return;
+    this.tone(this.effects, ...sound);
+    if (name === 'ultimate') this.tone(this.effects, 330, .35, .09, 'triangle', 680, .06);
   }
 }

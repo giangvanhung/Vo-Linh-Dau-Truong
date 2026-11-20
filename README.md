@@ -7,10 +7,20 @@ Game đối kháng arcade fantasy 2D, chơi trực tiếp trên trình duyệt. 
 Cần cài Node.js. Trong thư mục dự án, chạy:
 
 ```bash
+npm ci
 npm run dev
 ```
 
-Mở địa chỉ `http://localhost:5173` trong trình duyệt. Không cần cài package bên ngoài.
+Mở địa chỉ `http://localhost:5173` trong trình duyệt.
+
+## Đấu qua LAN
+
+1. Trên máy tính, mở game và chọn **Đấu 2 người qua LAN**.
+2. Kết nối điện thoại và máy tính vào cùng mạng nội bộ. Quét mã QR hoặc mở liên kết hiện dưới mã.
+3. Chọn **P1** hoặc **P2** trên từng điện thoại. Người còn lại có thể dùng bàn phím.
+4. Trên máy tính, chọn nhân vật rồi vào trận. Mở **Kết nối tay cầm LAN** dưới sân đấu để xem lại mã QR.
+
+Nếu có nhiều địa chỉ LAN, chọn địa chỉ của mạng đang dùng. Nếu điện thoại không vào được, kiểm tra quyền nhận kết nối của Node.js trong Windows Firewall trên mạng riêng.
 
 ## Điều khiển
 
@@ -49,7 +59,9 @@ src/
   ui/training-panel.js   Điều khiển và số liệu luyện tập
 data/fighters.json    Chỉ số nhân vật, sân đấu và thông số đòn
 index.html            Cấu trúc giao diện
-styles.css            Kiểu hiển thị
+public/styles/styles.css Kiểu hiển thị
+public/assets/characters/   Each fighter's concept, sprite sheet and atlas
+public/assets/backgrounds/  Stage layers and fallback composite
 server.mjs            Máy chủ tệp tĩnh cho môi trường phát triển
 ```
 

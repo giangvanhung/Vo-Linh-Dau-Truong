@@ -1,0 +1,10 @@
+# Local dependencies and logs
+node_modules/
+*.log
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+
+# Track game art and atlases in public/assets/.

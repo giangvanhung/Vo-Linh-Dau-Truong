@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles/styles.css" />
+    <link rel="stylesheet" href="/src/ui/lan.css" />
   </head>
   <body>
     <main class="page-shell">
@@ -38,17 +39,33 @@
         </div>
 
         <div class="stage-wrap">
-          <canvas id="arena" width="1000" height="500" aria-label="Sân đấu Võ Linh Đấu Trường"></canvas>
+          <canvas id="arena" tabindex="-1" width="1000" height="500" aria-label="Sân đấu Võ Linh Đấu Trường"></canvas>
           <div class="stage-vignette"></div>
           <button id="pause-button" class="panel-button pause-button" hidden>Tạm dừng <kbd>Esc</kbd></button>
           <div class="center-callout game-panel" id="menu-panel">
             <h1>Võ Linh<br><em>Đấu Trường</em></h1>
             <div class="menu-buttons">
               <button class="primary-button" id="versus-button">Bắt đầu đấu</button>
+              <button class="panel-button" id="lan-button">Đấu 2 người qua LAN</button>
               <button class="panel-button" id="practice-button">Luyện tập</button>
               <button class="panel-button" id="settings-button">Cài đặt</button>
               <button class="panel-button" id="guide-button">Hướng dẫn</button>
             </div>
+          </div>
+          <div class="center-callout game-panel" id="lan-panel" hidden>
+            <h2>Đấu 2 người qua LAN</h2>
+            <div id="lan-lobby">
+              <div id="lan-pairing">
+                <p id="lan-status" role="status">Đang tạo phòng…</p>
+                <div id="lan-link-box" hidden>
+                  <img id="lan-qr" width="126" height="126" alt="Quét để mở tay cầm LAN" hidden>
+                  <label id="lan-address-label" hidden>Địa chỉ mạng <select id="lan-address"></select></label>
+                  <a id="lan-link"></a>
+                </div>
+                <p>P1 dùng A/D, W/S và J K L P Q T U I O như thường. P2 dùng phím mũi tên, Z/X/C để đánh, V đỡ, B lướt, Shift+B lướt mạnh, N/M dùng kỹ năng, dấu phẩy dùng ultimate và dấu chấm thoát combo.</p>
+              </div>
+            </div>
+            <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="lan-start">Chọn nhân vật</button></div>
           </div>
           <div class="center-callout game-panel setup-panel" id="setup-panel" hidden>
             <h2 id="setup-title">Chọn nhân vật</h2>
@@ -94,8 +111,12 @@
           <div class="stage-bottom"><span>VÙNG ĐẤU <b>01</b></span><span>LINH GIỚI <i>✦</i></span></div>
         </div>
 
-        <div class="arena-footer"><span><i class="status-dot"></i> SẴN SÀNG KHI BẠN</span><span id="status-text">CHỌN THỜI ĐIỂM RA ĐÒN</span><span class="latency">OFFLINE <b>●</b></span></div>
+        <div class="arena-footer"><span><i class="status-dot"></i> SẴN SÀNG KHI BẠN</span><span id="status-text">CHỌN THỜI ĐIỂM RA ĐÒN</span><span class="latency"><span id="network-mode">OFFLINE</span> <b>●</b></span></div>
       </section>
+
+      <details class="lan-details" id="lan-details" hidden>
+        <summary>Kết nối tay cầm LAN</summary>
+      </details>
 
       <section id="training-panel" class="training-panel" aria-labelledby="training-title" hidden>
         <h2 id="training-title">Luyện tập</h2>

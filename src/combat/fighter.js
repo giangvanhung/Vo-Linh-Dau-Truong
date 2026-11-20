@@ -150,13 +150,17 @@ export class Fighter {
       }
       if (this.attack.elapsed >= this.attack.startup + this.attack.active + this.attack.recovery) this.attack = null;
     }
-    this.vy += world.gravity * dt;
-    this.y = Math.min(0, this.y + this.vy * dt);
-    this.onGround = this.y === 0;
-    if (this.onGround) this.vy = 0;
+    this.updateVertical(dt, world.gravity);
     this.x += this.knockVelocity * dt;
     this.knockVelocity *= Math.pow(0.001, dt);
     this.clampX(world);
+  }
+
+  updateVertical(dt, gravity) {
+    this.vy += gravity * dt;
+    this.y = Math.min(0, this.y + this.vy * dt);
+    this.onGround = this.y === 0;
+    if (this.onGround) this.vy = 0;
   }
 
   clampX(world) {
@@ -170,17 +174,23 @@ export class Fighter {
     return { x: this.x - width / 2, y: this.y - height, width, height };
   }
 
-  get attackBox() {
-    return this.attackBoxFor(this.attack, this.attack.facing);
+  get attackBoxes() {
+    return this.attackBoxesFor(this.attack, this.attack.facing);
   }
 
-  attackBoxFor(attack, facing = this.facing) {
-    const edge = this.x + facing * this.width * .18;
+  attackBoxesFor(attack, facing) {
+    const limbs = attack.limbBoxes ?? [undefined];
+    return limbs.map(limb => this.attackBoxFor(attack, facing, limb));
+  }
+
+  attackBoxFor(attack, facing = this.facing, segment = attack.limbBoxes?.[0]) {
+    const limb = segment ?? { near: this.width * .18, far: this.width * .18 + attack.range,
+      top: this.height - attack.yOffset, height: attack.height };
     return {
-      x: attack.radial ? this.x - attack.range : facing > 0 ? edge : edge - attack.range,
-      y: this.y - this.height + attack.yOffset,
-      width: attack.range * (attack.radial ? 2 : 1),
-      height: attack.height,
+      x: this.x + (facing > 0 ? limb.near : -limb.far),
+      y: this.y - limb.top,
+      width: limb.far - limb.near,
+      height: limb.height,
     };
   }
 }
@@ -189,15 +199,22 @@ export function findHit(attacker, defender) {
   const attack = attacker.attack;
   if (!attacker.attackActive || attack.projectile) return null;
   let hit = attack;
+  const contactFor = () => {
+    for (const box of attacker.attackBoxes) {
+      const contact = findContact(attacker, defender, hit, box, attacker.x);
+      if (contact) return contact;
+    }
+    return null;
+  };
   if (attack.pulses) {
     const frame = attack.elapsed - attack.startup;
     const pulse = attack.pulses.findIndex(({ from, to }) => frame >= from && frame < to);
     if (pulse === -1 || pulse === attack.lastPulse) return null;
     hit = { ...attack, ...attack.pulses[pulse] };
-    const contact = findContact(attacker, defender, hit, attacker.attackBox, attacker.x);
+    const contact = contactFor();
     return contact && { ...contact, onContact: () => { attack.lastPulse = pulse; } };
   }
-  return attack.hit ? null : findContact(attacker, defender, hit, attacker.attackBox, attacker.x);
+  return attack.hit ? null : contactFor();
 }
 
 function findContact(attacker, defender, attack, box, sourceX, direction) {

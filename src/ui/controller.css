@@ -1,0 +1,28 @@
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body {
+  margin: 0; min-height: 100svh; background: #17151d; color: #fff5ed;
+  font: 500 16px system-ui, sans-serif;
+  padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+}
+header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; max-width: 950px; margin: auto }
+h1 { font-size: 1.12rem; margin: 0 }
+p { color: #ded1e3; margin: 0 }
+button {
+  background: #382b42; border: 1px solid #8d6f9c; color: inherit; border-radius: 10px;
+  min-height: 48px; padding: .35rem .65rem; font: inherit; touch-action: none;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+button.is-down, button:active { background: #f3a368; color: #23151d; border-color: #ffe4cd }
+#pad { display: grid; grid-template-columns: minmax(145px, 1fr) minmax(250px, 1.55fr); align-items: center; gap: 18px; max-width: 950px; margin: 14px auto }
+.direction, .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px }
+.direction button { font-size: 1.6rem; min-height: clamp(45px, 15vh, 72px) }
+.direction button:first-child { grid-column: 2 }
+.direction button:nth-child(2) { grid-column: 1 }
+.actions button { font-size: clamp(.74rem, 2.1vw, 1rem) }
+.actions button:last-child { grid-column: 1 / -1; min-height: 40px }
+@media (orientation: portrait) {
+  #pad { grid-template-columns: 1fr; max-width: 440px }
+  .direction { width: min(100%, 250px); margin: 0 auto }
+}

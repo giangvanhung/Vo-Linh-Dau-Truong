@@ -25,14 +25,14 @@ export function createHud(config) {
   byId('setup-roster').append(rosterInfo);
   rosterInfo.hidden = false;
 
-  function updateRosterUI({ hung, mai, practice, difficulty }) {
+  function updateRosterUI({ hung, mai, practice, difficulty, lan }) {
     for (const [side, fighter] of [['hung', hung], ['mai', mai]]) {
       const hud = document.querySelector('.player-' + side);
       hud.querySelector('strong').textContent = fighter.name.toUpperCase();
       hud.style.setProperty('--fighter-color', fighter.color);
       ui['score-' + side].parentElement.querySelector('.score-name').textContent = fighter.name.toUpperCase();
     }
-    document.querySelector('.player-mai .player-side').textContent = practice ? 'BÙ NHÌN' : 'CPU · ' + difficultyLabels[difficulty].toUpperCase();
+    document.querySelector('.player-mai .player-side').textContent = practice ? 'BÙ NHÌN' : lan ? 'NGƯỜI CHƠI 2' : 'CPU · ' + difficultyLabels[difficulty].toUpperCase();
     document.querySelector('.controls-card .heading-note').textContent = hung.name.toUpperCase() + ' · NGƯỜI CHƠI';
     byId('close-control').textContent = hung.skills.closeSkill.label;
     byId('range-control').textContent = hung.skills.rangedSkill.label;

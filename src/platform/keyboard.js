@@ -2,11 +2,13 @@ const attackKeys = { j: 'light', k: 'heavy', l: 'kick', u: 'closeSkill', i: 'ran
 const movementAliases = { ArrowLeft: 'a', ArrowRight: 'd', ArrowUp: 'w', ArrowDown: 's' };
 const gameKeys = new Set(['a', 'd', 'w', 's', 'p', 'q', 't', ...Object.keys(attackKeys)]);
 
-export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput }) {
+export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, keyFor, allowArrows = () => true }) {
   let queuedAttack = null, queuedAction = null, queuedJump = false;
   const heldInputs = new Map();
 
   function gameKey(event) {
+    if (keyFor) return keyFor(event);
+    if (event.code?.startsWith('Arrow') && !allowArrows()) return;
     const key = event.key?.toLowerCase();
     if (key === 'đ') return 'd';
     if (gameKeys.has(key)) return key;
@@ -56,12 +58,12 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput })
     const code = physicalKey(event);
     const key = gameKey(event);
     if (!heldInputs.delete(code ?? key)) {
-      // Some keyboard layouts and input methods omit the physical code on one event.
+      // IMEs can report a different or missing physical code on release.
       for (const [input, heldKey] of heldInputs) {
-        if ((code === null || input === heldKey) && heldKey === key) heldInputs.delete(input);
+        if (heldKey === key) heldInputs.delete(input);
       }
     }
-  });
+  }, { capture: true });
   function clearInputs() {
     heldInputs.clear();
     queuedAttack = queuedAction = null;
@@ -81,6 +83,10 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput })
 
   window.addEventListener('blur', clearInputs);
   window.addEventListener('pagehide', clearInputs);
+  window.addEventListener('compositionstart', clearInputs, { capture: true });
+  document.addEventListener('focusin', event => {
+    if (event.target?.closest?.('select, input, textarea, [contenteditable="true"]')) clearInputs();
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) clearInputs();
   });

@@ -1,0 +1,9 @@
+#lan-pairing { font-size: 12px; line-height: 1.45; }
+#lan-pairing [hidden], .lan-details[hidden] { display: none; }
+#lan-link-box { display: grid; justify-items: center; gap: 6px; }
+#lan-link { color: #a1cef4; overflow-wrap: anywhere; }
+#lan-qr { background: white; border-radius: 4px; }
+.lan-details { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
+.lan-details summary { cursor: pointer; }
+.lan-details #lan-pairing { text-align: center; }
+.stage-wrap canvas:focus { outline: none; }

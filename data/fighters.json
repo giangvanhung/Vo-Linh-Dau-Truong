@@ -1,5 +1,11 @@
 {
   "stage": {
+    "background": "/assets/backgrounds/rooftop/preview.png",
+    "parallax": [
+      "/assets/backgrounds/rooftop/background.png",
+      "/assets/backgrounds/rooftop/midground.png",
+      "/assets/backgrounds/rooftop/foreground.png"
+    ],
     "groundRatio": 0.79,
     "playerStartRatio": 0.31,
     "cpuStartRatio": 0.69,
@@ -11,6 +17,7 @@
   },
   "characters": {
     "hung": {
+      "sprite": { "atlas": "/assets/characters/hung/atlas.json" },
       "name": "Hùng",
       "hp": 110,
       "width": 42,
@@ -25,18 +32,23 @@
           "startup": 14,
           "active": 5,
           "recovery": 30,
-          "range": 101,
+          "range": 29,
           "knockback": 340,
           "cooldownFrames": 300,
-          "radial": false,
-          "height": 74,
-          "yOffset": 17,
           "hitstun": 27,
           "hitstop": 4,
           "guardDamage": 29,
           "cancelInto": [
             "light",
             "kick"
+          ],
+          "limbBoxes": [
+            {
+              "near": 10,
+              "far": 29,
+              "top": 72,
+              "height": 15
+            }
           ]
         },
         "rangedSkill": {
@@ -68,9 +80,7 @@
           "startup": 30,
           "active": 23,
           "recovery": 34,
-          "range": 115,
-          "height": 84,
-          "yOffset": 11,
+          "range": 25,
           "cost": 100,
           "groundOnly": true,
           "travel": {
@@ -110,7 +120,15 @@
             "shakeIntensity": 44,
             "particles": 24,
             "trailSeconds": 0
-          }
+          },
+          "limbBoxes": [
+            {
+              "near": 8,
+              "far": 25,
+              "top": 77,
+              "height": 15
+            }
+          ]
         }
       },
       "moveSpeed": 270,
@@ -142,9 +160,7 @@
           "startup": 5,
           "active": 4,
           "recovery": 10,
-          "range": 57,
-          "height": 38,
-          "yOffset": 37,
+          "range": 42,
           "knockback": 65,
           "hitstun": 26,
           "hitstop": 0,
@@ -153,6 +169,14 @@
             "heavy",
             "kick",
             "closeSkill"
+          ],
+          "limbBoxes": [
+            {
+              "near": 17,
+              "far": 42,
+              "top": 70,
+              "height": 10
+            }
           ]
         },
         "heavy": {
@@ -161,36 +185,61 @@
           "startup": 12,
           "active": 5,
           "recovery": 29,
-          "range": 76,
-          "height": 76,
-          "yOffset": 4,
+          "range": 50,
           "knockback": 325,
           "hitstun": 25,
           "hitstop": 5,
           "guardDamage": 34,
-          "cancelInto": []
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 23,
+              "far": 50,
+              "top": 66,
+              "height": 11
+            }
+          ]
         },
         "kick": {
           "label": "ĐÁ",
-          "level": "low",
           "damage": 11,
           "startup": 9,
           "active": 5,
           "recovery": 15,
-          "range": 79,
-          "height": 35,
-          "yOffset": 56,
+          "range": 43,
           "knockback": 135,
           "hitstun": 21,
           "hitstop": 0,
           "guardDamage": 22,
           "cancelInto": [
             "closeSkill"
-          ]
+          ],
+          "limbBoxes": [
+            {
+              "near": 16,
+              "far": 26,
+              "top": 75,
+              "height": 16
+            },
+            {
+              "near": 26,
+              "far": 35,
+              "top": 84,
+              "height": 15
+            },
+            {
+              "near": 35,
+              "far": 43,
+              "top": 89,
+              "height": 17
+            }
+          ],
+          "level": "low"
         }
       }
     },
     "mai": {
+      "sprite": { "atlas": "/assets/characters/mai/atlas.json" },
       "name": "Mai",
       "hp": 90,
       "width": 38,
@@ -205,18 +254,23 @@
           "startup": 11,
           "active": 7,
           "recovery": 28,
-          "range": 87,
+          "range": 28,
           "knockback": 245,
           "cooldownFrames": 270,
-          "radial": true,
-          "height": 74,
-          "yOffset": 17,
           "hitstun": 27,
           "hitstop": 4,
           "guardDamage": 29,
           "cancelInto": [
             "light",
             "kick"
+          ],
+          "limbBoxes": [
+            {
+              "near": 11,
+              "far": 28,
+              "top": 71,
+              "height": 14
+            }
           ]
         },
         "rangedSkill": {
@@ -248,9 +302,7 @@
           "startup": 30,
           "active": 23,
           "recovery": 31,
-          "range": 107,
-          "height": 84,
-          "yOffset": 11,
+          "range": 23,
           "cost": 100,
           "groundOnly": true,
           "travel": {
@@ -292,7 +344,14 @@
             "particles": 24,
             "trailSeconds": 0.36
           },
-          "radial": true
+          "limbBoxes": [
+            {
+              "near": 8,
+              "far": 23,
+              "top": 76,
+              "height": 15
+            }
+          ]
         }
       },
       "moveSpeed": 335,
@@ -324,15 +383,21 @@
           "startup": 4,
           "active": 4,
           "recovery": 9,
-          "range": 61,
-          "height": 34,
-          "yOffset": 39,
+          "range": 37,
           "knockback": 83,
           "hitstun": 17,
           "hitstop": 0,
           "guardDamage": 15,
           "cancelInto": [
             "kick"
+          ],
+          "limbBoxes": [
+            {
+              "near": 15,
+              "far": 37,
+              "top": 73,
+              "height": 9
+            }
           ]
         },
         "heavy": {
@@ -341,30 +406,54 @@
           "startup": 10,
           "active": 5,
           "recovery": 22,
-          "range": 70,
-          "height": 46,
-          "yOffset": 31,
+          "range": 52,
           "knockback": 165,
           "hitstun": 19,
           "hitstop": 5,
           "guardDamage": 23,
-          "cancelInto": []
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 22,
+              "far": 52,
+              "top": 64,
+              "height": 10
+            }
+          ]
         },
         "kick": {
           "label": "ĐÁ",
-          "level": "low",
           "damage": 9,
           "startup": 8,
           "active": 5,
           "recovery": 12,
-          "range": 103,
-          "height": 31,
-          "yOffset": 55,
+          "range": 50,
           "knockback": 123,
           "hitstun": 16,
           "hitstop": 0,
           "guardDamage": 17,
-          "cancelInto": []
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 16,
+              "far": 28,
+              "top": 74,
+              "height": 16
+            },
+            {
+              "near": 28,
+              "far": 40,
+              "top": 79,
+              "height": 16
+            },
+            {
+              "near": 39,
+              "far": 50,
+              "top": 86,
+              "height": 16
+            }
+          ],
+          "level": "low"
         }
       }
     }

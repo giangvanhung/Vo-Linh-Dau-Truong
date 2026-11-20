@@ -1,15 +1,23 @@
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = fileURLToPath(new URL('.', import.meta.url));
-const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml' };
+import { attachLan } from './lan-server.mjs';
+
+const root = resolve(fileURLToPath(new URL('.', import.meta.url)));
+const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-    const requested = normalize(join(root, pathname === '/' ? 'index.html' : pathname));
-    if (!requested.startsWith(root)) throw new Error('Invalid path');
+    const route = pathname === '/' ? '/index.html' : pathname === '/controller' ? '/controller.html' : pathname;
+    if (!['/index.html', '/controller.html'].includes(route)
+      && !/^\/(src|assets|data|styles)\//.test(route)) throw new Error('Invalid path');
+    if (route.split('/').some(part => part.startsWith('.')) || route.includes('\\')) throw new Error('Invalid path');
+    const publicRoute = /^\/(assets|styles)\//.test(route);
+    const base = publicRoute ? resolve(root, 'public') : root;
+    const requested = resolve(base, '.' + route);
+    if (!requested.startsWith(root + sep)) throw new Error('Invalid path');
     const info = await stat(requested);
     if (!info.isFile()) throw new Error('Not a file');
     res.writeHead(200, { 'Content-Type': mime[extname(requested)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
@@ -20,4 +28,5 @@ const server = createServer(async (req, res) => {
   }
 });
 const port = Number(process.env.PORT) || 5173;
-server.listen(port, '127.0.0.1', () => console.log(`Võ Linh Đấu Trường: http://localhost:${port}`));
+attachLan(server);
+server.listen(port, '0.0.0.0', () => console.log(`Võ Linh Đấu Trường: http://localhost:${port}`));

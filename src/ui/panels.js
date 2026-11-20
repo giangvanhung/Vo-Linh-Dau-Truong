@@ -1,6 +1,6 @@
 const byId = id => document.getElementById(id);
 
-export function createPanels({ settings, openSetup, returnToMenu, togglePause, startMatch, selectMatch, saveSettings }) {
+export function createPanels({ settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings }) {
   const panels = [...document.querySelectorAll('.game-panel')];
   const banner = byId('fight-banner');
   const difficultySelect = byId('cpu-difficulty');
@@ -19,10 +19,10 @@ export function createPanels({ settings, openSetup, returnToMenu, togglePause, s
     banner.classList.toggle('finish', finish);
   }
 
-  function showSetup(practice) {
+  function showSetup(practice, lan) {
     difficultySelect.value = settings.difficulty;
-    byId('difficulty-picker').hidden = practice;
-    byId('setup-title').textContent = practice ? 'Chọn nhân vật luyện tập' : 'Chọn nhân vật';
+    byId('difficulty-picker').hidden = practice || lan;
+    byId('setup-title').textContent = practice ? 'Chọn nhân vật luyện tập' : lan ? 'Chọn nhân vật P1 và P2' : 'Chọn nhân vật';
     show('setup');
   }
 
@@ -32,6 +32,7 @@ export function createPanels({ settings, openSetup, returnToMenu, togglePause, s
   }
 
   byId('versus-button').addEventListener('click', () => openSetup(false));
+  byId('lan-button').addEventListener('click', openLan);
   byId('practice-button').addEventListener('click', () => openSetup(true));
   byId('settings-button').addEventListener('click', () => show('settings'));
   byId('guide-button').addEventListener('click', () => show('guide'));
