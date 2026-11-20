@@ -105,6 +105,10 @@ scanQr.onclick = async () => {
     label.textContent = 'Camera trực tiếp cần trang HTTPS. Bạn có thể dùng Chọn ảnh QR.';
     return;
   }
+  if (typeof globalThis.BarcodeDetector !== 'function' && typeof globalThis.jsQR !== 'function') {
+    label.textContent = 'Không tải được bộ đọc QR. Hãy tải lại trang hoặc dùng camera của điện thoại.';
+    return;
+  }
   const session = scanSession = {};
   scanQr.disabled = qrImage.disabled = true;
   scanner.hidden = false;
@@ -122,21 +126,51 @@ scanQr.onclick = async () => {
     preview.srcObject = stream;
     await preview.play();
     if (scanSession !== session) return;
+    let detector;
+    try {
+      if (typeof globalThis.BarcodeDetector === 'function') {
+        detector = new globalThis.BarcodeDetector({ formats: ['qr_code'] });
+      }
+    } catch {
+      // Some browsers expose BarcodeDetector without a working backend.
+    }
     label.textContent = 'Đưa trọn mã QR vào giữa khung và giữ điện thoại ổn định. Mã sẽ tự được nhận.';
     const canvas = document.createElement('canvas');
     let scanCenter = true;
-    function scanFrame() {
+    const startedAt = performance.now();
+    let readOtherCode = false;
+    async function scanFrame() {
       if (scanSession !== session) return;
       try {
         const { videoWidth, videoHeight } = preview;
         if (preview.readyState >= 2 && videoWidth && videoHeight) {
-          const side = Math.floor(Math.min(videoWidth, videoHeight) * 0.75);
-          const code = scanCenter
-            ? decodeQr(preview, canvas, 1080, (videoWidth - side) / 2, (videoHeight - side) / 2, side, side)
-            : decodeQr(preview, canvas, 1600, 0, 0, videoWidth, videoHeight);
-          scanCenter = !scanCenter;
-          if (code && openRoomQr(code.data)) return;
-          if (code) label.textContent = 'Hãy đưa mã QR phòng tay cầm vào khung.';
+          if (detector) {
+            let codes = [];
+            try {
+              codes = await detector.detect(preview);
+            } catch {
+              detector = undefined;
+            }
+            if (scanSession !== session) return;
+            if (codes.some(code => openRoomQr(code.rawValue))) return;
+            readOtherCode ||= codes.length > 0;
+          }
+          if (typeof globalThis.jsQR === 'function') {
+            const side = Math.floor(Math.min(videoWidth, videoHeight) * 0.75);
+            const code = scanCenter
+              ? decodeQr(preview, canvas, 1080, (videoWidth - side) / 2, (videoHeight - side) / 2, side, side)
+              : decodeQr(preview, canvas, 1920, 0, 0, videoWidth, videoHeight);
+            scanCenter = !scanCenter;
+            if (code && openRoomQr(code.data)) return;
+            readOtherCode ||= Boolean(code);
+          } else if (!detector) {
+            throw new Error('QR decoder unavailable');
+          }
+        }
+        if (readOtherCode) {
+          label.textContent = 'Camera đã đọc được mã. Hãy đưa đúng mã QR phòng tay cầm vào khung.';
+        } else if (performance.now() - startedAt > 5000) {
+          label.textContent = 'Chưa nhận được mã. Đưa điện thoại gần hơn, giữ trọn mã trong hình và tránh lóa màn hình.';
         }
       } catch {
         stopScan();
