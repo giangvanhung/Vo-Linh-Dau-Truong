@@ -2,6 +2,9 @@ import { activeZone, overlapsSurface, zoneRanges } from '../game/stages.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
 import { createCombatEffects } from './combat-effects.js';
 import { createStageBackground } from './stage-background.js';
+import { drawStrikeTrail } from './fighter-motion.js';
+import { drawHeldWeapon } from './held-weapon.js';
+import { ballRadius } from '../game/stage-ball.js';
 import { gear } from '../game/pickups.js';
 
 export function createArenaRenderer(canvas, config) {
@@ -24,11 +27,11 @@ export function createArenaRenderer(canvas, config) {
     const { wings, overlay } = character.awakening?.evolution ?? {};
     if (wings) paths.add(wings);
     if (overlay) paths.add(overlay.image);
-    if (character.weapon) paths.add(character.weapon.image);
+    if (character.weapon?.image) paths.add(character.weapon.image);
   }
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
-  function render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime, drop }) {
+  function render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime, ball, drop }) {
     const ground = h * config.stage.groundRatio;
     const displayHeight = canvas.clientHeight;
     const scale = Math.min(canvas.clientWidth / w, displayHeight / h);
@@ -45,6 +48,7 @@ export function createArenaRenderer(canvas, config) {
     ctx.save();
     applyShake(shake, screenEffect);
     drawTerrain(stage, stageFrame, w, ground);
+    if (ball) drawBall(ball, ground);
     if (drop) {
       ctx.fillStyle = '#252420';
       ctx.fillRect(drop.x - 15, ground + drop.y - 15, 30, 29);
@@ -80,6 +84,8 @@ export function createArenaRenderer(canvas, config) {
       ctx.translate(...offsets[index]);
       if (f.evolving && f.hp > 0) drawEvolutionWings(f, ground, animationTime);
       drawEvolutionBody(f, ground, animationTime);
+      drawHeldWeapon(ctx, images, f, ground, animationTime);
+      drawStrikeTrail(ctx, f, ground);
       drawCombatEffects(f, ground);
       if (f.attack?.evolvedPunch) drawEvolutionFist(f, ground, animationTime);
       if (f.hp <= 0 || (!f.freezeFrames && !f.poisonFrames)) {
@@ -179,6 +185,12 @@ export function createArenaRenderer(canvas, config) {
     ctx.beginPath();
     ctx.ellipse(Math.round(fighter.x), Math.round(ground + floor + 2), radius, 4, 0, 0, Math.PI * 2);
     ctx.fill();
+    if (fighter.equipmentColor && fighter.hp > 0) {
+      ctx.globalAlpha = .75 * proximity;
+      ctx.strokeStyle = fighter.equipmentColor;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -481,42 +493,48 @@ export function createArenaRenderer(canvas, config) {
     ctx.restore();
   }
 
+  function drawBall(ball, ground) {
+    ctx.save();
+    ctx.translate(ball.x, ground);
+    ctx.fillStyle = '#141f235c';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, ballRadius, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.translate(0, ball.y - ballRadius);
+    ctx.rotate(ball.spin);
+    ctx.fillStyle = '#fff5de';
+    ctx.strokeStyle = '#202631';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, ballRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#303747';
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const angle = i * Math.PI * .4;
+      const x = Math.cos(angle), y = Math.sin(angle);
+      if (i === 0) ctx.moveTo(x * 4, y * 4);
+      else ctx.lineTo(x * 4, y * 4);
+    }
+    ctx.closePath();
+    ctx.fill();
+    for (let i = 0; i < 5; i++) {
+      const angle = i * Math.PI * .4;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * 4, Math.sin(angle) * 4);
+      ctx.lineTo(Math.cos(angle) * 11, Math.sin(angle) * 11);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function drawFighter(fighter, ground, animationTime) {
     if (!drawSprite(fighter, ground, animationTime)) {
       const body = fighter.hurtbox;
       ctx.fillStyle = fighter.flash > 0 ? '#fff2dc' : fighter.color;
       ctx.fillRect(body.x, ground + body.y, body.width, body.height);
     }
-    const weapon = fighter.weapon && images.get(fighter.weapon.image);
-    if (!weapon || fighter.hp <= 0 || fighter.weaponUses || fighter.attack?.pickupWeapon) return;
-    const attack = fighter.attack;
-    const swinging = attack && ['heavy', 'closeSkill', 'ultimate'].includes(attack.id);
-    const extension = swinging ? Math.min(1, attack.elapsed / attack.startup,
-      Math.max(0, (attack.startup + attack.active + attack.recovery - attack.elapsed) / attack.recovery)) : 0;
-    const width = fighter.weapon.width;
-    const height = width * weapon.height / weapon.width;
-    const bob = Math.sin(animationTime / 115) * 2;
-    const hand = fighter.hurtbox.height * .64;
-    ctx.save();
-    ctx.translate(fighter.x, ground + fighter.y);
-    ctx.scale(attack?.facing ?? fighter.dash?.facing ?? fighter.facing, 1);
-    if (swinging && fighter.attackActive) {
-      ctx.strokeStyle = fighter.evolving ? fighter.evolution.color : fighter.glow;
-      ctx.globalAlpha = .68;
-      ctx.lineWidth = fighter.evolving && fighter.awakeningLevel === 2 ? 5 : 3;
-      ctx.beginPath();
-      ctx.ellipse(32, -hand, width * .59, height * .45, -.35, -1.1, .84);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    ctx.translate(13 + extension * 32, -hand + bob);
-    ctx.rotate(fighter.weapon.tilt + extension * 1.2);
-    if (fighter.evolving) {
-      ctx.shadowColor = fighter.evolution.color;
-      ctx.shadowBlur = fighter.awakeningLevel === 2 ? 21 : 10;
-    }
-    ctx.drawImage(weapon, -width * .37, -height * .61, width, height);
-    ctx.restore();
   }
 
   return render;

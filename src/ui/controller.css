@@ -78,6 +78,10 @@ button.is-down, button:active { background: #f3a368; color: #23151d; border-colo
 }
 .pad-tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px }
 .pad-tools button { min-height: 40px; padding-inline: 8px; font-size: .8rem; touch-action: manipulation }
+#pad-test {
+  flex: 0 0 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px;
+  padding: 5px 8px; border-radius: 8px; background: #211c2a; color: #f3edf7; font-size: .8rem;
+}
 .pad-network {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-width: 84px; padding: 4px 8px; border-radius: 8px;
@@ -95,7 +99,8 @@ button.is-down, button:active { background: #f3a368; color: #23151d; border-colo
 .pad-network[data-quality="fair"] i:nth-child(-n+2),
 .pad-network[data-quality="poor"] i:first-child { opacity: 1 }
 .pad-expanded { overflow: hidden }
-.pad-connected.pad-expanded .controller-header { display: none }
+.pad-connected.pad-expanded .controller-header,
+.pad-testing.pad-expanded .controller-header { display: none }
 .pad-expanded #pad {
   position: fixed;
   inset: 0;

@@ -16,7 +16,6 @@ export class Fighter {
     this.onGround = true;
     this.moving = false;
     this.walkDistance = 0;
-    this.walkBackwards = false;
     this.crouching = false;
     this.blocking = false;
     this.attack = null;
@@ -142,7 +141,15 @@ export class Fighter {
       || target.hitstun <= definition.startup)) return false;
 
     if (!previous) this.combo = 0;
-    this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false };
+    this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false,
+      usesNativeWeapon: !this.weaponUses && !definition.pickupWeapon };
+    const equipment = this.equipmentStats;
+    if (equipment) {
+      this.attack.equipmentAttack = 1 + equipment.attack / 100;
+      if (equipment.crit > 0 && Math.random() * 100 < equipment.crit) {
+        this.attack.criticalMultiplier = 1.5 + equipment.critDamage / 100;
+      }
+    }
     if (this.powerFrames) this.attack.damage *= 1.22;
     if (this.evolving && this.evolution.damageMultiplier) this.attack.damage *= this.evolution.damageMultiplier;
     if (this.evolving && this.evolution.punchMultiplier && (id === 'light' || id === 'heavy')) {
@@ -150,12 +157,15 @@ export class Fighter {
     }
     this.crouching = false;
     this.meter -= cost;
-    if (definition.cooldownFrames) this.cooldowns[id] = definition.cooldownFrames;
+    if (definition.cooldownFrames) {
+      this.cooldowns[id] = Math.ceil(definition.cooldownFrames * (1 - (equipment?.cooldown ?? 0) / 100));
+    }
     return true;
   }
 
   gainMeter(amount) {
-    this.meter = Math.min(this.rules.meterMax, Math.round((this.meter + amount) * 100) / 100);
+    const gain = amount * (1 + (this.equipmentStats?.energy ?? 0) / 100);
+    this.meter = Math.min(this.rules.meterMax, Math.round((this.meter + gain) * 100) / 100);
   }
 
   startDash(enhanced, rollDirection = 0) {
@@ -236,14 +246,15 @@ export class Fighter {
         this.x -= attack.facing * attack.travel.speed * .55 * dt;
       }
       if (attack.travel && activeFrame >= 0 && activeFrame < attack.travel.frames) {
-        this.x += attack.facing * attack.travel.speed * dt;
+        let distance = attack.travel.speed * dt;
         if (Math.abs(this.y - target.y) < Math.min(this.height, target.height)) {
           const spacing = attack.travel.passesThrough
             ? -attack.travel.crossDistance
             : (this.width + target.width) / 2 + 5;
-          const limit = target.x - attack.facing * spacing;
-          this.x = attack.facing > 0 ? Math.min(this.x, limit) : Math.max(this.x, limit);
+          const available = (target.x - this.x) * attack.facing - spacing;
+          distance = Math.min(distance, Math.max(0, available));
         }
+        this.x += attack.facing * distance;
       }
       if (this.attack.elapsed >= this.attack.startup + this.attack.active + this.attack.recovery) this.attack = null;
     }
@@ -287,10 +298,13 @@ export class Fighter {
   attackBoxFor(attack, facing = this.facing, segment = attack.limbBoxes?.[0]) {
     const limb = segment ?? { near: this.width * .18, far: this.width * .18 + attack.range,
       top: this.height - attack.yOffset, height: attack.height };
+    // Basic strikes can connect when fighters are standing on top of each other.
+    const near = !attack.pickupWeapon && ['light', 'heavy', 'kick'].includes(attack.id)
+      ? Math.min(0, limb.near) : limb.near;
     return {
-      x: this.x + (facing > 0 ? limb.near : -limb.far),
+      x: this.x + (facing > 0 ? near : -limb.far),
       y: this.y - limb.top,
-      width: limb.far - limb.near,
+      width: limb.far - near,
       height: limb.height,
     };
   }
@@ -353,7 +367,10 @@ export function applyHit(contact) {
   const evolution = attack.evolvedPunch && !contact.projectile ? attacker.evolution : null;
   const multiplier = blocked ? 1 - rules.blockReduction + rules.chipRate : scale * (evolution?.punchMultiplier ?? 1);
   const previousHP = defender.hp;
-  const incoming = Math.round(attack.damage * multiplier * 100) / 100;
+  const attackBonus = attack.equipmentAttack ?? 1;
+  const critical = blocked ? 1 : attack.criticalMultiplier ?? 1;
+  const defense = 1 - (defender.equipmentStats?.defense ?? 0) / 100;
+  const incoming = Math.round(attack.damage * multiplier * attackBonus * critical * defense * 100) / 100;
   const absorbed = Math.min(defender.shieldHp, incoming);
   defender.shieldHp = Math.round((defender.shieldHp - absorbed) * 100) / 100;
   defender.hp = Math.max(0, Math.round((previousHP - incoming + absorbed) * 100) / 100);
@@ -421,7 +438,7 @@ export function applyHit(contact) {
 
   return {
     ...contact, combo, broken, inflicted,
-    damage,
+    damage, critical: critical > 1,
     absorbed,
     hitstop: blocked ? 0 : attack.hitstop,
   };

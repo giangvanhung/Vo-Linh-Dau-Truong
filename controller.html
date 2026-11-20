@@ -32,6 +32,7 @@
         <button type="button" id="stop-qr">Đóng camera</button>
       </section>
       <button type="button" id="leave" hidden>Rời tay cầm</button>
+      <button type="button" id="test-offline">Kiểm tra nút</button>
     </div>
   </header>
   <main id="pad" hidden>
@@ -41,6 +42,7 @@
         <span id="pad-latency">Đang đo</span>
       </div>
       <button type="button" id="direction-mode" aria-pressed="false">Joystick</button>
+      <button type="button" id="test-pad" aria-pressed="false">Kiểm tra</button>
       <button type="button" id="expand-pad" aria-pressed="false">Toàn màn hình</button>
       <button type="button" id="rotate-pad" aria-pressed="false">Xoay ngang</button>
       <button type="button" id="light-pad" aria-pressed="false">Màu sáng</button>
@@ -48,6 +50,10 @@
       <button type="button" id="clear-pad-bg" hidden>Bỏ ảnh</button>
       <button type="button" id="leave-pad">Rời phòng</button>
       <input type="file" id="pad-bg-file" accept="image/*" hidden>
+      <div id="pad-test" hidden>
+        <span id="test-connection"></span>
+        <output id="test-input" aria-live="off"></output>
+      </div>
     </div>
     <div id="stick" hidden aria-label="Joystick di chuyển"><span></span></div>
     <section class="direction" aria-label="Di chuyển">

@@ -89,11 +89,12 @@
           <div class="center-callout game-panel" id="menu-panel">
             <h1>Võ Linh<br><em>Đấu Trường</em></h1>
             <div class="menu-buttons">
-              <button class="primary-button" id="versus-button">Bắt đầu đấu</button>
+              <button class="primary-button" id="versus-button">Đấu CPU · PvE</button>
               <button class="panel-button" id="local-button">2 người · Bàn phím</button>
               <button class="panel-button" id="team-button">2 người đấu 2 CPU</button>
               <button class="panel-button" id="lan-button">Đấu 2 người qua LAN</button>
               <button class="panel-button" id="practice-button">Luyện tập</button>
+              <button class="panel-button" id="equipment-button">Trang bị PvE</button>
               <button class="panel-button" id="settings-button">Cài đặt</button>
               <button class="panel-button" id="guide-button">Hướng dẫn</button>
             </div>
@@ -143,6 +144,28 @@
               <button class="panel-button" data-menu>Về menu</button>
               <button type="button" class="panel-button" id="solo-lan-button" aria-controls="lan-panel">Kết nối tay cầm P1</button>
               <button class="primary-button" id="start-button">Vào trận</button>
+            </div>
+          </div>
+          <div class="center-callout game-panel setup-panel equipment-panel" id="equipment-panel" hidden>
+            <h2>Trang bị PvE</h2>
+            <p id="equipment-wallet" aria-live="polite"></p>
+            <div class="equipment-fields">
+              <label>Võ sĩ <select id="equipment-fighter"></select></label>
+              <label>Ô trang bị <select id="equipment-slot"></select></label>
+              <label>Món trong kho <select id="equipment-item"></select></label>
+            </div>
+            <p id="equipment-worn"></p>
+            <p id="equipment-sets"></p>
+            <table class="equipment-stats">
+              <thead><tr><th>Chỉ số</th><th>Hiện tại</th><th>Khi chọn</th><th>Sau nâng cấp</th></tr></thead>
+              <tbody id="equipment-stats"></tbody>
+            </table>
+            <p id="equipment-notice" role="status"></p>
+            <p class="equipment-note">Kho dùng chung. Mỗi võ sĩ có bộ đồ riêng. Thắng trận PvE để mở món mới theo mốc. PvP chỉ hiện dấu màu trang bị.</p>
+            <div class="panel-actions">
+              <button class="panel-button" data-menu>Về menu</button>
+              <button class="panel-button" id="equipment-upgrade">Nâng cấp</button>
+              <button class="primary-button" id="equipment-equip">Trang bị</button>
             </div>
           </div>
           <div class="center-callout game-panel" id="settings-panel" hidden>
@@ -201,7 +224,7 @@
           </div>
           <div id="fight-banner" class="fight-banner" role="status" hidden></div>
           <div class="center-callout game-panel" id="result-panel" hidden>
-            <h2 id="result-title"></h2><p id="result-score"></p>
+            <h2 id="result-title"></h2><p id="result-score"></p><p id="result-reward" hidden></p>
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" data-replay>Chơi lại</button></div>
           </div>
           <div class="toast" id="toast" aria-live="polite"></div>

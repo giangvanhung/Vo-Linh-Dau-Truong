@@ -5,10 +5,22 @@ let room = query.get('room');
 const label = document.querySelector('#connection');
 const join = document.querySelector('#join');
 const leave = document.querySelector('#leave');
+const leavePad = document.querySelector('#leave-pad');
 const qrReconnect = document.querySelector('#qr-reconnect');
 const pad = document.querySelector('#pad');
 const network = document.querySelector('#pad-network');
 const latency = document.querySelector('#pad-latency');
+const testToggle = document.querySelector('#test-pad');
+const testPanel = document.querySelector('#pad-test');
+const testConnection = document.querySelector('#test-connection');
+const testInput = document.querySelector('#test-input');
+const offlineTest = document.querySelector('#test-offline');
+const controlLabels = new Map(Array.from(pad.querySelectorAll('[data-key]'), button => [
+  button.dataset.key, button.getAttribute('aria-label') || button.textContent.trim()
+]));
+const testedControls = new Set();
+let testing = false;
+let connectedPlayer;
 const stick = document.querySelector('#stick');
 const arrows = pad.querySelector('.direction');
 const directionMode = document.querySelector('#direction-mode');
@@ -29,7 +41,42 @@ let socket, heartbeat, reconnectTimer;
 let directionBatch = false;
 
 function send(message) {
+  if (testing && (message.type === 'input' || message.type === 'direction')) return;
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
+}
+
+function showTestInput() {
+  if (!testing) return;
+  const held = new Set(directions);
+  for (const button of pointers.values()) held.add(button.dataset.key);
+  for (const key of held) testedControls.add(key);
+  const names = [...held].map(key => controlLabels.get(key));
+  const inputStatus = names.length ? 'Đang giữ ' + names.join(', ')
+    : testedControls.size ? 'Đã nhả hết nút' : 'Bấm nút hoặc gạt joystick để thử';
+  testInput.textContent = inputStatus
+    + ' · Đã thử ' + testedControls.size + '/' + controlLabels.size;
+}
+
+function showTestConnection() {
+  if (!testing) return;
+  testConnection.textContent = connectedPlayer ? 'Đã kết nối P' + connectedPlayer
+    : socket || reconnectTimer ? 'Đang kết nối…' : 'Chưa kết nối';
+  network.hidden = !connectedPlayer && !socket && !reconnectTimer;
+  leavePad.hidden = network.hidden;
+}
+
+function setTesting(enabled) {
+  reset();
+  testing = enabled;
+  document.body.classList.toggle('pad-testing', enabled);
+  testedControls.clear();
+  testPanel.hidden = !enabled;
+  testToggle.setAttribute('aria-pressed', String(enabled));
+  testToggle.textContent = enabled ? 'Thoát kiểm tra' : 'Kiểm tra';
+  network.hidden = false;
+  leavePad.hidden = false;
+  showTestConnection();
+  showTestInput();
 }
 
 function reset() {
@@ -39,17 +86,21 @@ function reset() {
   stickPointer = null;
   stickRect = undefined;
   centerStick();
+  showTestInput();
   send({ type: 'reset' });
 }
 
 function showJoin(message, expired = false) {
-  reset();
+  setTesting(false);
+  connectedPlayer = undefined;
   clearInterval(heartbeat);
   clearTimeout(reconnectTimer);
+  reconnectTimer = undefined;
   label.textContent = message;
   setExpanded(false);
   exitFullscreen();
   pad.hidden = leave.hidden = true;
+  offlineTest.hidden = false;
   document.body.classList.remove('pad-connected');
   join.hidden = !room || expired;
   qrReconnect.hidden = false;
@@ -238,6 +289,7 @@ function showNetwork(quality, message) {
 function connectPlayer(player, retries = 0) {
   directionBatch = false;
   const connection = socket = lanSocket({ room, player });
+  showTestConnection();
   let joined = false;
   let lastReply;
   function beat() {
@@ -256,6 +308,9 @@ function connectPlayer(player, retries = 0) {
     }
     if (message.type !== 'joined') return;
     joined = true;
+    connectedPlayer = player;
+    offlineTest.hidden = true;
+    showTestConnection();
     directionBatch = message.directionBatch === true;
     label.textContent = 'Đã kết nối P' + player;
     pad.hidden = leave.hidden = false;
@@ -273,6 +328,7 @@ function connectPlayer(player, retries = 0) {
   connection.onclose = event => {
     if (socket !== connection) return;
     socket = undefined;
+    connectedPlayer = undefined;
     const attempts = joined ? 0 : retries;
     if ((joined || retries) && attempts < 4 && [1006, 1012, 1013, 4003].includes(event.code)) {
       reset();
@@ -280,9 +336,11 @@ function connectPlayer(player, retries = 0) {
       label.textContent = 'Đang kết nối lại P' + player + '…';
       showNetwork('waiting', 'Kết nối lại…');
       reconnectTimer = setTimeout(() => {
+        reconnectTimer = undefined;
         reset();
         connectPlayer(player, attempts + 1);
       }, 900 + attempts * 1500);
+      showTestConnection();
       return;
     }
     showJoin(event.code === 4003 ? 'Vị trí này đang được dùng. Hãy chọn vị trí khác.'
@@ -294,11 +352,34 @@ function connectPlayer(player, retries = 0) {
 for (const button of join.querySelectorAll('button')) {
   button.onclick = () => {
     stopScan();
+    setTesting(false);
+    pad.hidden = true;
+    offlineTest.hidden = true;
     join.hidden = true;
     label.textContent = 'Đang kết nối…';
     connectPlayer(button.dataset.player);
   };
 }
+
+offlineTest.onclick = () => {
+  if (testing) {
+    testToggle.click();
+    return;
+  }
+  stopScan();
+  pad.hidden = false;
+  setTesting(true);
+  pad.scrollIntoView({ block: 'nearest' });
+};
+
+testToggle.onclick = () => {
+  if (testing && !socket && !connectedPlayer && !reconnectTimer) {
+    pad.hidden = true;
+    setExpanded(false);
+    void exitFullscreen();
+  }
+  setTesting(!testing);
+};
 
 function leaveRoom() {
   reset();
@@ -309,7 +390,7 @@ function leaveRoom() {
 }
 
 leave.onclick = leaveRoom;
-document.querySelector('#leave-pad').onclick = leaveRoom;
+leavePad.onclick = leaveRoom;
 
 function setExpanded(enabled) {
   stickRect = undefined;
@@ -435,6 +516,7 @@ function updateDirections(next) {
   else for (const [button, down] of changes) send({ type: 'input', button, down });
   directions.clear();
   for (const button of next) directions.add(button);
+  showTestInput();
 }
 
 function moveStick(event) {
@@ -484,6 +566,7 @@ pad.addEventListener('pointerdown', event => {
   pointers.set(event.pointerId, button);
   button.classList.add('is-down');
   if (!alreadyHeld) send({ type: 'input', button: button.dataset.key, down: true });
+  if (!alreadyHeld) showTestInput();
 });
 
 function release(event) {
@@ -493,6 +576,7 @@ function release(event) {
   if ([...pointers.values()].includes(button)) return;
   button.classList.remove('is-down');
   send({ type: 'input', button: button.dataset.key, down: false });
+  showTestInput();
 }
 
 for (const event of ['pointerup','pointercancel','lostpointercapture']) pad.addEventListener(event, release);

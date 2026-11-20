@@ -1,3 +1,7 @@
+import { drawStillAttack } from './still-attacks.js';
+import { applyFighterMotion } from './fighter-motion.js';
+import { drawPoseSheet } from './pose-sheet.js';
+
 const attackClips = {
   light: ['light_punch', 1], heavy: ['heavy_punch', 2], kick: ['kick', 1],
   closeSkill: ['skill_1', 2], rangedSkill: ['skill_2', 3], ultimate: ['ultimate', 4],
@@ -36,6 +40,7 @@ export function animationName(fighter) {
   if (fighter.dash) return fighter.dash.roll ? 'roll' : 'dash';
   if (!fighter.onGround) return 'jump';
   if (fighter.blocking) return 'block';
+  if (fighter.charging) return 'charge';
   if (fighter.crouching) return 'crouch';
   return fighter.moving ? 'run' : 'idle';
 }
@@ -55,10 +60,11 @@ function selectFrame({ frames, strikeFrame }, fighter, name, elapsed) {
   if (fighter.dash && (name === 'dash' || name === 'roll')) {
     return frames[Math.min(frames.length - 1, Math.floor(fighter.dash.elapsed * frames.length / fighter.dash.frames))];
   }
+  if (name === 'jump') return frames[fighter.vy < 0 ? 0 : frames.length - 1 - (frames.length > 2 ? 1 : 0)];
   const durations = frames.map(frame => frame.duration > 0 ? frame.duration : 100);
   const length = durations.reduce((sum, duration) => sum + duration, 0);
-  let time = ['idle', 'run'].includes(name) ? elapsed % length : Math.min(elapsed, length - 1);
-  if (name === 'run' && fighter.walkBackwards) time = Math.max(0, length - 1 - time);
+  let time = name === 'run' || name === 'idle'
+    ? ((elapsed % length) + length) % length : Math.min(elapsed, length - 1);
   return frames[durations.findIndex(duration => (time -= duration) < 0)];
 }
 
@@ -69,9 +75,14 @@ export function createSpriteRenderer(ctx, characters) {
   for (const [id, character] of Object.entries(characters)) {
     const paths = character.sprite;
     if (paths?.still) {
-      loadImage(paths.still).then(image => sheets.set(id, { still: image })).catch(() => {});
+      const sheet = {};
+      sheets.set(id, sheet);
+      if (paths.poseSheet) sheet.posePath = paths.poseSheet;
+      else loadImage(paths.still).then(image => { sheet.still = image; }).catch(() => {});
       const evolved = character.awakening?.levelTwo?.evolution?.sprite;
       if (evolved) loadImage(evolved).then(image => evolvedStills.set(id, image)).catch(() => {});
+      sheet.extraPath = paths.extraPoses;
+      sheet.evolvedPath = character.awakening?.levelTwo?.evolution?.poseSheet;
       continue;
     }
     if (!paths?.atlas) continue;
@@ -83,29 +94,60 @@ export function createSpriteRenderer(ctx, characters) {
   return function draw(fighter, ground, animationTime) {
     const name = animationName(fighter);
     let clock = clocks.get(fighter);
-    if (!clock || clock.name !== name) {
-      clock = { name, start: animationTime };
+    if (!clock) {
+      clock = { name, start: animationTime, last: animationTime, crouch: 0 };
       clocks.set(fighter, clock);
     }
+    if (clock.name !== name) {
+      clock.name = name;
+      clock.start = animationTime;
+    }
+    const delta = Math.max(0, animationTime - clock.last);
+    clock.last = animationTime;
+    clock.crouch += ((name === 'crouch' ? 1 : 0) - clock.crouch) * Math.min(1, delta / 55);
     const sheet = sheets.get(fighter.characterId);
-    if (sheet?.still) {
-      const image = (fighter.evolving && fighter.awakeningLevel === 2 && evolvedStills.get(fighter.characterId)) || sheet.still;
+    if (sheet?.posePath) {
+      loadImage(sheet.posePath).then(image => { sheet.poses = image; }).catch(() => {});
+      sheet.posePath = null;
+    }
+    if (sheet?.extraPath) {
+      loadImage(sheet.extraPath).then(image => { sheet.extras = image; }).catch(() => {});
+      sheet.extraPath = null;
+    }
+    const evolved = fighter.evolving && fighter.awakeningLevel === 2 && fighter.evolution?.sprite;
+    if (evolved && sheet?.evolvedPath) {
+      loadImage(sheet.evolvedPath).then(image => { sheet.evolved = image; }).catch(() => {});
+      sheet.evolvedPath = null;
+    }
+    if (sheet?.still || sheet?.poses) {
+      const poses = evolved && sheet.evolved ? sheet.evolved : sheet.poses;
+      const image = evolved && !sheet.evolved ? evolvedStills.get(fighter.characterId) ?? sheet.still : sheet.still;
       const height = fighter.sprite.displaySize;
-      const width = height * image.width / image.height;
       const attack = fighter.attack;
       const sway = fighter.moving ? Math.sin(fighter.walkDistance / 9) : Math.sin(animationTime / 170) * .35;
-      const effort = fighter.attackActive ? 1 : attack ? -.45 : 0;
       ctx.save();
       ctx.translate(fighter.x, ground + fighter.y);
       ctx.scale(attack?.facing ?? fighter.dash?.facing ?? fighter.facing, 1);
       if (name === 'ko') ctx.rotate(-Math.PI / 2);
-      else ctx.transform(1, 0, -.12 * effort - .035 * sway, name === 'crouch' ? .71 : 1 + sway * .035, 0, 0);
+      else {
+        applyFighterMotion(ctx, fighter, name, height, clock.crouch, Boolean(image));
+        if (name === 'run' || name === 'idle') ctx.transform(1, 0, -.035 * sway, 1 + sway * .035, 0, 0);
+      }
+      if (fighter.invulnerable) ctx.globalAlpha = .78;
       if (fighter.flash > 0) ctx.filter = 'brightness(1.5)';
-      ctx.drawImage(image, -width / 2, -height, width, height);
+      if (!image) drawPoseSheet(ctx, poses, evolved ? null : sheet.extras, fighter, name, height);
+      else {
+        const width = height * image.width / image.height;
+        const articulated = image === sheet.still && name !== 'hit' && name !== 'ko'
+          && drawStillAttack(ctx, image, width, height, fighter);
+        if (!articulated) ctx.drawImage(image, -width / 2, -height, width, height);
+      }
       ctx.restore();
       return true;
     }
-    const clip = sheet?.clips.get(name) ?? (name === 'roll' ? sheet?.clips.get('dash') : undefined);
+    const clips = sheet?.clips;
+    const fallback = name === 'roll' ? 'dash' : name === 'charge' ? 'block' : attackClips[fighter.attack?.id]?.[0];
+    const clip = clips?.get(name) ?? clips?.get(fallback) ?? clips?.get('idle');
     if (!clip) return false;
     const elapsed = name === 'run' ? fighter.walkDistance * 1000 / fighter.moveSpeed : animationTime - clock.start;
     const entry = selectFrame(clip, fighter, name, elapsed);
@@ -118,16 +160,9 @@ export function createSpriteRenderer(ctx, characters) {
     const scale = (characters[fighter.characterId].sprite?.displaySize ?? 128) / source.h;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.translate(Math.round(fighter.x), Math.round(ground + fighter.y));
+    ctx.translate(fighter.x, ground + fighter.y);
     ctx.scale((fighter.attack?.facing ?? fighter.dash?.facing ?? fighter.facing) < 0 ? -1 : 1, 1);
-    if (fighter.dash?.roll) {
-      const progress = fighter.dash.elapsed / fighter.dash.frames;
-      const spin = Math.max(0, Math.min(1, (progress - .25) * 2));
-      const radius = scale * source.h * .22;
-      ctx.translate(0, -radius);
-      ctx.rotate(spin * 2 * Math.PI);
-      ctx.translate(0, radius);
-    }
+    applyFighterMotion(ctx, fighter, name, scale * source.h, clock.crouch, false);
     if (fighter.invulnerable) ctx.globalAlpha = .78;
     if (fighter.flash > 0) ctx.filter = 'brightness(1.5)';
     ctx.drawImage(sheet.image, x, y, w, h,

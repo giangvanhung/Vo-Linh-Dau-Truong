@@ -1,4 +1,5 @@
 import { enableMenuNavigation } from './menu-navigation.js';
+import { createEquipmentPanel } from './equipment-panel.js';
 
 import { assignable, bindingLabels, defaultBindings, keyCode, keyLabel } from '../platform/keyboard.js';
 import { musicChoices, roundFormats } from '../platform/settings.js';
@@ -35,10 +36,15 @@ function choiceCard(group, id, name, image, checked, onSelect) {
   return card;
 }
 
-export function createPanels({ characters, stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile }) {
+export function createPanels({ characters, stages, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile }) {
   const panels = [...document.querySelectorAll('.game-panel')];
   const stageWrap = panels[0].closest('.stage-wrap');
   enableMenuNavigation();
+  const refreshEquipment = createEquipmentPanel(characters, equipment);
+  byId('equipment-button').addEventListener('click', () => {
+    refreshEquipment();
+    show('equipment');
+  });
   const banner = byId('fight-banner');
   const format = byId('round-format');
   let formatMode = 'solo';
@@ -277,9 +283,11 @@ export function createPanels({ characters, stages, settings, openSetup, openLan,
     hideBanner: () => { banner.hidden = true; },
     restoreBanner: () => { banner.hidden = !banner.textContent; },
     setPauseAvailable: available => { pauseButton.hidden = !available; },
-    setResult(title, score) {
+    setResult(title, score, reward = '') {
       byId('result-title').textContent = title;
       byId('result-score').textContent = score;
+      byId('result-reward').textContent = reward;
+      byId('result-reward').hidden = !reward;
     },
   };
 }

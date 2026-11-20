@@ -11,7 +11,6 @@
     "cpuStartRatio": 0.69,
     "jumpVelocity": 590,
     "gravity": 1500,
-    "pushboxHeightRatio": 0.65,
     "roundSeconds": 60,
     "winsToMatch": 2
   },
@@ -185,7 +184,7 @@
           ]
         }
       },
-      "moveSpeed": 270,
+      "moveSpeed": 297,
       "hurtboxSize": {
         "width": 46,
         "height": 106
@@ -439,7 +438,7 @@
           ]
         }
       },
-      "moveSpeed": 335,
+      "moveSpeed": 369,
       "hurtboxSize": {
         "width": 37,
         "height": 102
@@ -754,7 +753,7 @@
           ]
         }
       },
-      "moveSpeed": 350,
+      "moveSpeed": 385,
       "hurtboxSize": {
         "width": 37,
         "height": 102
@@ -1034,7 +1033,7 @@
           ]
         }
       },
-      "moveSpeed": 245,
+      "moveSpeed": 270,
       "hurtboxSize": {
         "width": 37,
         "height": 102
@@ -1313,7 +1312,7 @@
           ]
         }
       },
-      "moveSpeed": 310,
+      "moveSpeed": 341,
       "hurtboxSize": {
         "width": 37,
         "height": 102
@@ -1590,7 +1589,7 @@
           "status": "frost"
         }
       },
-      "moveSpeed": 278,
+      "moveSpeed": 306,
       "hurtboxSize": {
         "width": 46,
         "height": 106
@@ -1869,7 +1868,7 @@
           "status": "poison"
         }
       },
-      "moveSpeed": 309,
+      "moveSpeed": 340,
       "hurtboxSize": {
         "width": 37,
         "height": 102
@@ -1997,12 +1996,15 @@
             "scale": 1.2000000000000002,
             "bonusHp": 18,
             "damageMultiplier": 1.12,
+            "poseSheet": "/assets/characters/golem/evolution-two-poses.png",
             "sprite": "/assets/characters/golem/evolution-two.png"
           }
         }
       },
       "sprite": {
         "still": "/assets/characters/golem/avatar.png",
+        "poseSheet": "/assets/characters/golem/poses.png",
+        "extraPoses": "/assets/characters/golem/extra-poses.png",
         "displaySize": 144
       },
       "name": "Thạch Khôi",
@@ -2138,7 +2140,7 @@
           ]
         }
       },
-      "moveSpeed": 196,
+      "moveSpeed": 216,
       "hurtboxSize": {
         "width": 37,
         "height": 102
@@ -2231,7 +2233,8 @@
       "weapon": {
         "image": "/assets/effects/golem-hammer.png",
         "width": 103,
-        "tilt": -0.25
+        "tilt": -0.43,
+        "arc": 1.76
       }
     },
     "fox": {
@@ -2275,6 +2278,8 @@
       },
       "sprite": {
         "still": "/assets/characters/fox/avatar.png",
+        "poseSheet": "/assets/characters/fox/poses.png",
+        "extraPoses": "/assets/characters/fox/extra-poses.png",
         "displaySize": 127
       },
       "name": "Yêu Hồ Lam Vĩ",
@@ -2397,7 +2402,7 @@
           ]
         }
       },
-      "moveSpeed": 307,
+      "moveSpeed": 338,
       "hurtboxSize": {
         "width": 37,
         "height": 102
@@ -2490,7 +2495,11 @@
       "weapon": {
         "image": "/assets/effects/fox-spear.png",
         "width": 117,
-        "tilt": -0.6,
+        "tilt": 0.2,
+        "arc": 0.45,
+        "reach": 33,
+        "gripX": 0.42,
+        "gripY": 0.61,
         "projectile": true
       }
     },
@@ -2561,7 +2570,15 @@
       },
       "sprite": {
         "still": "/assets/characters/goblin/avatar.png",
+        "poseSheet": "/assets/characters/goblin/poses.png",
+        "extraPoses": "/assets/characters/goblin/extra-poses.png",
         "displaySize": 108
+      },
+      "weapon": {
+        "image": "/assets/effects/party-sword.png",
+        "width": 91,
+        "tilt": -0.58,
+        "arc": 1.24
       },
       "name": "Goblin Răng Đồng",
       "hp": 93,
@@ -2701,7 +2718,7 @@
           }
         }
       },
-      "moveSpeed": 322,
+      "moveSpeed": 354,
       "hurtboxSize": {
         "width": 37,
         "height": 81
@@ -2843,7 +2860,18 @@
       },
       "sprite": {
         "still": "/assets/characters/elf/avatar.png",
+        "poseSheet": "/assets/characters/elf/poses.png",
+        "extraPoses": "/assets/characters/elf/extra-poses.png",
         "displaySize": 139
+      },
+      "weapon": {
+        "image": "/assets/effects/fox-spear.png",
+        "width": 105,
+        "tilt": 0.14,
+        "arc": 0.6,
+        "reach": 34,
+        "gripX": 0.43,
+        "gripY": 0.59
       },
       "name": "Elf Lục Tiễn",
       "hp": 102,
@@ -2960,7 +2988,7 @@
           }
         }
       },
-      "moveSpeed": 278,
+      "moveSpeed": 306,
       "hurtboxSize": {
         "width": 37,
         "height": 104
@@ -3093,7 +3121,15 @@
       },
       "sprite": {
         "still": "/assets/characters/jackal/avatar.png",
+        "poseSheet": "/assets/characters/jackal/poses.png",
+        "extraPoses": "/assets/characters/jackal/extra-poses.png",
         "displaySize": 134
+      },
+      "weapon": {
+        "kind": "staff",
+        "color": "#8052a5",
+        "tilt": -0.92,
+        "arc": 1.18
       },
       "name": "Pháp Sư Sa Nguyệt",
       "hp": 99,
@@ -3210,7 +3246,7 @@
           "radial": true
         }
       },
-      "moveSpeed": 231,
+      "moveSpeed": 254,
       "hurtboxSize": {
         "width": 37,
         "height": 101
@@ -3342,6 +3378,8 @@
       },
       "sprite": {
         "still": "/assets/characters/robot/avatar.png",
+        "poseSheet": "/assets/characters/robot/poses.png",
+        "extraPoses": "/assets/characters/robot/extra-poses.png",
         "displaySize": 135
       },
       "name": "K-07 Đấm Thép",
@@ -3459,7 +3497,7 @@
           "radial": false
         }
       },
-      "moveSpeed": 205,
+      "moveSpeed": 226,
       "hurtboxSize": {
         "width": 37,
         "height": 99
@@ -3601,7 +3639,15 @@
       },
       "sprite": {
         "still": "/assets/characters/corgi/avatar.png",
+        "poseSheet": "/assets/characters/corgi/poses.png",
+        "extraPoses": "/assets/characters/corgi/extra-poses.png",
         "displaySize": 104
+      },
+      "weapon": {
+        "kind": "pan",
+        "color": "#554c51",
+        "tilt": -0.83,
+        "arc": 1.6
       },
       "name": "Bếp Trưởng Bánh Bao",
       "hp": 88,
@@ -3718,7 +3764,7 @@
           "radial": false
         }
       },
-      "moveSpeed": 328,
+      "moveSpeed": 361,
       "hurtboxSize": {
         "width": 37,
         "height": 76
@@ -3855,6 +3901,7 @@
             "color": "#6adbbd",
             "scale": 1.19,
             "damageMultiplier": 1.17,
+            "poseSheet": "/assets/characters/dragon/evolution-two-poses.png",
             "sprite": "/assets/characters/dragon/evolution-two.png",
             "bonusHp": 18
           }
@@ -3862,6 +3909,8 @@
       },
       "sprite": {
         "still": "/assets/characters/dragon/avatar.png",
+        "poseSheet": "/assets/characters/dragon/poses.png",
+        "extraPoses": "/assets/characters/dragon/extra-poses.png",
         "displaySize": 133
       },
       "name": "Lục Long Trầm Vân",
@@ -3979,7 +4028,7 @@
           "radial": false
         }
       },
-      "moveSpeed": 254,
+      "moveSpeed": 279,
       "hurtboxSize": {
         "width": 37,
         "height": 103
@@ -4135,6 +4184,8 @@
       },
       "sprite": {
         "still": "/assets/characters/shadow/avatar.png",
+        "poseSheet": "/assets/characters/shadow/poses.png",
+        "extraPoses": "/assets/characters/shadow/extra-poses.png",
         "displaySize": 130
       },
       "name": "Tử Ảnh Lam Chi",
@@ -4252,7 +4303,7 @@
           "radial": true
         }
       },
-      "moveSpeed": 273,
+      "moveSpeed": 300,
       "hurtboxSize": {
         "width": 37,
         "height": 99
@@ -4543,6 +4594,39 @@
       "parallax": [],
       "artGroundRatio": 0.72,
       "platforms": []
+    },
+    "hoian": {
+      "name": "Phố Đèn Hội An",
+      "description": "Sân lát đá bên sông, đèn lồng, thuyền nhỏ và xe đạp trước dãy nhà vàng.",
+      "background": "/assets/backgrounds/hoian-lanterns.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.83,
+      "platforms": []
+    },
+    "paris": {
+      "name": "Quảng Trường Bờ Seine",
+      "description": "Quán cà phê, sạp sách và hàng hoa nhìn ra tháp Eiffel.",
+      "background": "/assets/backgrounds/paris-seine.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.81,
+      "platforms": []
+    },
+    "route66": {
+      "name": "Trạm Dừng Route 66",
+      "description": "Quán ăn ven đường, xe cổ và trạm xăng giữa hoàng hôn sa mạc.",
+      "background": "/assets/backgrounds/route66-diner.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": []
+    },
+    "football": {
+      "name": "Sân Bóng Khu Phố",
+      "description": "Sân đất dưới đèn pha, có khung thành và một quả bóng có thể đá nảy.",
+      "background": "/assets/backgrounds/neighborhood-football.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": [],
+      "football": true
     }
   }
 }

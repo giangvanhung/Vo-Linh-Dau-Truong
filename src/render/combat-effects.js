@@ -8,7 +8,7 @@ export function createCombatEffects(ctx, images) {
     ctx.shadowBlur = 10;
     ctx.translate(x, ground + y);
     ctx.scale(facing, 1);
-    const weapon = !attack.pickupWeapon && attacker.weapon?.projectile && images.get(attacker.weapon.image);
+    const weapon = attack.usesNativeWeapon && attacker.weapon?.projectile && images.get(attacker.weapon.image);
     if (weapon) {
       const size = width * 1.08;
       const imageHeight = size * weapon.height / weapon.width;
@@ -64,77 +64,37 @@ export function createCombatEffects(ctx, images) {
     ctx.restore();
   }
 
-  function drawPartyWeapon(kind, fighter, ground) {
-    const attack = fighter.attack;
-    ctx.save();
-    ctx.translate(fighter.x, ground + fighter.y - fighter.height * .6);
-    ctx.scale(attack?.facing ?? fighter.facing, 1);
-    ctx.rotate(fighter.attackActive ? .27 : -.67);
-    ctx.fillStyle = ctx.strokeStyle = gear[kind].color;
-    ctx.lineCap = 'round';
-    if (kind === 'slipper') {
-      ctx.beginPath();
-      ctx.ellipse(25, 0, 17, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#694e36';
-      for (let x = 18; x <= 35; x += 5) ctx.fillRect(x, -4, 2, 7);
-    } else {
-      const length = kind === 'rattan' ? 75 : 55;
-      ctx.lineWidth = kind === 'rattan' ? 3 : 6;
-      ctx.beginPath();
-      ctx.moveTo(7, 0);
-      ctx.quadraticCurveTo(length * .7, kind === 'rattan' ? (fighter.attackActive ? -25 : 16) : 0, length, 0);
-      ctx.stroke();
-      if (kind === 'broom') {
-        ctx.beginPath();
-        ctx.moveTo(length - 12, 0);
-        ctx.lineTo(length + 9, -12);
-        ctx.lineTo(length + 9, 12);
-        ctx.closePath();
-        ctx.fill();
-      }
-      if (kind === 'dogStaff') {
-        ctx.strokeStyle = '#355e43';
-        ctx.lineWidth = 2;
-        for (let x = 19; x < length; x += 10) {
-          ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x, 3); ctx.stroke();
-        }
-      }
-    }
-    ctx.restore();
-  }
-
   function drawCombatEffects(fighter, ground) {
     if (fighter.hp <= 0) return;
     const attack = fighter.attack;
-    const kind = attack?.pickupWeapon ?? (fighter.weaponUses ? fighter.pickupWeapon : '');
-    const item = gear[kind];
-    if (item?.swing) drawPartyWeapon(kind, fighter, ground);
-    if (attack?.projectile?.shape === 'waveBeam' && attack.elapsed < attack.startup) {
-      const radius = 2 + 15 * attack.elapsed / attack.startup;
+    if (attack?.projectile && !attack.pickupWeapon && !fighter.disabled && attack.elapsed < attack.startup) {
+      const progress = attack.elapsed / attack.startup;
+      const radius = 2 + (attack.projectile.shape === 'waveBeam' ? 15 : 8) * progress;
       ctx.save();
-      ctx.shadowBlur = 18;
-      ctx.shadowColor = '#55bfff';
-      ctx.fillStyle = '#d8f8ff';
+      ctx.globalAlpha = .35 + progress * .55;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = attack.projectile.color;
+      ctx.fillStyle = attack.projectile.color;
       ctx.beginPath();
       ctx.arc(fighter.x + attack.facing * fighter.width * .58, ground + fighter.y - attack.projectile.yOffset,
         radius, 0, Math.PI * 2);
       ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff4db';
+      ctx.beginPath();
+      ctx.arc(fighter.x + attack.facing * fighter.width * .58, ground + fighter.y - attack.projectile.yOffset,
+        radius * .48, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
-    if (fighter.shieldHp > 0 || item?.image) {
-      const equipment = fighter.shieldHp > 0 ? [gear.shield, item] : [item];
+    const shield = fighter.shieldHp > 0 && images.get(gear.shield.image);
+    if (shield) {
+      const width = 34;
+      const height = width * shield.height / shield.width;
       ctx.save();
       ctx.translate(fighter.x, ground + fighter.y);
       ctx.scale(attack?.facing ?? fighter.facing, 1);
-      for (const [index, entry] of equipment.entries()) {
-        const image = images.get(entry?.image);
-        if (!image) continue;
-        const guard = entry === gear.shield;
-        const size = guard ? 34 : fighter.attackActive && entry === gear.sword ? 83 : 56;
-        const height = size * image.height / image.width;
-        ctx.drawImage(image, (index || !guard ? 18 : -35) - size / 4, -fighter.hurtbox.height * .68 - height / 2, size, height);
-      }
+      ctx.drawImage(shield, -44, -fighter.hurtbox.height * .68 - height / 2, width, height);
       ctx.restore();
     }
     if (!attack || attack.projectile || (!fighter.skills[attack.id] && !attack.pickupWeapon && !attack.showArc)) return;

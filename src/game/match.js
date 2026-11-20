@@ -1,5 +1,5 @@
 import { FRAME_SECONDS, Fighter, findHit, applyHit, updateProjectiles } from '../combat/fighter.js';
-import { updateFacing, pushboxesOverlap, separateFighters } from '../combat/positioning.js';
+import { updateFacing } from '../combat/positioning.js';
 import { CpuController } from '../combat/cpu.js';
 import { GameAudio } from '../platform/audio.js';
 import { createKeyboard, defaultBindings, keyCode } from '../platform/keyboard.js';
@@ -13,6 +13,8 @@ import { applyStageEffects, stageForMatch } from './stages.js';
 import { TrainingSession } from './training.js';
 import { applyControls } from './fighter-controls.js';
 import { createPickups, equippedHeavy, gear } from './pickups.js';
+import { createStageBall, updateStageBall } from './stage-ball.js';
+import { awardEquipment, equipFighter, loadEquipment, rarities, saveEquipment } from './equipment.js';
 
 export function startGame(config) {
   const canvas = document.querySelector('#arena');
@@ -21,6 +23,7 @@ export function startGame(config) {
   const ui = { toast: byId('toast'), 'status-text': byId('status-text') };
   const hud = createHud(config);
   const settings = loadSettings();
+  const equipment = loadEquipment();
   const training = new TrainingSession();
   const canTrain = () => practice && phase === 'fight';
   const controlRules = { jumpVelocity: config.stage.jumpVelocity, useAttack, activateAwakening, toast };
@@ -32,6 +35,7 @@ export function startGame(config) {
   const world = { width: canvas.width, height: canvas.height, gravity: config.stage.gravity };
   let stage = stageForMatch(config.stage, config.stages.rooftop, true);
   let stageFrame = 0;
+  let ball = null;
   let partyItems = false;
   const pickups = createPickups();
   function setStage(id, hazards) {
@@ -48,6 +52,7 @@ export function startGame(config) {
   let difficulty = 'normal', cpu;
   let bestOf = 3, damageHung = 0, damageMai = 0;
   let localMode = '', teamCpuIds = [], activePlayer = 0, activeCpu = 0;
+  const isPve = () => !practice && !lan && localMode !== 'versus';
   let hitstop = 0, shake = 0;
   let animationTime = 0;
   let previousPositions = [];
@@ -62,6 +67,7 @@ export function startGame(config) {
   function makeFighter(id, side) {
     const fighter = new Fighter(config.characters[id], fighterX(side), side === 'hung' ? 1 : -1, config.combat);
     fighter.characterId = id;
+    if (side === 'hung' || lan || localMode === 'versus') equipFighter(fighter, equipment, id, side === 'hung' && isPve() && phase !== 'menu');
     return fighter;
   }
 
@@ -76,6 +82,7 @@ export function startGame(config) {
     mai = makeFighter(localMode === 'team' ? teamCpuIds[0] : opponentId, 'mai');
     seconds = roundLength;
     stageFrame = 0;
+    ball = createStageBall(stage, world.width);
     pickups.reset();
     hitstop = shake = toastClock = 0;
     clearInputs();
@@ -181,7 +188,7 @@ export function startGame(config) {
     startMatch();
   }
 
-  const panels = createPanels({ characters: config.characters, stages: config.stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile: (id, file) => audio.setMusicFile(id, file) });
+  const panels = createPanels({ characters: config.characters, stages: config.stages, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile: (id, file) => audio.setMusicFile(id, file) });
 
   const pairing = byId('lan-pairing');
   const address = byId('lan-address');
@@ -445,9 +452,6 @@ export function startGame(config) {
       if (phaseTime <= 0) panels.showBanner('');
     }
     const movementStart = [hung.x, mai.x];
-    const startingGap = mai.x - hung.x;
-    const startingSide = Math.sign(startingGap) || hung.facing;
-    const bodiesTouchingVertically = pushboxesOverlap(hung, mai, config.stage.pushboxHeightRatio);
     updateFacing(hung, mai);
     const local = keyboard.consumeActions();
     const second = keyboardP2.consumeActions();
@@ -480,9 +484,12 @@ export function startGame(config) {
     applyStageEffects(world, hung, movementStart[0], stageFrame, dt);
     applyStageEffects(world, mai, movementStart[1], stageFrame, dt);
     const previousX = [hung.x, mai.x];
+    const wasAirborne = [!hung.onGround, !mai.onGround];
     hung.update(dt, world, mai);
     mai.update(dt, world, hung);
+    updateStageBall(ball, [hung, mai], world.width, dt);
     for (const [index, fighter] of [hung, mai].entries()) {
+      if (wasAirborne[index] && fighter.onGround) burst(fighter.x, fighter.y - 2, 4, '#d2ba97');
       if (fighter.dash?.elapsed === 1) audio.cue('dash');
       const attack = fighter.attack;
       if (attack && attack.elapsed === attack.startup) {
@@ -502,7 +509,6 @@ export function startGame(config) {
         });
       }
     }
-    separateFighters(hung, mai, world, config.stage.pushboxHeightRatio, startingSide, bodiesTouchingVertically);
     updateFacing(hung, mai);
     for (const [index, fighter] of [hung, mai].entries()) {
       const step = fighter.x - movementStart[index];
@@ -511,10 +517,7 @@ export function startGame(config) {
         && fighter.onGround && !fighter.disabled
         && !fighter.attack && !fighter.dash && !fighter.blocking && !fighter.crouching;
       if (fighter.moving) {
-        const backwards = step * fighter.facing < 0;
-        if (backwards !== fighter.walkBackwards) fighter.walkDistance = 0;
-        fighter.walkBackwards = backwards;
-        fighter.walkDistance += Math.min(Math.abs(step), Math.abs(intended));
+        fighter.walkDistance += Math.sign(step) * fighter.facing * Math.min(Math.abs(step), Math.abs(intended));
       } else {
         fighter.walkDistance = 0;
       }
@@ -586,6 +589,7 @@ export function startGame(config) {
     hitstop = Math.max(hitstop, hit.hitstop);
     shake = Math.max(shake, hit.hitstop ? .14 : .07);
     if (broken) toast('VỠ THẾ THỦ!');
+    else if (hit.critical && damage) toast('CHÍ MẠNG!');
     else if (combo >= 2) toast(attacker.name.toUpperCase() + ' · COMBO ' + combo + ' HIT');
     else if (blocked) toast('ĐỠ ĐÒN!');
     const sparkType = blocked ? 'guard' : isKick ? 'kick' : 'hit';
@@ -633,9 +637,18 @@ export function startGame(config) {
     const winner = localMode === 'team' ? (lead > 0 ? 'ĐỘI NGƯỜI CHƠI' : 'ĐỘI CPU') : (lead > 0 ? hung : mai).name.toUpperCase();
     ui['status-text'].textContent = lead === 0 ? 'HIỆP HÒA · ĐẤU LẠI' : winner + ' THẮNG HIỆP';
     const headToHead = lan || localMode === 'versus';
+    let rewardText = '';
+    if (!nextRound && isPve()) {
+      const reward = awardEquipment(equipment, winsHung > winsMai);
+      const saved = saveEquipment(equipment);
+      rewardText = '+' + reward.gold + ' gold · +' + reward.material + ' nguyên liệu';
+      if (reward.item) rewardText += ' · Mở ' + reward.item.name + ' (' + rarities[reward.item.tier] + ')';
+      if (!saved) rewardText += ' · Lưu trong phiên này';
+    }
     panels.setResult(
       localMode === 'team' ? (winsHung > winsMai ? 'Đội người chơi thắng' : 'Đội CPU thắng') : headToHead ? 'P' + (winsHung > winsMai ? '1' : '2') + ' thắng trận' : winsHung > winsMai ? 'Chiến thắng' : 'Thất bại',
       `${hung.name} (${headToHead ? 'P1' : 'bạn'}) ${winsHung} – ${winsMai} ${mai.name} (${headToHead ? 'P2' : 'CPU'})`,
+      rewardText,
     );
     if (nextRound && lead !== 0) round++;
   }
@@ -671,7 +684,7 @@ export function startGame(config) {
       if (Math.hypot(dx, dy) > 24) return [0, 0]; // Snap across teleports.
       return [dx * remaining, dy * remaining];
     });
-    render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, animationTime, debug, drop: pickups.drop });
+    render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, animationTime, debug, ball, drop: pickups.drop });
     if (toastClock <= 0) ui.toast.classList.remove('show');
     requestAnimationFrame(frame);
   }
