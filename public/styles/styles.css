@@ -160,6 +160,7 @@
 .pause-button { position: absolute; z-index: 2; top: 10px; right: 10px; }
 .fight-banner { position: absolute; z-index: 2; inset: 0; display: grid; place-items: center; pointer-events: none; font: 700 clamp(56px, 12vw, 126px)/1 "Space Grotesk", sans-serif; color: #fff0d8; text-shadow: 0 3px 0 #9f4029, 0 0 35px #f58d53; background: #19131c36; }
 .fight-banner.finish { color: #ffc47f; animation: knockout .25s ease-out both; }
+.keyboard-hint { position: absolute; z-index: 3; left: 50%; bottom: 28px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px); padding: 7px 12px; border: 1px solid #ac763e; border-radius: 6px; background: #211914; color: #ffe0ae; text-align: center; font-size: 12px; line-height: 1.4; pointer-events: none; }
 @keyframes knockout { from { opacity: .35; transform: scale(1.13); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .fight-banner.finish { animation: none; } }
 .hud .player-hud strong { color: var(--fighter-color, #f1efed); }

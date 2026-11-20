@@ -37,6 +37,7 @@ export class Fighter {
     this.chargeFrames = 0;
     this.awakeningFrames = 0;
     this.awakeningLevel = 0;
+    this.flightTarget = null;
     this.awakeningUnlocked = false;
     this.awakeningWindow = 0;
     this.lastConfirmedAttack = null;
@@ -75,6 +76,7 @@ export class Fighter {
   get evolution() { return this.awakeningForm?.evolution; }
   get awakeningDuration() { return this.awakeningForm?.durationFrames ?? 480; }
   get evolving() { return this.awakeningFrames > 0 && Boolean(this.evolution); }
+  get canFly() { return this.evolving && Boolean(this.evolution.flightHeight); }
   get nextAwakening() {
     if (!this.awakeningLevel) return this.awakening ? 1 : 0;
     return this.awakeningLevel === 1 && this.awakening.levelTwo ? 2 : 0;
@@ -88,12 +90,14 @@ export class Fighter {
   }
 
   charge(held) {
-    if (!held || !this.canFocus || (this.awakeningFrames && this.nextAwakening !== 2)) {
+    if (!held || !this.canFocus) {
       this.chargeFrames = 0;
       return;
     }
     this.chargeFrames = Math.min(60, this.chargeFrames + 1);
-    if (this.chargeFrames > 18) this.gainMeter(.45);
+    if (this.chargeStyle === 'pressure') {
+      if (this.chargeFrames > 30) this.gainMeter(.62);
+    } else if (this.chargeFrames > 18) this.gainMeter(.45);
   }
 
   awaken() {
@@ -113,10 +117,22 @@ export class Fighter {
   }
 
   endAwakening() {
+    this.stopFlight();
     this.awakeningFrames = 0;
     this.awakeningLevel = 0;
     this.maxHp = this.baseHp;
     this.hp = Math.min(this.hp, this.maxHp);
+  }
+
+  startFlight() {
+    this.flightTarget = this.y - this.evolution.flightHeight;
+    this.onGround = false;
+  }
+
+  stopFlight() {
+    if (this.flightTarget === null) return;
+    this.flightTarget = null;
+    this.vy = Math.max(0, this.vy);
   }
 
   skillFor(id) {
@@ -150,7 +166,7 @@ export class Fighter {
   startAttack(id, definition, target) {
     if (this.disabled || this.dash || this.attackLock > 0 || this.blocking) return false;
     const cost = definition.cost ?? 0;
-    if ((definition.groundOnly && !this.onGround) || this.cooldowns[id] > 0 || this.meter < cost) return false;
+    if ((definition.groundOnly && !this.onGround) || this.cooldowns[id] > 0 || this.meter < (definition.meterRequired ?? cost)) return false;
     const previous = this.attack;
     if (previous && (!previous.confirmed || !previous.cancelInto.includes(id)
       || target.hitstun <= definition.startup)) return false;
@@ -289,6 +305,14 @@ export class Fighter {
   }
 
   updateVertical(dt, world) {
+    if (this.flightTarget !== null) {
+      if (this.canFly && !this.disabled) {
+        this.y = Math.max(this.flightTarget, this.y - 245 * dt);
+        this.vy = 0;
+        return;
+      }
+      this.stopFlight();
+    }
     let floor = 0;
     for (const platform of world.platforms ?? []) {
       if (this.y <= platform.y && overlapsSurface(this.x, world.width, platform.range)) floor = Math.min(floor, platform.y);
@@ -335,199 +359,4 @@ export class Fighter {
       height: limb.height,
     };
   }
-}
-
-export function findHit(attacker, defender) {
-  const attack = attacker.attack;
-  if (!attacker.attackActive || attack.projectile) return null;
-  let hit = attack;
-  const contactFor = () => {
-    for (const box of attacker.attackBoxes) {
-      const contact = findContact(attacker, defender, hit, box, attacker.x);
-      if (contact) return contact;
-    }
-    return null;
-  };
-  if (attack.pulses) {
-    const frame = attack.elapsed - attack.startup;
-    const pulse = attack.pulses.findIndex(({ from, to }) => frame >= from && frame < to);
-    if (pulse === -1 || pulse === attack.lastPulse) return null;
-    hit = { ...attack, ...attack.pulses[pulse] };
-    const contact = contactFor();
-    return contact && { ...contact, onContact: () => { attack.lastPulse = pulse; } };
-  }
-  return attack.hit ? null : contactFor();
-}
-
-function findContact(attacker, defender, attack, box, sourceX, direction) {
-  if (defender.hp <= 0) return null;
-  const hurt = defender.hurtbox;
-  const left = Math.max(box.x, hurt.x);
-  const right = Math.min(box.x + box.width, hurt.x + hurt.width);
-  const top = Math.max(box.y, hurt.y);
-  const bottom = Math.min(box.y + box.height, hurt.y + hurt.height);
-  if (left >= right || top >= bottom) return null;
-  if (defender.invulnerable) {
-    if (defender.characterId === 'mai' && defender.dash?.roll) defender.awakeningWindow = 150;
-    return null;
-  }
-  return {
-    attacker, defender, attack,
-    blocked: defender.blocking && (!defender.lowGuardOnly || attack.level === 'low')
-      && (direction ?? (Math.sign(sourceX - defender.x) || -attack.facing)) * defender.facing > 0,
-    direction: direction ? -direction : attack.radial ? Math.sign(defender.x - sourceX) || attack.facing : attack.facing,
-    x: (left + right) / 2,
-    y: (top + bottom) / 2,
-  };
-}
-
-export function applyHit(contact) {
-  const { attacker, defender, attack, blocked } = contact;
-  const rules = attacker.rules;
-  contact.onContact?.();
-  attack.hit = true;
-  attack.confirmed = !blocked;
-  const combo = blocked ? 0 : contact.projectile ? 1 : attacker.combo + 1;
-  if (!contact.projectile || !attacker.attacking) attacker.combo = combo;
-  const scale = rules.comboScaling[Math.min(combo - 1, rules.comboScaling.length - 1)];
-  // Apply chip separately from the damage that passes through guard.
-  const evolution = attack.evolvedPunch && !contact.projectile ? attacker.evolution : null;
-  const multiplier = blocked ? 1 - rules.blockReduction + rules.chipRate : scale * (evolution?.punchMultiplier ?? 1);
-  const previousHP = defender.hp;
-  const attackBonus = attack.equipmentAttack ?? 1;
-  const critical = blocked ? 1 : attack.criticalMultiplier ?? 1;
-  const defense = 1 - (defender.equipmentStats?.defense ?? 0) / 100;
-  const incoming = Math.round(attack.damage * multiplier * attackBonus * critical * defense * 100) / 100;
-  const absorbed = Math.min(defender.shieldHp, incoming);
-  defender.shieldHp = Math.round((defender.shieldHp - absorbed) * 100) / 100;
-  defender.hp = Math.max(0, Math.round((previousHP - incoming + absorbed) * 100) / 100);
-  defender.knockVelocity = contact.direction * attack.knockback * (blocked ? .16 : 1);
-  const damage = Math.round((previousHP - defender.hp) * 100) / 100;
-  let inflicted;
-  if (!blocked) {
-    if (evolution?.lifeSteal && attacker.hp > 0) {
-      attacker.hp = Math.min(attacker.maxHp, Math.round((attacker.hp + damage * evolution.lifeSteal) * 100) / 100);
-    }
-    if (defender.freezeFrames) {
-      defender.freezeFrames = 0;
-      inflicted = 'shatter';
-    }
-    if (attack.status === 'frost' && !defender.frostImmunity) {
-      defender.frostWindow = 240;
-      if (++defender.frostStacks >= 3) {
-        defender.frostStacks = 0;
-        defender.freezeFrames = 45;
-        defender.frostImmunity = 140;
-        defender.knockVelocity = 0;
-        attacker.awakeningUnlocked = true;
-        inflicted = 'freeze';
-      }
-    }
-    if (attack.status === 'poison') {
-      defender.poisonFrames = 210;
-      if (++defender.poisonStacks >= 3) {
-        defender.poisonStacks = 0;
-        attacker.awakeningUnlocked = true;
-        inflicted = 'poisonStun';
-      }
-    }
-  }
-  attacker.gainMeter(damage * rules.meterOnDeal);
-  defender.gainMeter(blocked ? rules.meterOnBlock : damage * rules.meterOnReceive);
-  const broken = blocked && defender.spendGuard(attack.guardDamage);
-  if (blocked && !broken && defender.characterId === 'hung') defender.awakeningWindow = 150;
-  if (broken && attacker.characterId === 'ngoc') attacker.awakeningUnlocked = true;
-  if (blocked) {
-    defender.attackLock = .14;
-  } else {
-    defender.attack = null;
-    defender.dash = null;
-    defender.chargeFrames = 0;
-    if (attack.launch) {
-      defender.vy = -attack.launch;
-      defender.onGround = false;
-    }
-    if ((attacker.characterId === 'hung' && attacker.awakeningWindow && attack.id === 'heavy')
-      || (attacker.characterId === 'mai' && attacker.awakeningWindow)
-      || (attacker.characterId === 'linh' && combo >= 2 && attacker.lastConfirmedAttack === 'kick' && attack.id === 'closeSkill')
-      || attacker.awakening?.unlockAttack === attack.id) {
-      attacker.awakeningUnlocked = true;
-    }
-    if (attacker.characterId === 'vy' && attack.level === 'low' && !contact.projectile) {
-      attacker.awakeningWindow = 150;
-      attacker.awakeningSide = Math.sign(defender.x - attacker.x);
-    }
-    attacker.lastConfirmedAttack = attack.id;
-    defender.hitstun = inflicted === 'poisonStun' ? Math.max(42, attack.hitstun) : attack.hitstun;
-    defender.crouching = false;
-    defender.flash = .13;
-  }
-
-  return {
-    ...contact, combo, broken, inflicted,
-    damage, critical: critical > 1,
-    absorbed,
-    hitstop: blocked ? 0 : attack.hitstop,
-  };
-}
-
-export function updateProjectiles(projectiles, fighters, dt, world) {
-  const contacts = [];
-  for (const attacker of fighters) {
-    const attack = attacker.attack;
-    if (!attack?.projectile || attack.elapsed !== attack.startup) continue;
-    const { width, yOffset, lifetimeFrames, spawnOffset = attacker.width / 2 } = attack.projectile;
-    projectiles.push({
-      attacker, attack, x: attacker.x + attack.facing * (spawnOffset + width / 2),
-      y: attacker.y - yOffset, frames: lifetimeFrames, age: 0, facing: attack.facing, hit: false,
-    });
-  }
-  for (let i = projectiles.length - 1; i >= 0; i--) {
-    const shot = projectiles[i];
-    const { attacker, attack } = shot;
-    const { speed, width, height, pierce, returnAfter, delayFrames, afterfire, poolFrames } = attack.projectile;
-    const reachedEdge = shot.facing > 0 ? shot.x >= world.width - width / 2 : shot.x <= width / 2;
-    if (returnAfter && !shot.returned && (shot.age >= returnAfter || reachedEdge)) {
-      shot.returned = true;
-      shot.facing *= -1;
-      shot.hit = false;
-    }
-    shot.age++;
-    const velocity = shot.age <= (delayFrames ?? 0) ? speed * .12 : speed;
-    const oldX = shot.x;
-    shot.x += shot.facing * velocity * dt;
-    shot.frames--;
-    const defender = fighters.find(fighter => fighter !== attacker);
-    if (!shot.hit) {
-      const hit = findContact(attacker, defender, attack, {
-        x: Math.min(oldX, shot.x) - width / 2, y: shot.y - height / 2,
-        width: width + Math.abs(shot.x - oldX), height,
-      }, oldX, -shot.facing);
-      if (hit) {
-        contacts.push({ ...hit, projectile: true });
-        shot.hit = true;
-        if ((!returnAfter && hit.blocked) || !pierce) shot.frames = 0;
-      }
-    }
-    const expired = shot.frames <= 0 || shot.x < -width || shot.x > world.width + width;
-    if (!shot.hit && (expired || (shot.x - defender.x) * attack.facing > (width + defender.width) / 2)) {
-      attack.projectileMissed = true;
-    }
-    if (expired && poolFrames) {
-      const platform = (world.platforms ?? []).find(surface => shot.y <= surface.y && overlapsSurface(shot.x, world.width, surface.range));
-      shot.x = Math.max(42, Math.min(world.width - 42, shot.x));
-      shot.y = (platform?.y ?? 0) - 9;
-      shot.attack = { ...attack, damage: 2, knockback: 35, hitstun: 8, level: 'low',
-        projectile: { ...attack.projectile, poolFrames: 0, speed: 0, width: 84, height: 18, pierce: true, shape: 'pool' } };
-      shot.hit = false;
-      shot.frames = poolFrames;
-    } else if (expired && afterfire && shot.x >= 0 && shot.x <= world.width) {
-      shot.attack = { ...attack, damage: 5, level: 'low', hitstun: 12, knockback: 65,
-        projectile: { ...attack.projectile, afterfire: false, speed: 0, width: 65, height: 16, shape: 'embers' } };
-      shot.y = -8;
-      shot.hit = false;
-      shot.frames = 27;
-    } else if (expired) projectiles.splice(i, 1);
-  }
-  return contacts;
 }

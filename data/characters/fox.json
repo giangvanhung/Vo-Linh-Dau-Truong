@@ -1,0 +1,266 @@
+{
+  "awakening": {
+    "unlockAttack": "rangedSkill",
+    "condition": "Phi thương trúng khi đối thủ hở thủ",
+    "skill": "rangedSkill",
+    "label": "Hồ Ảnh Thương · Hồi Linh",
+    "changes": {
+      "projectile": {
+        "returnAfter": 32,
+        "lifetimeFrames": 67,
+        "pierce": true
+      }
+    },
+    "evolution": {
+      "color": "#b4adff",
+      "scale": 1.05,
+      "damageMultiplier": 1.08
+    },
+    "levelTwo": {
+      "skill": "rangedSkill",
+      "label": "Hồi Linh · Thiên Hồ",
+      "durationFrames": 540,
+      "changes": {
+        "projectile": {
+          "returnAfter": 39,
+          "lifetimeFrames": 82,
+          "pierce": true,
+          "width": 89,
+          "speed": 725
+        },
+        "damage": 16
+      },
+      "evolution": {
+        "color": "#d9cbff",
+        "scale": 1.1300000000000001,
+        "damageMultiplier": 1.12
+      }
+    }
+  },
+  "sprite": {
+    "still": "/assets/characters/fox/avatar.png",
+    "poseSheet": "/assets/characters/fox/poses.png",
+    "extraPoses": "/assets/characters/fox/extra-poses.png",
+    "displaySize": 127
+  },
+  "name": "Yêu Hồ Lam Vĩ",
+  "hp": 89,
+  "width": 38,
+  "height": 100,
+  "color": "#7778dc",
+  "glow": "#8ec8ff",
+  "cpu": true,
+  "skills": {
+    "closeSkill": {
+      "label": "Ảnh Bộ Xuyên Tâm",
+      "damage": 16,
+      "startup": 13,
+      "active": 7,
+      "recovery": 28,
+      "range": 28,
+      "knockback": 245,
+      "cooldownFrames": 270,
+      "hitstun": 27,
+      "hitstop": 4,
+      "guardDamage": 29,
+      "cancelInto": [
+        "light",
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 20,
+          "far": 82,
+          "top": 71,
+          "height": 18
+        }
+      ],
+      "travel": {
+        "speed": 700,
+        "frames": 8,
+        "passesThrough": false
+      }
+    },
+    "rangedSkill": {
+      "label": "Hồ Ảnh Thương",
+      "damage": 13,
+      "startup": 19,
+      "active": 1,
+      "recovery": 22,
+      "range": 53,
+      "knockback": 150,
+      "hitstun": 20,
+      "hitstop": 2,
+      "guardDamage": 18,
+      "cooldownFrames": 324,
+      "cancelInto": [],
+      "projectile": {
+        "speed": 655,
+        "width": 73,
+        "height": 14,
+        "pierce": false,
+        "color": "#8ec8ff",
+        "yOffset": 58,
+        "lifetimeFrames": 96,
+        "shape": "wind"
+      }
+    },
+    "ultimate": {
+      "label": "Tam Vĩ Truy Hồn",
+      "damage": 12,
+      "startup": 30,
+      "active": 23,
+      "recovery": 31,
+      "range": 23,
+      "cost": 100,
+      "groundOnly": true,
+      "travel": {
+        "speed": 820,
+        "frames": 18,
+        "passesThrough": true,
+        "crossDistance": 52
+      },
+      "pulses": [
+        {
+          "from": 0,
+          "to": 9,
+          "knockback": 20,
+          "hitstun": 14
+        },
+        {
+          "from": 9,
+          "to": 16,
+          "knockback": 25,
+          "hitstun": 14
+        },
+        {
+          "from": 16,
+          "to": 23,
+          "knockback": 365,
+          "hitstun": 30,
+          "damage": 21
+        }
+      ],
+      "hitstop": 3,
+      "guardDamage": 11,
+      "cancelInto": [],
+      "effect": {
+        "color": "#8ec8ff",
+        "flashSeconds": 0.23,
+        "flashOpacity": 0.27,
+        "shakeSeconds": 0.36,
+        "shakeIntensity": 44,
+        "particles": 24,
+        "trailSeconds": 0.36
+      },
+      "limbBoxes": [
+        {
+          "near": 8,
+          "far": 23,
+          "top": 76,
+          "height": 15
+        }
+      ]
+    }
+  },
+  "moveSpeed": 338,
+  "hurtboxSize": {
+    "width": 37,
+    "height": 102
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 132,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 204,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 51,
+  "profile": {
+    "role": "Linh thú dùng thương",
+    "strength": "Mũi thương xa, lướt đâm, phi thương hồi về.",
+    "weakness": "Ít máu và mũi thương dễ hụt khi đứng quá sát."
+  },
+  "attacks": {
+    "light": {
+      "label": "ĐẤM NHẸ",
+      "damage": 6,
+      "startup": 4,
+      "active": 4,
+      "recovery": 9,
+      "range": 37,
+      "knockback": 83,
+      "hitstun": 17,
+      "hitstop": 0,
+      "guardDamage": 15,
+      "cancelInto": [
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 19,
+          "far": 43,
+          "top": 82,
+          "height": 11
+        }
+      ]
+    },
+    "heavy": {
+      "label": "ĐẤM NẶNG",
+      "damage": 11,
+      "startup": 13,
+      "active": 5,
+      "recovery": 22,
+      "range": 52,
+      "knockback": 165,
+      "hitstun": 19,
+      "hitstop": 5,
+      "guardDamage": 23,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 25,
+          "far": 91,
+          "top": 72,
+          "height": 15
+        }
+      ]
+    },
+    "kick": {
+      "label": "ĐÁ",
+      "damage": 9,
+      "startup": 8,
+      "active": 5,
+      "recovery": 12,
+      "range": 50,
+      "knockback": 123,
+      "hitstun": 16,
+      "hitstop": 0,
+      "guardDamage": 17,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 18,
+          "far": 58,
+          "top": 77,
+          "height": 15
+        }
+      ],
+      "level": "low"
+    }
+  },
+  "weapon": {
+    "image": "/assets/effects/fox-spear.png",
+    "width": 117,
+    "tilt": 0.2,
+    "arc": 0.45,
+    "reach": 33,
+    "gripX": 0.42,
+    "gripY": 0.61,
+    "projectile": true
+  }
+}

@@ -1,0 +1,309 @@
+{
+  "awakening": {
+    "unlockAttack": "closeSkill",
+    "condition": "Chém trúng bằng Ảnh Đao Liên Trảm khi đối thủ hở thủ",
+    "skill": "closeSkill",
+    "label": "Ảnh Đao · Xé Giáp",
+    "changes": {
+      "guardDamage": 29,
+      "limbBoxes": [
+        {
+          "near": -14,
+          "far": 87,
+          "top": 94,
+          "height": 61
+        }
+      ]
+    },
+    "evolution": {
+      "color": "#f3bd59",
+      "scale": 1.08,
+      "damageMultiplier": 1.08
+    },
+    "levelTwo": {
+      "skill": "closeSkill",
+      "durationFrames": 540,
+      "label": "Ảnh Đao · Liên Trảm Ba Nhịp",
+      "changes": {
+        "active": 22,
+        "limbBoxes": [
+          {
+            "near": -25,
+            "far": 105,
+            "top": 104,
+            "height": 74
+          }
+        ],
+        "pulses": [
+          {
+            "from": 0,
+            "to": 6,
+            "damage": 8,
+            "knockback": 13
+          },
+          {
+            "from": 6,
+            "to": 13,
+            "damage": 8,
+            "knockback": 20
+          },
+          {
+            "from": 13,
+            "to": 22,
+            "damage": 13,
+            "knockback": 230
+          }
+        ]
+      },
+      "evolution": {
+        "color": "#ffe295",
+        "scale": 1.16,
+        "bonusHp": 8,
+        "damageMultiplier": 1.12
+      }
+    }
+  },
+  "sprite": {
+    "still": "/assets/characters/goblin/avatar.png",
+    "poseSheet": "/assets/characters/goblin/poses.png",
+    "extraPoses": "/assets/characters/goblin/extra-poses.png",
+    "displaySize": 108
+  },
+  "weapon": {
+    "image": "/assets/effects/party-sword.png",
+    "width": 91,
+    "tilt": -0.58,
+    "arc": 1.24
+  },
+  "name": "Goblin Răng Đồng",
+  "hp": 93,
+  "width": 38,
+  "height": 81,
+  "color": "#afb85e",
+  "glow": "#afb85e",
+  "cpu": true,
+  "skills": {
+    "closeSkill": {
+      "label": "Ảnh Đao Liên Trảm",
+      "damage": 9,
+      "startup": 11,
+      "active": 16,
+      "recovery": 21,
+      "range": 75,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 0,
+          "far": 75,
+          "top": 88,
+          "height": 53
+        }
+      ],
+      "cooldownFrames": 217,
+      "travel": {
+        "speed": 540,
+        "frames": 9,
+        "passesThrough": false
+      },
+      "pulses": [
+        {
+          "from": 0,
+          "to": 7,
+          "knockback": 17
+        },
+        {
+          "from": 7,
+          "to": 16,
+          "damage": 10,
+          "knockback": 175
+        }
+      ]
+    },
+    "rangedSkill": {
+      "label": "Vệt Cắt Sát Đất",
+      "damage": 10,
+      "startup": 14,
+      "active": 1,
+      "recovery": 20,
+      "range": 39,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 8,
+          "far": 39,
+          "top": 24,
+          "height": 18
+        }
+      ],
+      "level": "low",
+      "cooldownFrames": 289,
+      "projectile": {
+        "speed": 445,
+        "width": 44,
+        "height": 14,
+        "yOffset": 14,
+        "color": "#afb85e",
+        "lifetimeFrames": 72,
+        "pierce": false,
+        "shape": "wind"
+      }
+    },
+    "ultimate": {
+      "label": "Tam Nhật Trảm",
+      "damage": 8,
+      "startup": 24,
+      "active": 23,
+      "recovery": 30,
+      "range": 94,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 0,
+          "far": 94,
+          "top": 94,
+          "height": 66
+        }
+      ],
+      "cost": 100,
+      "groundOnly": true,
+      "pulses": [
+        {
+          "from": 0,
+          "to": 7,
+          "knockback": 15,
+          "hitstun": 16
+        },
+        {
+          "from": 7,
+          "to": 15,
+          "knockback": 25,
+          "hitstun": 17
+        },
+        {
+          "from": 15,
+          "to": 23,
+          "knockback": 310,
+          "damage": 16,
+          "hitstun": 26
+        }
+      ],
+      "effect": {
+        "color": "#afb85e",
+        "particles": 14,
+        "shakeIntensity": 19,
+        "shakeSeconds": 0.14,
+        "trailSeconds": 0.23
+      },
+      "travel": {
+        "speed": 550,
+        "frames": 14,
+        "passesThrough": false
+      }
+    }
+  },
+  "moveSpeed": 354,
+  "hurtboxSize": {
+    "width": 37,
+    "height": 81
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 132,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 204,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 51,
+  "profile": {
+    "role": "Đấu sĩ đao cong",
+    "strength": "Áp sát nhanh, chém nối và quét thấp.",
+    "weakness": "Phải áp sát để phát huy đòn liên hoàn."
+  },
+  "attacks": {
+    "light": {
+      "label": "Khía Đao",
+      "damage": 6,
+      "startup": 4,
+      "active": 4,
+      "recovery": 9,
+      "range": 48,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [
+        "kick",
+        "closeSkill"
+      ],
+      "limbBoxes": [
+        {
+          "near": 12,
+          "far": 48,
+          "top": 68,
+          "height": 18
+        }
+      ],
+      "showArc": true
+    },
+    "heavy": {
+      "label": "Bổ Đồng",
+      "damage": 13,
+      "startup": 13,
+      "active": 5,
+      "recovery": 22,
+      "range": 76,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 29,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 9,
+          "far": 76,
+          "top": 87,
+          "height": 38
+        }
+      ],
+      "showArc": true
+    },
+    "kick": {
+      "label": "Gạt Chân",
+      "damage": 8,
+      "startup": 7,
+      "active": 5,
+      "recovery": 12,
+      "range": 58,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 12,
+          "far": 58,
+          "top": 33,
+          "height": 24
+        }
+      ],
+      "level": "low"
+    }
+  }
+}

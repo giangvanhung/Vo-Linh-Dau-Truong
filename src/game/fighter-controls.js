@@ -18,11 +18,13 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
     return;
   }
   if (input.jump && fighter.onGround && !fighter.disabled && fighter.canMoveDuringAttack && !fighter.dash && !input.guard) {
-    fighter.vy = -jumpVelocity;
+    if (fighter.canFly) fighter.startFlight();
+    else fighter.vy = -jumpVelocity;
     fighter.airDirection = input.direction;
     fighter.superMotionFrames = 0;
     fighter.onGround = false;
   }
+  if (input.crouch) fighter.stopFlight();
   if (input.action === 'dash' || input.action === 'enhancedDash') {
     const enhanced = input.action === 'enhancedDash';
     if (fighter.startDash(enhanced) && enhanced) toast('LƯỚT CƯỜNG HÓA');

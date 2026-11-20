@@ -67,6 +67,10 @@ export class CpuController {
       - (shot.attack.projectile.width + cpu.hurtbox.width) / 2) / shot.attack.projectile.speed;
     const shot = projectiles.find(candidate => {
       if (candidate.attacker !== player || candidate.hit || (cpu.x - candidate.x) * candidate.attack.facing <= 0) return false;
+      if (candidate.attack.projectile.meterPerFrame) {
+        return player.attack === candidate.attack && (cpu.x - candidate.x) * candidate.facing <= candidate.width + cpu.width / 2
+          && Math.abs(candidate.y - (cpu.y - cpu.height / 2)) < (candidate.height + cpu.height) / 2;
+      }
       const eta = timeToHit(candidate);
       return eta <= .55 && eta < candidate.frames * FRAME_SECONDS
         && Math.abs(candidate.y - (cpu.y - cpu.height / 2)) < (candidate.attack.projectile.height + cpu.height) / 2;

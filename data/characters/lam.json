@@ -1,0 +1,281 @@
+{
+  "awakening": {
+    "evolution": {
+      "color": "#a9eaff",
+      "scale": 1.03,
+      "overlay": {
+        "image": "/assets/effects/lam-evolution.png",
+        "x": 0,
+        "y": 1.13,
+        "width": 0.7
+      }
+    },
+    "condition": "Đóng băng đối thủ",
+    "skill": "rangedSkill",
+    "label": "Hàn Tinh · Băng Tỏa",
+    "changes": {
+      "projectile": {
+        "returnAfter": 24,
+        "lifetimeFrames": 55,
+        "pierce": true
+      }
+    },
+    "levelTwo": {
+      "skill": "rangedSkill",
+      "label": "Băng Tỏa · Cực Quang",
+      "durationFrames": 540,
+      "changes": {
+        "projectile": {
+          "returnAfter": 32,
+          "lifetimeFrames": 71,
+          "pierce": true,
+          "width": 59,
+          "height": 36,
+          "shape": "ice"
+        },
+        "damage": 14
+      },
+      "evolution": {
+        "color": "#c5fbff",
+        "scale": 1.11,
+        "overlay": {
+          "image": "/assets/effects/lam-evolution.png",
+          "x": 0,
+          "y": 1.13,
+          "width": 0.7
+        },
+        "damageMultiplier": 1.12
+      }
+    }
+  },
+  "sprite": {
+    "atlas": "/assets/characters/lam/atlas.json"
+  },
+  "name": "Lam",
+  "hp": 105,
+  "width": 42,
+  "height": 104,
+  "color": "#76bff2",
+  "glow": "#b1eeff",
+  "cpu": false,
+  "skills": {
+    "closeSkill": {
+      "label": "Toái Băng Quyền",
+      "damage": 15,
+      "startup": 14,
+      "active": 5,
+      "recovery": 30,
+      "range": 29,
+      "knockback": 340,
+      "cooldownFrames": 300,
+      "hitstun": 27,
+      "hitstop": 4,
+      "guardDamage": 23,
+      "cancelInto": [
+        "light",
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 10,
+          "far": 46,
+          "top": 72,
+          "height": 28
+        }
+      ],
+      "effect": {
+        "color": "#b1eeff",
+        "particles": 12,
+        "flashSeconds": 0.12,
+        "flashOpacity": 0.1,
+        "shakeSeconds": 0.14,
+        "shakeIntensity": 14,
+        "trailSeconds": 0.15
+      },
+      "status": "frost"
+    },
+    "rangedSkill": {
+      "label": "Hàn Tinh",
+      "damage": 10,
+      "startup": 18,
+      "active": 1,
+      "recovery": 30,
+      "range": 30,
+      "knockback": 100,
+      "hitstun": 20,
+      "hitstop": 2,
+      "guardDamage": 18,
+      "cooldownFrames": 420,
+      "cancelInto": [],
+      "projectile": {
+        "speed": 455,
+        "width": 33,
+        "height": 24,
+        "pierce": false,
+        "color": "#b1eeff",
+        "yOffset": 58,
+        "lifetimeFrames": 82,
+        "shape": "ice"
+      },
+      "effect": {
+        "color": "#b1eeff",
+        "particles": 12,
+        "flashSeconds": 0.12,
+        "flashOpacity": 0.1,
+        "shakeSeconds": 0.14,
+        "shakeIntensity": 14,
+        "trailSeconds": 0.15
+      },
+      "status": "frost"
+    },
+    "ultimate": {
+      "label": "Bão Hàn",
+      "damage": 11,
+      "startup": 30,
+      "active": 23,
+      "recovery": 34,
+      "range": 25,
+      "cost": 100,
+      "groundOnly": true,
+      "travel": {
+        "speed": 760,
+        "frames": 23,
+        "passesThrough": false
+      },
+      "pulses": [
+        {
+          "from": 0,
+          "to": 10,
+          "knockback": 35,
+          "hitstun": 15
+        },
+        {
+          "from": 10,
+          "to": 17,
+          "knockback": 40,
+          "hitstun": 15
+        },
+        {
+          "from": 17,
+          "to": 23,
+          "knockback": 490,
+          "hitstun": 33,
+          "damage": 23
+        }
+      ],
+      "hitstop": 3,
+      "guardDamage": 11,
+      "cancelInto": [],
+      "effect": {
+        "color": "#b1eeff",
+        "particles": 12,
+        "flashSeconds": 0.12,
+        "flashOpacity": 0.1,
+        "shakeSeconds": 0.14,
+        "shakeIntensity": 14,
+        "trailSeconds": 0.15
+      },
+      "limbBoxes": [
+        {
+          "near": 8,
+          "far": 25,
+          "top": 77,
+          "height": 15
+        }
+      ],
+      "status": "frost"
+    }
+  },
+  "moveSpeed": 306,
+  "hurtboxSize": {
+    "width": 46,
+    "height": 106
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 84,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 150,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 78,
+  "profile": {
+    "role": "Băng Quyền"
+  },
+  "attacks": {
+    "light": {
+      "label": "ĐẤM NHẸ",
+      "damage": 8,
+      "startup": 5,
+      "active": 4,
+      "recovery": 10,
+      "range": 42,
+      "knockback": 65,
+      "hitstun": 26,
+      "hitstop": 0,
+      "guardDamage": 15,
+      "cancelInto": [
+        "heavy",
+        "kick",
+        "closeSkill"
+      ],
+      "limbBoxes": [
+        {
+          "near": 24,
+          "far": 48,
+          "top": 90,
+          "height": 11
+        }
+      ]
+    },
+    "heavy": {
+      "label": "ĐẤM NẶNG",
+      "damage": 19,
+      "startup": 12,
+      "active": 5,
+      "recovery": 29,
+      "range": 50,
+      "knockback": 325,
+      "hitstun": 25,
+      "hitstop": 5,
+      "guardDamage": 34,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 15,
+          "far": 48,
+          "top": 91,
+          "height": 13
+        }
+      ]
+    },
+    "kick": {
+      "label": "ĐÁ",
+      "damage": 11,
+      "startup": 9,
+      "active": 5,
+      "recovery": 15,
+      "range": 43,
+      "knockback": 135,
+      "hitstun": 21,
+      "hitstop": 0,
+      "guardDamage": 22,
+      "cancelInto": [
+        "closeSkill"
+      ],
+      "limbBoxes": [
+        {
+          "near": 27,
+          "far": 67,
+          "top": 79,
+          "height": 15
+        }
+      ],
+      "level": "low"
+    }
+  }
+}

@@ -1,8 +1,48 @@
 import { gear } from '../game/pickups.js';
 
 export function createCombatEffects(ctx, images) {
-  function drawProjectile({ x, y, facing, attack, attacker }, ground) {
+  function drawChannelBeam({ x, y, facing, width, height, age }, ground) {
+    if (width < 1) return;
+    const radius = height / 2;
+    ctx.save();
+    ctx.translate(x, ground + y);
+    ctx.scale(facing, 1);
+    const glow = ctx.createLinearGradient(0, -radius, 0, radius);
+    glow.addColorStop(0, '#087dff00');
+    glow.addColorStop(.25, '#258fff');
+    glow.addColorStop(.5, '#f3ffff');
+    glow.addColorStop(.75, '#258fff');
+    glow.addColorStop(1, '#087dff00');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, -radius, width, height);
+    ctx.strokeStyle = '#e3ffff';
+    ctx.lineWidth = Math.max(1, radius * .18);
+    ctx.beginPath();
+    for (let i = 0; i <= 24; i++) {
+      ctx.lineTo(width * i / 24, Math.sin(i * .9 - age * .8) * radius * .32);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#b8f6ff';
+    for (let i = 0; i < 10; i++) {
+      const offset = ((age * 31 + i * 101) % width);
+      ctx.fillRect(offset, Math.sin(i * 3.7 + age * .2) * radius * 1.25, Math.min(22, width - offset), 1.5);
+    }
+    ctx.shadowColor = '#27aaff';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = '#f1ffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * .66, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawProjectile(shot, ground) {
+    const { x, y, facing, attack, attacker } = shot;
     const { color, width, height, pierce, shape } = attack.projectile;
+    if (shape === 'channelBeam') {
+      if (attacker.attack === attack) drawChannelBeam(shot, ground);
+      return;
+    }
     ctx.save();
     ctx.shadowColor = ctx.fillStyle = color;
     ctx.shadowBlur = 10;
@@ -29,6 +69,27 @@ export function createCombatEffects(ctx, images) {
       ctx.beginPath();
       ctx.ellipse(width * .08, 0, width * .32, height * .22, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+      return;
+    }
+    if (shape === 'piercingRay' || shape === 'crescent') {
+      ctx.beginPath();
+      if (shape === 'piercingRay') {
+        ctx.moveTo(-width / 2, 0);
+        ctx.lineTo(width * .28, -height / 2);
+        ctx.lineTo(width / 2, 0);
+        ctx.lineTo(width * .28, height / 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff7fb';
+        ctx.fillRect(-width * .3, -1, width * .72, 2);
+      } else {
+        ctx.moveTo(-width / 2, -height / 2);
+        ctx.quadraticCurveTo(width * 1.45, -height * .32, -width / 2, height / 2);
+        ctx.quadraticCurveTo(width * .18, 0, -width / 2, -height / 2);
+        ctx.fill();
+        ctx.strokeStyle = '#f6e5ff';
+        ctx.stroke();
+      }
       ctx.restore();
       return;
     }
@@ -67,9 +128,21 @@ export function createCombatEffects(ctx, images) {
   function drawCombatEffects(fighter, ground) {
     if (fighter.hp <= 0) return;
     const attack = fighter.attack;
+    if (fighter.characterId === 'robot' && attack?.id === 'closeSkill' && fighter.attackActive) {
+      const progress = (attack.elapsed - attack.startup + 1) / attack.active;
+      ctx.save();
+      ctx.globalAlpha = 1 - progress * .8;
+      ctx.strokeStyle = '#ffcf96';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(fighter.x + attack.facing * (40 + 66 * progress), ground + fighter.y - 57,
+        5 + 12 * progress, 13 + 14 * progress, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     if (attack?.projectile && !attack.pickupWeapon && !fighter.disabled && attack.elapsed < attack.startup) {
       const progress = attack.elapsed / attack.startup;
-      const radius = 2 + (attack.projectile.shape === 'waveBeam' ? 15 : 8) * progress;
+      const radius = 2 + (attack.projectile.shape?.endsWith('Beam') ? 15 : 8) * progress;
       ctx.save();
       ctx.globalAlpha = .35 + progress * .55;
       ctx.shadowBlur = 12;

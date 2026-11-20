@@ -66,7 +66,28 @@ function drawBlessing(ctx, time, strength, color, height) {
 export function drawChargeVariant(ctx, fighter, time, build, color) {
   const id = fighter.characterId;
   const strength = Math.min(1, .2 + build * .8);
-  if (spiritFighters.has(id)) drawSpirit(ctx, time, strength, color, fighter.height);
+  if (fighter.chargeStyle === 'pressure' && fighter.charging) {
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      const phase = (time / 630 + i / 3) % 1;
+      ctx.globalAlpha = (1 - phase) * strength;
+      ctx.strokeStyle = i === 1 ? '#f24a70' : '#a773ff';
+      ctx.beginPath();
+      ctx.ellipse(0, -2, 20 + 145 * phase, 4 + 23 * phase, 0, 0, tau);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = strength;
+    ctx.strokeStyle = '#ff6488';
+    for (const side of [-1, 1]) {
+      const x = side * (25 + Math.sin(time / 55 + side) * 8);
+      ctx.beginPath();
+      ctx.moveTo(x * 1.5, -fighter.height * .87);
+      ctx.lineTo(x * .85, -fighter.height * .58);
+      ctx.lineTo(x * 1.35, -fighter.height * .48);
+      ctx.lineTo(x, -fighter.height * .23);
+      ctx.stroke();
+    }
+  } else if (spiritFighters.has(id)) drawSpirit(ctx, time, strength, color, fighter.height);
   else if (blessingFighters.has(id)) drawBlessing(ctx, time, strength, color, fighter.height);
   else return false;
   return true;

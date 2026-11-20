@@ -4,6 +4,7 @@ import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { attachLan } from './lan-server.mjs';
+import { loadFighterConfig } from './scripts/fighter-config.mjs';
 import { bundleGame } from './scripts/game-bundle.mjs';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)));
@@ -16,8 +17,15 @@ const server = createServer(async (req, res) => {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     const route = pathname === '/' ? '/index.html' : pathname === '/controller' ? '/controller.html' : pathname;
     if (!['/index.html', '/controller.html'].includes(route)
-      && !/^\/(src|assets|data|styles)\//.test(route)) throw new Error('Invalid path');
+      && route !== '/data/fighters.json'
+      && !/^\/(src|assets|styles)\//.test(route)) throw new Error('Invalid path');
     if (route.split('/').some(part => part.startsWith('.')) || route.includes('\\')) throw new Error('Invalid path');
+    if (route === '/data/fighters.json') {
+      const config = await loadFighterConfig();
+      res.writeHead(200, { 'Content-Type': mime['.json'], 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify(config));
+      return;
+    }
     if (route === '/src/game.bundle.js') {
       const script = await bundleGame();
       res.writeHead(200, { 'Content-Type': mime['.js'], 'Cache-Control': 'no-cache' });

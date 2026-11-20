@@ -7,9 +7,8 @@ export const bindingLabels = {
   q:'Lướt', r:'Lộn né', f:'Tụ khí', g:'Tiến hóa', u:'Chiêu gần', i:'Chiêu xa', o:'Tuyệt kỹ', t:'Thoát combo',
 };
 const legacyArrows = { 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown' };
-export const ambiguousCompositionKey = event =>
-  (event.isComposing || event.keyCode === 229 || event.key === 'Process')
-  && (!event.code || event.code === 'Unidentified');
+const compositionKey = event => event.isComposing || event.keyCode === 229 || event.key === 'Process';
+export const ambiguousCompositionKey = event => compositionKey(event) && (!event.code || event.code === 'Unidentified');
 
 export function keyCode(event) {
   if (event.code && event.code !== 'Unidentified') return event.code;
@@ -64,11 +63,13 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, o
     if (!canPlay() || event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.target?.closest?.('select, input, textarea, [contenteditable="true"]')) return;
     if (ambiguousCompositionKey(event)) {
+      clearInputs();
       if (!event.repeat) onCompositionIssue?.();
       return;
     }
     const key = gameKey(event);
     if (!gameKeys.has(key)) return;
+    if (!event.repeat && (compositionKey(event) || event.key?.toLowerCase() === 'đ')) onCompositionIssue?.();
     event.preventDefault();
     const input = keyCode(event) ?? key;
     if (heldInputs.has(input) || (event.repeat && !continuousKeys.has(key))) return;

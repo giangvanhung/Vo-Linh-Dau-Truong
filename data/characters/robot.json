@@ -1,0 +1,259 @@
+{
+  "awakening": {
+    "unlockAttack": "heavy",
+    "condition": "Đánh trúng bằng Nắm Đấm Thủy Lực khi đối thủ hở thủ",
+    "skill": "rangedSkill",
+    "durationFrames": 480,
+    "label": "Động Cơ Tăng Áp",
+    "changes": {
+      "damage": 16,
+      "projectile": {
+        "width": 38,
+        "speed": 680
+      }
+    },
+    "evolution": {
+      "color": "#ff9d47",
+      "scale": 1.04,
+      "damageMultiplier": 1.08
+    },
+    "levelTwo": {
+      "skill": "rangedSkill",
+      "durationFrames": 540,
+      "label": "Lõi Nhiệt Tối Đa",
+      "changes": {
+        "damage": 19,
+        "projectile": {
+          "width": 48,
+          "speed": 720
+        }
+      },
+      "evolution": {
+        "color": "#ff9d47",
+        "scale": 1.12,
+        "damageMultiplier": 1.17
+      }
+    }
+  },
+  "sprite": {
+    "still": "/assets/characters/robot/avatar.png",
+    "poseSheet": "/assets/characters/robot/poses.png",
+    "extraPoses": "/assets/characters/robot/extra-poses.png",
+    "displaySize": 135
+  },
+  "name": "K-07 Đấm Thép",
+  "hp": 117,
+  "width": 38,
+  "height": 99,
+  "color": "#ff9d47",
+  "glow": "#ff9d47",
+  "cpu": true,
+  "skills": {
+    "closeSkill": {
+      "label": "Quyền Xung Kích",
+      "damage": 18,
+      "startup": 13,
+      "active": 7,
+      "recovery": 24,
+      "range": 112,
+      "knockback": 205,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": -18,
+          "far": 112,
+          "top": 78,
+          "height": 42
+        }
+      ],
+      "cooldownFrames": 255,
+      "radial": false,
+      "effect": {
+        "color": "#ffcf96",
+        "particles": 18,
+        "flashSeconds": 0.12,
+        "flashOpacity": 0.1,
+        "shakeSeconds": 0.14,
+        "shakeIntensity": 20
+      }
+    },
+    "rangedSkill": {
+      "label": "Xung Điện",
+      "damage": 13,
+      "startup": 15,
+      "active": 1,
+      "recovery": 25,
+      "range": 43,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 9,
+          "far": 43,
+          "top": 80,
+          "height": 30
+        }
+      ],
+      "cooldownFrames": 278,
+      "projectile": {
+        "speed": 640,
+        "width": 28,
+        "height": 22.400000000000002,
+        "yOffset": 57.419999999999995,
+        "color": "#ff9d47",
+        "lifetimeFrames": 72,
+        "pierce": false
+      }
+    },
+    "ultimate": {
+      "label": "Quá Tải Lò Lõi",
+      "damage": 10,
+      "startup": 27,
+      "active": 23,
+      "recovery": 30,
+      "range": 97,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": -24,
+          "far": 97,
+          "top": 136,
+          "height": 127
+        }
+      ],
+      "cost": 100,
+      "groundOnly": true,
+      "pulses": [
+        {
+          "from": 0,
+          "to": 7,
+          "knockback": 15,
+          "hitstun": 16
+        },
+        {
+          "from": 7,
+          "to": 15,
+          "knockback": 25,
+          "hitstun": 17
+        },
+        {
+          "from": 15,
+          "to": 23,
+          "knockback": 310,
+          "damage": 16,
+          "hitstun": 26
+        }
+      ],
+      "effect": {
+        "color": "#ff9d47",
+        "particles": 14,
+        "shakeIntensity": 19,
+        "shakeSeconds": 0.14,
+        "trailSeconds": 0.23
+      },
+      "radial": false
+    }
+  },
+  "moveSpeed": 226,
+  "hurtboxSize": {
+    "width": 37,
+    "height": 99
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 132,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 204,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 51,
+  "profile": {
+    "role": "Robot quyền Anh bọc thép",
+    "strength": "Đòn nặng phá thế thủ mạnh, xung điện đi nhanh.",
+    "weakness": "Chậm chân và dễ bị áp sát sau cú nện."
+  },
+  "attacks": {
+    "light": {
+      "label": "Jab Pít-tông",
+      "damage": 6,
+      "startup": 6,
+      "active": 5,
+      "recovery": 11,
+      "range": 52,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 8,
+          "far": 52,
+          "top": 83,
+          "height": 29
+        }
+      ],
+      "showArc": true
+    },
+    "heavy": {
+      "label": "Nắm Đấm Thủy Lực",
+      "damage": 14,
+      "startup": 16,
+      "active": 5,
+      "recovery": 24,
+      "range": 72,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 41,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 6,
+          "far": 72,
+          "top": 99,
+          "height": 52
+        }
+      ],
+      "showArc": true
+    },
+    "kick": {
+      "label": "Đá Móc Bọc Thép",
+      "damage": 8,
+      "startup": 9,
+      "active": 5,
+      "recovery": 13,
+      "range": 54,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 3,
+          "far": 54,
+          "top": 43,
+          "height": 27
+        }
+      ],
+      "level": "low"
+    }
+  }
+}

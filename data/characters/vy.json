@@ -1,0 +1,279 @@
+{
+  "awakening": {
+    "evolution": {
+      "color": "#ff627f",
+      "scale": 0.96,
+      "overlay": {
+        "image": "/assets/effects/vy-evolution.png",
+        "x": 0.53,
+        "y": 0.61,
+        "width": 0.88
+      }
+    },
+    "condition": "Đá thấp trúng rồi đổi bên",
+    "skill": "rangedSkill",
+    "label": "Cánh Sen · Sen Nở",
+    "changes": {
+      "projectile": {
+        "delayFrames": 21,
+        "width": 48,
+        "height": 33,
+        "shape": "bloom"
+      }
+    },
+    "levelTwo": {
+      "skill": "rangedSkill",
+      "label": "Sen Nở · Huyết Nguyệt",
+      "durationFrames": 540,
+      "changes": {
+        "projectile": {
+          "delayFrames": 14,
+          "width": 67,
+          "height": 46,
+          "shape": "bloom",
+          "pierce": true
+        },
+        "damage": 17
+      },
+      "evolution": {
+        "color": "#ff9bbb",
+        "scale": 1.04,
+        "overlay": {
+          "image": "/assets/effects/vy-evolution.png",
+          "x": 0.53,
+          "y": 0.61,
+          "width": 0.88
+        },
+        "damageMultiplier": 1.12
+      }
+    }
+  },
+  "sprite": {
+    "atlas": "/assets/characters/vy/atlas.json"
+  },
+  "name": "Vy",
+  "hp": 98,
+  "width": 38,
+  "height": 100,
+  "color": "#e66b9c",
+  "glow": "#ffd0df",
+  "cpu": false,
+  "skills": {
+    "closeSkill": {
+      "label": "Hồng Liên Cước",
+      "damage": 17,
+      "startup": 9,
+      "active": 7,
+      "recovery": 28,
+      "range": 50,
+      "knockback": 245,
+      "cooldownFrames": 270,
+      "hitstun": 27,
+      "hitstop": 4,
+      "guardDamage": 29,
+      "cancelInto": [
+        "light",
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 31,
+          "far": 63,
+          "top": 17,
+          "height": 15
+        }
+      ],
+      "level": "low",
+      "animation": "sweep",
+      "strikeFrame": 2,
+      "effect": {
+        "color": "#ffd0df",
+        "particles": 9,
+        "flashSeconds": 0.09,
+        "flashOpacity": 0.07,
+        "shakeSeconds": 0.09,
+        "shakeIntensity": 14,
+        "trailSeconds": 0.15
+      }
+    },
+    "rangedSkill": {
+      "label": "Hồng Liên Xuyên Quang",
+      "damage": 12,
+      "startup": 15,
+      "active": 1,
+      "recovery": 22,
+      "range": 53,
+      "knockback": 150,
+      "hitstun": 20,
+      "hitstop": 2,
+      "guardDamage": 18,
+      "cooldownFrames": 324,
+      "cancelInto": [],
+      "projectile": {
+        "speed": 980,
+        "width": 74,
+        "height": 12,
+        "pierce": true,
+        "color": "#ffd0df",
+        "yOffset": 58,
+        "lifetimeFrames": 105,
+        "shape": "piercingRay"
+      },
+      "level": "mid",
+      "effect": {
+        "color": "#ffd0df",
+        "particles": 6,
+        "flashSeconds": 0.07,
+        "flashOpacity": 0.07,
+        "shakeSeconds": 0.07,
+        "shakeIntensity": 14,
+        "trailSeconds": 0
+      }
+    },
+    "ultimate": {
+      "label": "Vũ Điệu Hồng Liên",
+      "damage": 12,
+      "startup": 30,
+      "active": 23,
+      "recovery": 31,
+      "range": 23,
+      "cost": 100,
+      "groundOnly": true,
+      "travel": {
+        "speed": 890,
+        "frames": 20,
+        "passesThrough": true,
+        "crossDistance": 64
+      },
+      "pulses": [
+        {
+          "from": 0,
+          "to": 9,
+          "knockback": 20,
+          "hitstun": 14
+        },
+        {
+          "from": 9,
+          "to": 16,
+          "knockback": 25,
+          "hitstun": 14
+        },
+        {
+          "from": 16,
+          "to": 23,
+          "knockback": 365,
+          "hitstun": 30,
+          "damage": 21
+        }
+      ],
+      "hitstop": 3,
+      "guardDamage": 11,
+      "cancelInto": [],
+      "effect": {
+        "color": "#ffd0df",
+        "particles": 21,
+        "flashSeconds": 0.18,
+        "flashOpacity": 0.14,
+        "shakeSeconds": 0.18,
+        "shakeIntensity": 14,
+        "trailSeconds": 0.28
+      },
+      "limbBoxes": [
+        {
+          "near": 8,
+          "far": 23,
+          "top": 76,
+          "height": 15
+        }
+      ]
+    }
+  },
+  "moveSpeed": 341,
+  "hurtboxSize": {
+    "width": 37,
+    "height": 102
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 132,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 204,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 51,
+  "profile": {
+    "role": "Vũ Công Hồng Liên"
+  },
+  "attacks": {
+    "light": {
+      "label": "ĐẤM NHẸ",
+      "damage": 6,
+      "startup": 4,
+      "active": 4,
+      "recovery": 9,
+      "range": 37,
+      "knockback": 83,
+      "hitstun": 17,
+      "hitstop": 0,
+      "guardDamage": 15,
+      "cancelInto": [
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 17,
+          "far": 41,
+          "top": 84,
+          "height": 11
+        }
+      ]
+    },
+    "heavy": {
+      "label": "ĐẤM NẶNG",
+      "damage": 12,
+      "startup": 10,
+      "active": 5,
+      "recovery": 22,
+      "range": 52,
+      "knockback": 165,
+      "hitstun": 19,
+      "hitstop": 5,
+      "guardDamage": 23,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 14,
+          "far": 47,
+          "top": 94,
+          "height": 13
+        }
+      ]
+    },
+    "kick": {
+      "label": "Liên Cước",
+      "damage": 12,
+      "startup": 8,
+      "active": 5,
+      "recovery": 12,
+      "range": 50,
+      "knockback": 148,
+      "hitstun": 16,
+      "hitstop": 0,
+      "guardDamage": 17,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 18,
+          "far": 58,
+          "top": 73,
+          "height": 15
+        }
+      ],
+      "level": "low"
+    }
+  }
+}

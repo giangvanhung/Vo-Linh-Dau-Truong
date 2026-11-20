@@ -1,0 +1,264 @@
+{
+  "awakening": {
+    "unlockAttack": "closeSkill",
+    "condition": "Đánh trúng bằng Long Trảo khi đối thủ hở thủ",
+    "skill": "closeSkill",
+    "durationFrames": 480,
+    "label": "Vảy Ngọc Hiện Thân",
+    "changes": {
+      "range": 96,
+      "damage": 19,
+      "limbBoxes": [
+        {
+          "near": -18,
+          "far": 96,
+          "top": 103,
+          "height": 93
+        }
+      ]
+    },
+    "evolution": {
+      "color": "#6adbbd",
+      "scale": 1.04,
+      "damageMultiplier": 1.08
+    },
+    "levelTwo": {
+      "skill": "closeSkill",
+      "durationFrames": 540,
+      "label": "Thanh Long Hiện Thế",
+      "changes": {
+        "range": 110,
+        "damage": 21,
+        "limbBoxes": [
+          {
+            "near": -18,
+            "far": 110,
+            "top": 103,
+            "height": 93
+          }
+        ]
+      },
+      "evolution": {
+        "color": "#6adbbd",
+        "scale": 1.19,
+        "damageMultiplier": 1.17,
+        "poseSheet": "/assets/characters/dragon/evolution-two-poses.png",
+        "sprite": "/assets/characters/dragon/evolution-two.png",
+        "bonusHp": 18
+      }
+    }
+  },
+  "sprite": {
+    "still": "/assets/characters/dragon/avatar.png",
+    "poseSheet": "/assets/characters/dragon/poses.png",
+    "extraPoses": "/assets/characters/dragon/extra-poses.png",
+    "displaySize": 133
+  },
+  "name": "Lục Long Trầm Vân",
+  "hp": 106,
+  "width": 38,
+  "height": 103,
+  "color": "#6adbbd",
+  "glow": "#6adbbd",
+  "cpu": true,
+  "skills": {
+    "closeSkill": {
+      "label": "Long Trảo",
+      "damage": 17,
+      "startup": 16,
+      "active": 7,
+      "recovery": 24,
+      "range": 82,
+      "knockback": 205,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": -18,
+          "far": 82,
+          "top": 103,
+          "height": 93
+        }
+      ],
+      "cooldownFrames": 255,
+      "radial": false
+    },
+    "rangedSkill": {
+      "label": "Ngọc Long Châu",
+      "damage": 14,
+      "startup": 20,
+      "active": 1,
+      "recovery": 25,
+      "range": 43,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 9,
+          "far": 43,
+          "top": 80,
+          "height": 30
+        }
+      ],
+      "cooldownFrames": 278,
+      "projectile": {
+        "speed": 432,
+        "width": 41,
+        "height": 32.800000000000004,
+        "yOffset": 59.739999999999995,
+        "color": "#6adbbd",
+        "lifetimeFrames": 72,
+        "pierce": false
+      }
+    },
+    "ultimate": {
+      "label": "Thiên Long Giáng Thế",
+      "damage": 10,
+      "startup": 35,
+      "active": 23,
+      "recovery": 30,
+      "range": 111,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": -24,
+          "far": 111,
+          "top": 140,
+          "height": 131
+        }
+      ],
+      "cost": 100,
+      "groundOnly": true,
+      "pulses": [
+        {
+          "from": 0,
+          "to": 7,
+          "knockback": 15,
+          "hitstun": 16
+        },
+        {
+          "from": 7,
+          "to": 15,
+          "knockback": 25,
+          "hitstun": 17
+        },
+        {
+          "from": 15,
+          "to": 23,
+          "knockback": 310,
+          "damage": 16,
+          "hitstun": 26
+        }
+      ],
+      "effect": {
+        "color": "#6adbbd",
+        "particles": 14,
+        "shakeIntensity": 19,
+        "shakeSeconds": 0.14,
+        "trailSeconds": 0.23
+      },
+      "radial": false
+    }
+  },
+  "moveSpeed": 279,
+  "hurtboxSize": {
+    "width": 37,
+    "height": 103
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 132,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 204,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 51,
+  "profile": {
+    "role": "Võ sư hóa Thanh Long",
+    "strength": "Móng rồng áp đảo tầm trung. Cấp 2 hóa Thanh Long và tăng máu.",
+    "weakness": "Tuyệt kỹ lên đòn chậm."
+  },
+  "attacks": {
+    "light": {
+      "label": "Long Chỉ",
+      "damage": 6,
+      "startup": 6,
+      "active": 5,
+      "recovery": 11,
+      "range": 52,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 8,
+          "far": 52,
+          "top": 83,
+          "height": 29
+        }
+      ],
+      "showArc": true
+    },
+    "heavy": {
+      "label": "Vảy Rồng Quét",
+      "damage": 14,
+      "startup": 16,
+      "active": 5,
+      "recovery": 24,
+      "range": 72,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 31,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 6,
+          "far": 72,
+          "top": 99,
+          "height": 52
+        }
+      ],
+      "showArc": true
+    },
+    "kick": {
+      "label": "Giáng Chân",
+      "damage": 8,
+      "startup": 9,
+      "active": 5,
+      "recovery": 13,
+      "range": 54,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 3,
+          "far": 54,
+          "top": 43,
+          "height": 27
+        }
+      ],
+      "level": "low"
+    }
+  }
+}

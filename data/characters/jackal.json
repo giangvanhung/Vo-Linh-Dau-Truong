@@ -1,0 +1,258 @@
+{
+  "awakening": {
+    "unlockAttack": "rangedSkill",
+    "condition": "Đánh trúng bằng Nguyệt Cầu khi đối thủ hở thủ",
+    "skill": "rangedSkill",
+    "label": "Nguyệt Cầu · Trăng Khuyết",
+    "changes": {
+      "projectile": {
+        "width": 56,
+        "height": 51,
+        "speed": 475
+      }
+    },
+    "evolution": {
+      "color": "#dfacff",
+      "scale": 1.07,
+      "damageMultiplier": 1.08
+    },
+    "levelTwo": {
+      "skill": "rangedSkill",
+      "durationFrames": 540,
+      "label": "Nguyệt Cầu · Toàn Thực",
+      "changes": {
+        "damage": 21,
+        "projectile": {
+          "width": 79,
+          "height": 68,
+          "speed": 510
+        }
+      },
+      "evolution": {
+        "color": "#f0cfff",
+        "scale": 1.14,
+        "bonusHp": 9,
+        "damageMultiplier": 1.12
+      }
+    }
+  },
+  "sprite": {
+    "still": "/assets/characters/jackal/avatar.png",
+    "poseSheet": "/assets/characters/jackal/poses.png",
+    "extraPoses": "/assets/characters/jackal/extra-poses.png",
+    "displaySize": 134
+  },
+  "weapon": {
+    "kind": "staff",
+    "color": "#8052a5",
+    "tilt": -0.92,
+    "arc": 1.18
+  },
+  "name": "Pháp Sư Sa Nguyệt",
+  "hp": 99,
+  "width": 38,
+  "height": 101,
+  "color": "#c0a1ff",
+  "glow": "#c0a1ff",
+  "cpu": true,
+  "skills": {
+    "closeSkill": {
+      "label": "Ấn Nguyệt Bộc Phá",
+      "damage": 17,
+      "startup": 18,
+      "active": 7,
+      "recovery": 24,
+      "range": 66,
+      "knockback": 205,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": -66,
+          "far": 66,
+          "top": 102,
+          "height": 90
+        }
+      ],
+      "cooldownFrames": 255,
+      "radial": true
+    },
+    "rangedSkill": {
+      "label": "Nguyệt Cầu",
+      "damage": 15,
+      "startup": 22,
+      "active": 1,
+      "recovery": 25,
+      "range": 43,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 9,
+          "far": 43,
+          "top": 80,
+          "height": 30
+        }
+      ],
+      "cooldownFrames": 278,
+      "projectile": {
+        "speed": 415,
+        "width": 40,
+        "height": 37,
+        "yOffset": 55,
+        "color": "#c0a1ff",
+        "lifetimeFrames": 72,
+        "pierce": false
+      }
+    },
+    "ultimate": {
+      "label": "Nhật Thực Sa Mạc",
+      "damage": 8,
+      "startup": 31,
+      "active": 23,
+      "recovery": 30,
+      "range": 112,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": -112,
+          "far": 112,
+          "top": 139,
+          "height": 130
+        }
+      ],
+      "cost": 100,
+      "groundOnly": true,
+      "pulses": [
+        {
+          "from": 0,
+          "to": 7,
+          "knockback": 15,
+          "hitstun": 16
+        },
+        {
+          "from": 7,
+          "to": 15,
+          "knockback": 25,
+          "hitstun": 17
+        },
+        {
+          "from": 15,
+          "to": 23,
+          "knockback": 310,
+          "damage": 16,
+          "hitstun": 26
+        }
+      ],
+      "effect": {
+        "color": "#c0a1ff",
+        "particles": 14,
+        "shakeIntensity": 19,
+        "shakeSeconds": 0.14,
+        "trailSeconds": 0.23
+      },
+      "radial": true
+    }
+  },
+  "moveSpeed": 254,
+  "hurtboxSize": {
+    "width": 37,
+    "height": 101
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 132,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 204,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 51,
+  "profile": {
+    "role": "Pháp sư đầu chó rừng",
+    "strength": "Quyền trượng tạo vùng nổ quanh người và phóng cầu chú xa.",
+    "weakness": "Niệm phép lâu và di chuyển chậm."
+  },
+  "attacks": {
+    "light": {
+      "label": "Gõ Trượng",
+      "damage": 6,
+      "startup": 6,
+      "active": 5,
+      "recovery": 11,
+      "range": 52,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 8,
+          "far": 52,
+          "top": 83,
+          "height": 29
+        }
+      ],
+      "showArc": true
+    },
+    "heavy": {
+      "label": "Trượng Trăng",
+      "damage": 14,
+      "startup": 16,
+      "active": 5,
+      "recovery": 24,
+      "range": 72,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 31,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 6,
+          "far": 72,
+          "top": 99,
+          "height": 52
+        }
+      ],
+      "showArc": true
+    },
+    "kick": {
+      "label": "Đạp Cát",
+      "damage": 8,
+      "startup": 9,
+      "active": 5,
+      "recovery": 13,
+      "range": 54,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 3,
+          "far": 54,
+          "top": 43,
+          "height": 27
+        }
+      ],
+      "level": "low"
+    }
+  }
+}

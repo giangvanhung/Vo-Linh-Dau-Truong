@@ -1,0 +1,267 @@
+{
+  "awakening": {
+    "unlockAttack": "closeSkill",
+    "condition": "Đánh trúng bằng Chảo Xoay khi đối thủ hở thủ",
+    "skill": "closeSkill",
+    "durationFrames": 480,
+    "label": "Chảo Lửa Hồng",
+    "changes": {
+      "range": 88,
+      "damage": 15,
+      "limbBoxes": [
+        {
+          "near": -74,
+          "far": 88,
+          "top": 76,
+          "height": 66
+        }
+      ]
+    },
+    "evolution": {
+      "color": "#8ad5a5",
+      "scale": 1.04,
+      "damageMultiplier": 1.08
+    },
+    "levelTwo": {
+      "skill": "closeSkill",
+      "durationFrames": 540,
+      "label": "Bếp Trưởng Tốc Hành",
+      "changes": {
+        "range": 102,
+        "damage": 17,
+        "limbBoxes": [
+          {
+            "near": -74,
+            "far": 102,
+            "top": 76,
+            "height": 66
+          }
+        ]
+      },
+      "evolution": {
+        "color": "#8ad5a5",
+        "scale": 1.12,
+        "damageMultiplier": 1.17
+      }
+    }
+  },
+  "sprite": {
+    "still": "/assets/characters/corgi/avatar.png",
+    "poseSheet": "/assets/characters/corgi/poses.png",
+    "extraPoses": "/assets/characters/corgi/extra-poses.png",
+    "displaySize": 104
+  },
+  "weapon": {
+    "kind": "pan",
+    "color": "#554c51",
+    "tilt": -0.83,
+    "arc": 1.6
+  },
+  "name": "Bếp Trưởng Bánh Bao",
+  "hp": 88,
+  "width": 38,
+  "height": 76,
+  "color": "#8ad5a5",
+  "glow": "#8ad5a5",
+  "cpu": true,
+  "skills": {
+    "closeSkill": {
+      "label": "Chảo Xoay",
+      "damage": 13,
+      "startup": 8,
+      "active": 7,
+      "recovery": 24,
+      "range": 74,
+      "knockback": 205,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": -74,
+          "far": 74,
+          "top": 76,
+          "height": 66
+        }
+      ],
+      "cooldownFrames": 255,
+      "radial": true
+    },
+    "rangedSkill": {
+      "label": "Bánh Bao Bay",
+      "damage": 10,
+      "startup": 20,
+      "active": 1,
+      "recovery": 25,
+      "range": 43,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 9,
+          "far": 43,
+          "top": 80,
+          "height": 30
+        }
+      ],
+      "cooldownFrames": 278,
+      "projectile": {
+        "speed": 295,
+        "width": 33,
+        "height": 26.400000000000002,
+        "yOffset": 44.08,
+        "color": "#8ad5a5",
+        "lifetimeFrames": 72,
+        "pierce": false
+      }
+    },
+    "ultimate": {
+      "label": "Tiệc Chảo Ba Món",
+      "damage": 8,
+      "startup": 27,
+      "active": 23,
+      "recovery": 30,
+      "range": 86,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": -24,
+          "far": 86,
+          "top": 113,
+          "height": 104
+        }
+      ],
+      "cost": 100,
+      "groundOnly": true,
+      "pulses": [
+        {
+          "from": 0,
+          "to": 7,
+          "knockback": 15,
+          "hitstun": 16
+        },
+        {
+          "from": 7,
+          "to": 15,
+          "knockback": 25,
+          "hitstun": 17
+        },
+        {
+          "from": 15,
+          "to": 23,
+          "knockback": 310,
+          "damage": 16,
+          "hitstun": 26
+        }
+      ],
+      "effect": {
+        "color": "#8ad5a5",
+        "particles": 14,
+        "shakeIntensity": 19,
+        "shakeSeconds": 0.14,
+        "trailSeconds": 0.23
+      },
+      "radial": false
+    }
+  },
+  "moveSpeed": 361,
+  "hurtboxSize": {
+    "width": 37,
+    "height": 76
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 132,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 204,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 51,
+  "profile": {
+    "role": "Corgi đầu bếp cầm chảo",
+    "strength": "Chạy nhanh, vóc thấp và đòn chảo xoay ra nhanh.",
+    "weakness": "Ít máu, bánh bao bay chậm."
+  },
+  "attacks": {
+    "light": {
+      "label": "Gõ Chảo",
+      "damage": 6,
+      "startup": 4,
+      "active": 5,
+      "recovery": 11,
+      "range": 52,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 8,
+          "far": 52,
+          "top": 83,
+          "height": 29
+        }
+      ],
+      "showArc": true
+    },
+    "heavy": {
+      "label": "Chảo Úp",
+      "damage": 14,
+      "startup": 16,
+      "active": 5,
+      "recovery": 24,
+      "range": 72,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 31,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 6,
+          "far": 72,
+          "top": 79,
+          "height": 52
+        }
+      ],
+      "showArc": true
+    },
+    "kick": {
+      "label": "Trượt Dép",
+      "damage": 8,
+      "startup": 9,
+      "active": 5,
+      "recovery": 13,
+      "range": 54,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 3,
+          "far": 54,
+          "top": 43,
+          "height": 27
+        }
+      ],
+      "level": "low"
+    }
+  }
+}

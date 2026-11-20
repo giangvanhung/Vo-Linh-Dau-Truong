@@ -1,0 +1,28 @@
+{
+  "guardMax": 100,
+  "guardDrain": 28,
+  "guardRegen": 34,
+  "guardRegenDelay": 0.65,
+  "guardBreakFrames": 60,
+  "blockReduction": 0.7,
+  "chipRate": 0.03,
+  "comboScaling": [
+    1,
+    0.85,
+    0.7,
+    0.6,
+    0.5
+  ],
+  "meterMax": 100,
+  "meterOnDeal": 0.7,
+  "meterOnReceive": 1.5,
+  "meterOnBlock": 5,
+  "escape": {
+    "cost": 50,
+    "minCombo": 2,
+    "cooldownFrames": 300,
+    "invulnerableFrames": 18,
+    "recoveryFrames": 12,
+    "pushSpeed": 380
+  }
+}

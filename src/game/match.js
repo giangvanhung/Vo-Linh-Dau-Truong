@@ -1,12 +1,15 @@
-import { FRAME_SECONDS, Fighter, findHit, applyHit, updateProjectiles } from '../combat/fighter.js';
+import { FRAME_SECONDS, Fighter } from '../combat/fighter.js';
+import { findHit, applyHit } from '../combat/hits.js';
+import { updateProjectiles } from '../combat/projectiles.js';
 import { faceOpponent } from '../combat/positioning.js';
 import { CpuController } from '../combat/cpu.js';
 import { GameAudio } from '../platform/audio.js';
 import { createKeyboard, defaultBindings, keyCode } from '../platform/keyboard.js';
-import { createLanHost, mergeInputs } from '../platform/lan.js';
+import { mergeInputs } from '../platform/lan.js';
 import { loadSettings, persistSettings, roundFormats } from '../platform/settings.js';
 import { createArenaRenderer } from '../render/arena.js';
 import { createHud, damageFormat } from '../ui/hud.js';
+import { createControllerPairing } from '../ui/controller-pairing.js';
 import { createPanels } from '../ui/panels.js';
 import { createTrainingPanel } from '../ui/training-panel.js';
 import { applyStageEffects, stageForMatch } from './stages.js';
@@ -23,6 +26,9 @@ export function startGame(config) {
   const render = createArenaRenderer(canvas, config);
   const byId = id => document.getElementById(id);
   const ui = { toast: byId('toast'), 'status-text': byId('status-text') };
+  const keyboardHint = byId('keyboard-hint');
+  const windowsKeyboard = /Windows/i.test(navigator.userAgent);
+  byId('pause-keyboard-hint').hidden = !windowsKeyboard;
   const hud = createHud(config);
   const settings = loadSettings();
   const equipment = loadEquipment();
@@ -50,7 +56,7 @@ export function startGame(config) {
   let hung, mai, phase = 'menu', seconds = roundLength, winsHung = 0, winsMai = 0, round = 1;
   let playerId = 'hung', opponentId = 'mai', practice = false, lan = false, pausedPhase;
   let phaseTime = 0, nextRound = false;
-  let lastTime, accumulator = 0, toastClock = 0, lastCompositionHint = -Infinity;
+  let lastTime, accumulator = 0, toastClock = 0, keyboardHintUntil = 0;
   let difficulty = 'normal', cpu;
   let bestOf = 3, damageHung = 0, damageMai = 0;
   let localMode = '';
@@ -111,6 +117,7 @@ export function startGame(config) {
   }
 
   function startMatch() {
+    keyboardHintUntil = 0;
     if (practice) training.resetActivity();
     audio.unlock();
     winsHung = winsMai = damageHung = damageMai = 0;
@@ -122,8 +129,7 @@ export function startGame(config) {
     practice = isPractice;
     localMode = mode;
     phase = 'setup';
-    soloLanButton.hidden = lan || Boolean(localMode);
-    soloLanButton.textContent = soloLan ? 'Mã QR tay cầm P1' : 'Kết nối tay cầm P1';
+    pairing.updateSetupButton(lan || Boolean(localMode));
     panels.showSetup(practice, lan, localMode);
   }
 
@@ -134,12 +140,7 @@ export function startGame(config) {
     localMode = '';
     partyItems = false;
     bestOf = 3;
-    soloLan = false;
-    roomReady = false;
-    lanHost.close();
-    byId('lan-details').hidden = true;
-    byId('lan-details').open = false;
-    byId('network-mode').textContent = 'OFFLINE';
+    pairing.close();
     winsHung = winsMai = damageHung = damageMai = 0;
     round = 1;
     resetFighters();
@@ -186,113 +187,24 @@ export function startGame(config) {
     if (localMode === 'team') team.selectCpu(roster);
     opponentId = opponent === 'random' ? roster[Math.floor(Math.random() * roster.length)] : opponent;
     difficulty = level;
-    if (soloLan) {
-      byId('lan-details').append(pairing);
-      byId('lan-details').hidden = false;
-    }
+    if (pairing.solo) pairing.moveToDetails();
     startMatch();
   }
 
   const panels = createPanels({ characters: config.characters, stages: config.stages, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile: (id, file) => audio.setMusicFile(id, file) });
 
-  const pairing = byId('lan-pairing');
-  const address = byId('lan-address');
-  const networkLabels = { wifi: 'Wi‑Fi', ethernet: 'Ethernet (cắm dây)', virtual: 'VPN / mạng ảo', other: 'Mạng khác', online: 'Internet' };
-  const networkHints = {
-    wifi: 'Dùng địa chỉ này khi điện thoại và máy tính kết nối cùng Wi‑Fi.',
-    ethernet: 'Dùng địa chỉ này khi dây mạng máy tính nối vào cùng router phát Wi‑Fi cho điện thoại.',
-    virtual: 'Địa chỉ VPN hoặc mạng ảo. Nếu điện thoại chỉ dùng Wi‑Fi, hãy chọn địa chỉ Wi‑Fi hoặc Ethernet.',
-    other: 'Nếu chưa rõ đây là mạng nào, xem tên bộ điều hợp trong cài đặt mạng của máy tính.',
-    online: 'Quét mã QR bằng điện thoại có kết nối Internet. TV và điện thoại có thể dùng hai mạng khác nhau.',
-  };
-  const soloLanButton = byId('solo-lan-button');
-  let soloLan = false;
-  let addresses = [];
-  let connected = [false, false];
-  let roomReady = false;
-  function updateLanStatus() {
-    if (!roomReady) return;
-    byId('lan-status').textContent = (addresses.length ? '' : 'Không tìm thấy địa chỉ IPv4 LAN. ')
-      + connected.slice(0, soloLan ? 1 : 2)
-        .map((online, index) => 'P' + (index + 1) + (online ? ' có tay cầm' : ' dùng bàn phím')).join(' · ');
-  }
-  function updateLanAddress() {
-    const option = addresses[Number(address.value)];
-    byId('lan-link-box').hidden = !option;
-    if (!option) return;
-    byId('lan-network-help').hidden = option.type === 'online';
-    const link = byId('lan-link');
-    link.href = link.textContent = option.link;
-    byId('lan-address-hint').textContent = networkHints[option.type] ?? networkHints.other;
-    const qr = byId('lan-qr');
-    qr.hidden = !option.qr;
-    if (option.qr) qr.src = option.qr;
-  }
-  const lanHost = createLanHost({
-    canPlay: () => (lan || soloLan) && phase === 'fight',
-    onRoom(options) {
-      addresses = options;
-      address.options.length = 0;
-      options.forEach(({ link, name, type }, index) => {
-        const label = networkLabels[type] ?? networkLabels.other;
-        const adapter = name && name.toLowerCase() !== type ? ` (${name})` : '';
-        address.add(new Option(`${label}${adapter} · ${new URL(link).host}`, index));
-      });
-      byId('lan-address-label').hidden = options.length < 2;
-      roomReady = true;
-      updateLanAddress();
-      updateLanStatus();
-    },
-    onStatus(players) {
-      connected = players;
-      updateLanStatus();
-    },
-    onClose() {
-      roomReady = false;
-      byId('lan-status').textContent = 'Mất kết nối phòng. Bàn phím vẫn dùng được. Về menu để tạo phòng mới.';
-      byId('network-mode').textContent = 'LAN · MẤT KẾT NỐI';
-      byId('lan-link-box').hidden = true;
-      if (soloLan) soloLanButton.hidden = false;
-      ui['status-text'].textContent = 'MẤT KẾT NỐI PHÒNG LAN';
-    },
+  const pairing = createControllerPairing({
+    byId,
+    canPlay: solo => (lan || solo) && phase === 'fight',
+    onContinue: () => openSetup(practice),
+    showLobby: () => panels.show('lan'),
   });
-  address.addEventListener('change', updateLanAddress);
-  soloLanButton.addEventListener('click', () => {
-    soloLan = true;
-    showControllerRoom();
-    if (!roomReady) openControllerRoom();
-  });
-  byId('lan-start').addEventListener('click', () => {
-    byId('lan-details').append(pairing);
-    byId('lan-details').hidden = false;
-    openSetup(practice);
-  });
-  function openControllerRoom() {
-    addresses = [];
-    connected = [false, false];
-    roomReady = false;
-    byId('lan-keyboard-help').hidden = soloLan;
-    byId('lan-status').textContent = 'Đang tạo phòng…';
-    byId('lan-link-box').hidden = true;
-    byId('network-mode').textContent = soloLan ? 'TAY CẦM LAN' : 'LAN';
-    lanHost.open({ solo: soloLan });
-  }
-
-  function showControllerRoom() {
-    byId('lan-title').textContent = soloLan ? 'Kết nối tay cầm P1' : 'Đấu 2 người qua LAN';
-    byId('lan-lobby').append(pairing);
-    pairing.querySelectorAll('details').forEach(details => { details.open = false; });
-    panels.show('lan');
-    byId('lan-start').focus({ preventScroll: true });
-    byId('lan-panel').scrollTop = 0;
-  }
 
   function openLan() {
     lan = true;
     practice = false;
     phase = 'lan';
-    showControllerRoom();
-    openControllerRoom();
+    pairing.open();
   }
 
   const trainingPanel = createTrainingPanel(training, createTrainingActions(training, {
@@ -312,10 +224,7 @@ export function startGame(config) {
   }
 
   function showCompositionHint() {
-    const now = performance.now();
-    if (now - lastCompositionHint < 12000) return;
-    lastCompositionHint = now;
-    toast('Bộ gõ có thể đang chặn phím. Nếu dùng UniKey, hãy chuyển sang E.', 5);
+    keyboardHintUntil = performance.now() + 7000;
   }
 
   const keyboard = createKeyboard({
@@ -348,7 +257,7 @@ export function startGame(config) {
     hung.bufferedAttack = mai.bufferedAttack = null;
     keyboard.clear();
     keyboardP2.clear();
-    lanHost.clear();
+    pairing.clear();
   }
 
   function useAttack(fighter, target, id) {
@@ -392,6 +301,7 @@ export function startGame(config) {
       const count = Math.ceil(phaseTime - 1e-8);
       if (count <= 0) {
         phase = 'fight';
+        if (round === 1 && windowsKeyboard) showCompositionHint();
         phaseTime = .6;
         panels.showBanner('FIGHT');
         audio.cue('fight');
@@ -444,13 +354,13 @@ export function startGame(config) {
     const movementStart = [hung.x, mai.x];
     const local = keyboard.consumeActions();
     const second = keyboardP2.consumeActions();
-    const input = lan || soloLan ? mergeInputs(local, lanHost.consume(0)) : local;
+    const input = lan || pairing.solo ? mergeInputs(local, pairing.consume(0)) : local;
     const replay = practice ? training.step(input) : null;
     const autoFaceOpponent = !lan && localMode !== 'versus' && !replay;
     if (autoFaceOpponent) faceOpponent(mai, hung);
     applyControls(hung, mai, localMode === 'team' && team.activePlayer ? second : input, controlRules);
     if (lan) {
-      applyControls(mai, hung, mergeInputs(second, lanHost.consume(1)), controlRules);
+      applyControls(mai, hung, mergeInputs(second, pairing.consume(1)), controlRules);
     } else if (localMode === 'versus') {
       applyControls(mai, hung, second, controlRules);
     } else if (replay) {
@@ -601,6 +511,8 @@ export function startGame(config) {
   function finishRound() {
     phase = 'round-over';
     phaseTime = 1.35;
+    hung.stopFlight();
+    mai.stopFlight();
     clearInputs();
     mai.blocking = false;
     panels.setPauseAvailable(false);
@@ -666,6 +578,7 @@ export function startGame(config) {
     });
     render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, animationTime, debug, ball, drop: pickups.drop });
     if (toastClock <= 0) ui.toast.classList.remove('show');
+    keyboardHint.hidden = phase !== 'fight' || now >= keyboardHintUntil;
     requestAnimationFrame(frame);
   }
   setStage('rooftop', true);

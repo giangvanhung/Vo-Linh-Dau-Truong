@@ -1,0 +1,221 @@
+{
+  "stage": {
+    "background": "/assets/backgrounds/rooftop/preview.jpg",
+    "parallax": [
+      "/assets/backgrounds/rooftop/background.png",
+      "/assets/backgrounds/rooftop/midground.png",
+      "/assets/backgrounds/rooftop/foreground.png"
+    ],
+    "groundRatio": 0.79,
+    "playerStartRatio": 0.31,
+    "cpuStartRatio": 0.69,
+    "jumpVelocity": 590,
+    "gravity": 1500,
+    "roundSeconds": 60,
+    "winsToMatch": 2
+  },
+  "stages": {
+    "rooftop": {
+      "name": "Sân thượng mưa",
+      "description": "Vũng nước làm bước chạy trượt thêm.",
+      "background": "/assets/backgrounds/rooftop/preview.jpg",
+      "parallax": [
+        "/assets/backgrounds/rooftop/background.png",
+        "/assets/backgrounds/rooftop/midground.png",
+        "/assets/backgrounds/rooftop/foreground.png"
+      ],
+      "zone": {
+        "kind": "slip",
+        "range": [
+          0.38,
+          0.62
+        ],
+        "inertia": 0.77,
+        "color": "#7cbbf5"
+      }
+    },
+    "ice": {
+      "name": "Hang băng",
+      "description": "Hai gờ băng để nhảy lên. Mặt băng giữa sân kéo dài đà trượt.",
+      "background": "/assets/backgrounds/ice.webp",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": [
+        {
+          "range": [
+            0.09,
+            0.34
+          ],
+          "y": -57
+        },
+        {
+          "range": [
+            0.66,
+            0.91
+          ],
+          "y": -57
+        }
+      ],
+      "zone": {
+        "kind": "slip",
+        "range": [
+          0.3,
+          0.7
+        ],
+        "inertia": 0.91,
+        "color": "#7ff9ff"
+      }
+    },
+    "cloud": {
+      "name": "Đền trên mây",
+      "description": "Hai bệ cao. Gió báo trước rồi đẩy võ sĩ đang ở trên không sang phải.",
+      "background": "/assets/backgrounds/cloud.webp",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": [
+        {
+          "range": [
+            0.15,
+            0.39
+          ],
+          "y": -73
+        },
+        {
+          "range": [
+            0.6,
+            0.85
+          ],
+          "y": -104
+        }
+      ],
+      "zone": {
+        "kind": "wind",
+        "range": [
+          0.29,
+          0.75
+        ],
+        "cycle": 288,
+        "active": 102,
+        "color": "#b4e3ff"
+      }
+    },
+    "forge": {
+      "name": "Lò rèn dưới núi",
+      "description": "Cầu cao giữa sân. Khe hơi hai bên nhấc võ sĩ lên khi sáng.",
+      "background": "/assets/backgrounds/forge.webp",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": [
+        {
+          "range": [
+            0.34,
+            0.66
+          ],
+          "y": -69
+        }
+      ],
+      "zone": {
+        "kind": "vent",
+        "range": [
+          0.17,
+          0.29
+        ],
+        "cycle": 240,
+        "active": 46,
+        "color": "#ffae65"
+      }
+    },
+    "lava": {
+      "name": "Vực Dung Nham",
+      "description": "Vệt dung nham sáng lên trước khi phun. Đứng trong vùng nóng mất 6 HP mỗi nửa giây. Nhảy qua để tránh.",
+      "background": "/assets/backgrounds/lava-arena.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "zone": {
+        "kind": "lava",
+        "range": [
+          0.39,
+          0.61
+        ],
+        "cycle": 360,
+        "active": 112,
+        "damage": 6,
+        "color": "#ff9b4c"
+      }
+    },
+    "observatory": {
+      "name": "Đài Vọng Nguyệt",
+      "description": "Vùng lam dưới kính thiên văn hồi nộ cho đấu sĩ đứng trên mặt đất khi phát sáng.",
+      "background": "/assets/backgrounds/moon-observatory.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "zone": {
+        "kind": "mana",
+        "range": [
+          0.45,
+          0.55
+        ],
+        "cycle": 300,
+        "active": 150,
+        "color": "#83cdc0"
+      }
+    },
+    "market": {
+      "name": "Chợ Sáng",
+      "description": "Sân lát đá trước những sạp trái cây, mái bạt và hàng nón lá.",
+      "background": "/assets/backgrounds/vietnam-market.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": []
+    },
+    "crossroads": {
+      "name": "Ngã Tư Đèn Đỏ",
+      "description": "Đường phố nắng ấm bên vạch qua đường, xe máy và xe cà phê.",
+      "background": "/assets/backgrounds/vietnam-crossroads.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.745,
+      "platforms": []
+    },
+    "meadow": {
+      "name": "Đồng Cỏ Cao Nguyên",
+      "description": "Sân cỏ rộng dưới nắng, nhìn ra đồi và ruộng bậc thang.",
+      "background": "/assets/backgrounds/highland-meadow.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.72,
+      "platforms": []
+    },
+    "hoian": {
+      "name": "Phố Đèn Hội An",
+      "description": "Sân lát đá bên sông, đèn lồng, thuyền nhỏ và xe đạp trước dãy nhà vàng.",
+      "background": "/assets/backgrounds/hoian-lanterns.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.83,
+      "platforms": []
+    },
+    "paris": {
+      "name": "Quảng Trường Bờ Seine",
+      "description": "Quán cà phê, sạp sách và hàng hoa nhìn ra tháp Eiffel.",
+      "background": "/assets/backgrounds/paris-seine.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.81,
+      "platforms": []
+    },
+    "route66": {
+      "name": "Trạm Dừng Route 66",
+      "description": "Quán ăn ven đường, xe cổ và trạm xăng giữa hoàng hôn sa mạc.",
+      "background": "/assets/backgrounds/route66-diner.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": []
+    },
+    "football": {
+      "name": "Sân Bóng Khu Phố",
+      "description": "Sân đất dưới đèn pha, có khung thành và một quả bóng có thể đá nảy.",
+      "background": "/assets/backgrounds/neighborhood-football.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": [],
+      "football": true
+    }
+  }
+}

@@ -50,17 +50,28 @@ src/
   main.js             Nạp cấu hình và khởi động game
   game/match.js       Điều phối trận, tính hiệp, pause và cập nhật 60 Hz
   game/training.js    Chế độ bù nhìn, số liệu combo và bản ghi input
-  combat/fighter.js   Trạng thái võ sĩ, đòn đánh, hitbox và projectile
+  combat/fighter.js   Trạng thái võ sĩ, ra đòn và hitbox
+  combat/hits.js      Phân xử va chạm đòn đánh, đỡ đòn và sát thương
+  combat/projectiles.js Cập nhật đạn và luồng khí công
   combat/positioning.js  Hướng nhìn và va chạm thân người
   combat/cpu.js       Quyết định và độ khó CPU
   platform/keyboard.js  Trạng thái phím giữ và lệnh bấm một lần
   platform/settings.js  Mặc định và lưu vào localStorage
   platform/audio.js     Nhạc và hiệu ứng âm thanh
   render/arena.js     Vẽ sân đấu, nhân vật và hiệu ứng lên Canvas
+  render/evolution-effects.js Cánh, hào quang và trang bị tiến hóa
   ui/hud.js           Thanh máu, năng lượng, tỷ số và hồ sơ nhân vật
   ui/panels.js        Menu, chọn nhân vật, cài đặt, pause và kết quả
+  ui/controller-pairing.js  Phòng tay cầm, QR và địa chỉ mạng trên màn hình game
+  ui/controller.js    Kết nối, đo độ trễ và kết nối lại trên điện thoại
+  ui/controller-input.js   Joystick, nút hướng và nút hành động
+  ui/controller-qr.js      Quét camera và đọc ảnh QR
+  ui/controller-layout.js  Toàn màn hình, xoay và tùy chỉnh nền tay cầm
   ui/training-panel.js   Điều khiển và số liệu luyện tập
-data/fighters.json    Chỉ số nhân vật, sân đấu và thông số đòn
+data/characters/      Mỗi file chứa chỉ số, chiêu, sprite và tiến hóa của một võ sĩ
+data/roster.json      ID và thứ tự võ sĩ trong danh sách
+data/stages.json      Sân đấu và cấu hình mặc định
+data/combat.json      Luật chiến đấu dùng chung
 index.html            Cấu trúc giao diện
 public/styles/styles.css Kiểu hiển thị
 public/assets/characters/   Each fighter's concept, sprite sheet and atlas
@@ -68,13 +79,15 @@ public/assets/backgrounds/  Stage layers and fallback composite
 server.mjs            Máy chủ tệp tĩnh cho môi trường phát triển
 ```
 
+Máy chủ local và bản build gộp dữ liệu thành một phản hồi tại `/data/fighters.json`. Khi thêm võ sĩ, tạo file `data/characters/<id>.json` và thêm ID vào `data/roster.json`.
+
 Mỗi bước mô phỏng đọc lệnh bàn phím, cập nhật quyết định CPU, xử lý vị trí và phân xử đòn đánh. Sau đó Canvas và HUD đọc trạng thái để hiển thị. Các mô-đun trong `combat/` chạy được với Node mà không cần DOM.
 
 | Triệu chứng | Chỗ bắt đầu debug |
 | --- | --- |
 | Kẹt phím, nhả phím nhưng vẫn di chuyển | `platform/keyboard.js`, kiểm tra `keydown`, `keyup` và mất tiêu điểm |
 | Nhảy qua CPU rồi kẹt hoặc quay sai hướng | `combat/positioning.js`, kiểm tra va chạm khi tiếp đất |
-| Đòn đánh hụt, sai sát thương hoặc sai thời gian hồi | `combat/fighter.js` và `data/fighters.json` |
+| Đòn đánh hụt, sai sát thương hoặc sai thời gian hồi | `combat/hits.js`, `combat/projectiles.js`, `combat/fighter.js` và file võ sĩ trong `data/characters/` |
 | CPU đỡ hoặc phản đòn sai | `combat/cpu.js`, kiểm tra trạng thái và thời gian quan sát |
 | Đồng hồ, chuyển hiệp, pause hoặc chơi lại sai | `game/match.js`, kiểm tra chuyển `phase` |
 | Nút, bảng thông tin hay hình vẽ hiển thị sai | `ui/panels.js`, `ui/hud.js` hoặc `render/arena.js` |

@@ -1,0 +1,269 @@
+{
+  "awakening": {
+    "unlockAttack": "heavy",
+    "condition": "Đâm trúng bằng Trường Thương khi đối thủ hở thủ",
+    "skill": "closeSkill",
+    "label": "Nâng Gió · Vút Mây",
+    "changes": {
+      "launch": 400,
+      "limbBoxes": [
+        {
+          "near": 17,
+          "far": 121,
+          "top": 126,
+          "height": 82
+        }
+      ]
+    },
+    "evolution": {
+      "color": "#9bffd7",
+      "scale": 1.06,
+      "damageMultiplier": 1.08
+    },
+    "levelTwo": {
+      "skill": "closeSkill",
+      "durationFrames": 540,
+      "label": "Thương Long Thiên Diệp",
+      "changes": {
+        "launch": 450,
+        "damage": 23,
+        "limbBoxes": [
+          {
+            "near": 12,
+            "far": 141,
+            "top": 150,
+            "height": 115
+          }
+        ]
+      },
+      "evolution": {
+        "color": "#cbffe3",
+        "scale": 1.13,
+        "bonusHp": 10,
+        "damageMultiplier": 1.12
+      }
+    }
+  },
+  "sprite": {
+    "still": "/assets/characters/elf/avatar.png",
+    "poseSheet": "/assets/characters/elf/poses.png",
+    "extraPoses": "/assets/characters/elf/extra-poses.png",
+    "displaySize": 139
+  },
+  "weapon": {
+    "image": "/assets/effects/fox-spear.png",
+    "width": 105,
+    "tilt": 0.14,
+    "arc": 0.6,
+    "reach": 34,
+    "gripX": 0.43,
+    "gripY": 0.59
+  },
+  "name": "Elf Lục Tiễn",
+  "hp": 102,
+  "width": 38,
+  "height": 104,
+  "color": "#73e2bf",
+  "glow": "#73e2bf",
+  "cpu": true,
+  "skills": {
+    "closeSkill": {
+      "label": "Mũi Thương Nâng Gió",
+      "damage": 16,
+      "startup": 15,
+      "active": 6,
+      "recovery": 24,
+      "range": 111,
+      "knockback": 88,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 23,
+          "far": 111,
+          "top": 112,
+          "height": 66
+        }
+      ],
+      "cooldownFrames": 250,
+      "launch": 300
+    },
+    "rangedSkill": {
+      "label": "Diệp Phong",
+      "damage": 12,
+      "startup": 18,
+      "active": 1,
+      "recovery": 22,
+      "range": 44,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 15,
+          "far": 44,
+          "top": 72,
+          "height": 19
+        }
+      ],
+      "cooldownFrames": 281,
+      "projectile": {
+        "speed": 690,
+        "width": 57,
+        "height": 13,
+        "yOffset": 63,
+        "color": "#73e2bf",
+        "lifetimeFrames": 72,
+        "pierce": false,
+        "shape": "wind"
+      }
+    },
+    "ultimate": {
+      "label": "Thương Vũ Xuyên Mây",
+      "damage": 8,
+      "startup": 24,
+      "active": 23,
+      "recovery": 30,
+      "range": 139,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 20,
+          "far": 139,
+          "top": 123,
+          "height": 100
+        }
+      ],
+      "cost": 100,
+      "groundOnly": true,
+      "pulses": [
+        {
+          "from": 0,
+          "to": 7,
+          "knockback": 15,
+          "hitstun": 16
+        },
+        {
+          "from": 7,
+          "to": 15,
+          "knockback": 25,
+          "hitstun": 17
+        },
+        {
+          "from": 15,
+          "to": 23,
+          "knockback": 310,
+          "damage": 16,
+          "hitstun": 26
+        }
+      ],
+      "effect": {
+        "color": "#73e2bf",
+        "particles": 14,
+        "shakeIntensity": 19,
+        "shakeSeconds": 0.14,
+        "trailSeconds": 0.23
+      }
+    }
+  },
+  "moveSpeed": 306,
+  "hurtboxSize": {
+    "width": 37,
+    "height": 104
+  },
+  "dash": {
+    "frames": 10,
+    "distance": 132,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 204,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 51,
+  "profile": {
+    "role": "Thương thủ rừng sâu",
+    "strength": "Giữ khoảng cách bằng mũi thương dài và có đòn hất tung.",
+    "weakness": "Đâm thương dễ hụt khi đối thủ áp quá sát."
+  },
+  "attacks": {
+    "light": {
+      "label": "Gõ Cán Thương",
+      "damage": 6,
+      "startup": 5,
+      "active": 4,
+      "recovery": 10,
+      "range": 47,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [
+        "kick"
+      ],
+      "limbBoxes": [
+        {
+          "near": 3,
+          "far": 47,
+          "top": 76,
+          "height": 24
+        }
+      ],
+      "showArc": true
+    },
+    "heavy": {
+      "label": "Trường Thương",
+      "damage": 13,
+      "startup": 14,
+      "active": 5,
+      "recovery": 23,
+      "range": 107,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 26,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 27,
+          "far": 107,
+          "top": 82,
+          "height": 19
+        }
+      ],
+      "showArc": true
+    },
+    "kick": {
+      "label": "Quét Cán",
+      "damage": 9,
+      "startup": 9,
+      "active": 5,
+      "recovery": 13,
+      "range": 61,
+      "knockback": 135,
+      "hitstun": 20,
+      "hitstop": 3,
+      "guardDamage": 19,
+      "cancelInto": [],
+      "limbBoxes": [
+        {
+          "near": 5,
+          "far": 61,
+          "top": 34,
+          "height": 23
+        }
+      ],
+      "level": "low"
+    }
+  }
+}

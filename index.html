@@ -234,7 +234,9 @@
             <p>Giữ <kbd data-binding="f">F</kbd> để nạp đầy nộ, rồi đứng vững và bấm <kbd data-binding="g">G</kbd> để tiến hóa. Trong trận thường, mỗi nhân vật có điều kiện riêng. Bấm phím tiến hóa để xem gợi ý. Trong Luyện tập, dùng nút Nạp cấp tiến hóa kế tiếp để nạp nhanh.</p>
             <p>Bấm Trái hoặc Phải để quay mặt và di chuyển. Khi thả nút, nhân vật giữ hướng vừa chọn. Đỡ đòn về phía đang nhìn.</p>
             <p>Giữ hướng hoặc bấm Nhảy trong lúc đấm, đá hay dùng vũ khí để vừa di chuyển vừa đánh. Mỗi đòn giữ hướng đã chọn lúc bắt đầu.</p>
-            <p><strong>Long Quyền Khí Pháo · 50 nộ</strong> — Khi đứng đất, bấm Xuống rồi bấm hướng muốn bắn cùng Đấm nhẹ. P1 mặc định dùng <kbd data-binding="s">S</kbd> rồi <kbd data-binding="a">A</kbd> hoặc <kbd data-binding="d">D</kbd> + <kbd data-binding="j">J</kbd>. P2 dùng ↓ rồi ← hoặc → + Num 1. Tay cầm dùng nút hướng hoặc joystick và Đấm nhẹ.</p>
+            <p><strong>Long Quyền Khí Pháo · Cần ít nhất 50 nộ</strong> — Khi đứng đất, bấm Xuống rồi bấm hướng muốn bắn cùng Đấm nhẹ. Chưởng rút nộ liên tục, bắn lâu hơn khi có nhiều nộ và tắt nếu hết nộ hoặc bị ngắt đòn. P1 mặc định dùng <kbd data-binding="s">S</kbd> rồi <kbd data-binding="a">A</kbd> hoặc <kbd data-binding="d">D</kbd> + <kbd data-binding="j">J</kbd>. P2 dùng ↓ rồi ← hoặc → + Num 1. Tay cầm dùng nút hướng hoặc joystick và Đấm nhẹ.</p>
+            <p><strong>Uy Áp Tử Ảnh</strong> — Giữ nút Tụ khí khi chơi Tử Ảnh Lam Chi. Mất thêm một nhịp để lấy đà, sau đó nộ tăng nhanh hơn.</p>
+            <p><strong>Mai · Bay khi có cánh</strong> — Bấm Nhảy để cất cánh, dùng phím trái/phải và các đòn đánh trên không. Bấm Xuống để hạ cánh. Mai sẽ rơi khi trúng đòn hoặc hết tiến hóa.</p>
             <section class="lower-grid">
               <div class="controls-card"><div class="section-heading"><span class="tiny-icon">⌘</span><h2>ĐIỀU KHIỂN</h2><span class="heading-note">HÙNG · NGƯỜI CHƠI</span></div><div class="controls-list">
                 <div class="control-row"><span class="key-group"><kbd data-binding="a">A</kbd><kbd data-binding="d">D</kbd></span><span>Di chuyển</span></div><div class="control-row"><kbd data-binding="w">W</kbd><span>Nhảy</span></div><div class="control-row"><kbd data-binding="s">S</kbd><span>Ngồi</span></div><div class="control-row"><kbd data-binding="j">J</kbd><span>Đấm nhẹ</span><small>NHANH</small></div><div class="control-row"><kbd data-binding="k">K</kbd><span>Đấm nặng</span><small>UY LỰC</small></div><div class="control-row"><kbd data-binding="l">L</kbd><span id="kick-control">Đá</span><small>TẦM TRUNG</small></div><div class="control-row"><kbd data-binding="p">P</kbd><span>Đỡ đòn</span><small>GIỮ ĐỂ BLOCK</small></div>
@@ -254,6 +256,7 @@
           </div>
           <div class="center-callout game-panel" id="pause-panel" hidden>
             <h2>Tạm dừng</h2>
+            <p id="pause-keyboard-hint" hidden>Phím di chuyển bị lỗi khi dùng UniKey? Chuyển UniKey từ V sang E bằng Ctrl + Shift nếu dùng phím tắt mặc định.</p>
             <div class="menu-buttons">
               <button class="primary-button" id="resume-button">Tiếp tục</button>
               <button class="panel-button" id="pause-guide-button">Hướng dẫn</button>
@@ -268,6 +271,7 @@
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" data-replay>Chơi lại</button></div>
           </div>
           <div class="toast" id="toast" aria-live="polite"></div>
+          <div class="keyboard-hint" id="keyboard-hint" role="status" hidden>Nếu dùng UniKey, hãy chuyển từ V sang E để tránh lỗi phím di chuyển.</div>
           <div class="stage-bottom"><span>SÂN ĐẤU <b id="stage-name"></b></span><span>LINH GIỚI <i>✦</i></span></div>
         </div>
         </div>

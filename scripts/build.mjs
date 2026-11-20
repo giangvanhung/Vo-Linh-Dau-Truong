@@ -1,4 +1,5 @@
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
+import { loadFighterConfig } from './fighter-config.mjs';
 import { bundleGame } from './game-bundle.mjs';
 
 const source = path => new URL('../' + path, import.meta.url);
@@ -11,13 +12,12 @@ if (!['https:', 'wss:'].includes(relay.protocol) || relay.username || relay.pass
 
 await mkdir(dist(''), { recursive: true });
 await Promise.all([
-  ...['src', 'data', 'index.html', 'controller.html'].map(path => cp(source(path), dist(path), { recursive: true })),
+  ...['src', 'index.html', 'controller.html'].map(path => cp(source(path), dist(path), { recursive: true })),
   ...['assets', 'styles'].map(path => cp(source('public/' + path), dist(path), { recursive: true })),
 ]);
-await mkdir(dist('src/vendor/'), { recursive: true });
+await Promise.all(['src/vendor/', 'data/'].map(path => mkdir(dist(path), { recursive: true })));
 await Promise.all([
-  readFile(source('data/fighters.json'), 'utf8').then(text =>
-    writeFile(dist('data/fighters.json'), JSON.stringify(JSON.parse(text)))),
+  loadFighterConfig().then(config => writeFile(dist('data/fighters.json'), JSON.stringify(config))),
   cp(source('node_modules/jsqr/dist/jsQR.js'), dist('src/vendor/jsqr.js')),
   writeFile(dist('src/platform/relay-url.js'), `export const relayUrl = ${JSON.stringify(relay.origin)};\n`),
 ]);
