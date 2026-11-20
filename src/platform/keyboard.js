@@ -6,10 +6,13 @@ export const bindingLabels = {
   a:'Trái', d:'Phải', w:'Nhảy', s:'Cúi', j:'Đòn nhẹ', k:'Đòn nặng', l:'Đá', p:'Đỡ',
   q:'Lướt', r:'Lộn né', f:'Tụ khí', g:'Tiến hóa', u:'Chiêu gần', i:'Chiêu xa', o:'Tuyệt kỹ', t:'Thoát combo',
 };
+const legacyArrows = { 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown' };
 export function keyCode(event) {
-  return event.code && event.code !== 'Unidentified' ? event.code
-    : event.key?.toLowerCase() === 'đ' ? 'KeyD'
-    : /^[a-z]$/i.test(event.key) ? 'Key' + event.key.toUpperCase() : event.key;
+  if (event.code && event.code !== 'Unidentified') return event.code;
+  if (event.keyCode >= 65 && event.keyCode <= 90) return 'Key' + String.fromCharCode(event.keyCode);
+  if (legacyArrows[event.keyCode]) return legacyArrows[event.keyCode];
+  if (event.key?.toLowerCase() === 'đ') return 'KeyD';
+  return /^[a-z]$/i.test(event.key) ? 'Key' + event.key.toUpperCase() : event.key;
 }
 export function assignable(code) {
   return /^(Key[A-Z]|Digit[0-9]|Numpad([0-9]|Add|Decimal|Subtract|Multiply|Divide|Enter)|Arrow(Left|Right|Up|Down)|Comma|Period|BracketLeft|BracketRight|Slash|Minus|Equal|Semicolon|Quote)$/.test(code);
@@ -43,10 +46,6 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
     return Number(isHeld('d')) - Number(isHeld('a'));
   }
 
-  function physicalKey(event) {
-    return event.code && event.code !== 'Unidentified' ? event.code : null;
-  }
-
   function isHeld(key) {
     return [...heldInputs.values()].includes(key);
   }
@@ -57,12 +56,12 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
       if (!event.repeat) onPause();
       return;
     }
-    if (!canPlay()) return;
+    if (event.isComposing || event.keyCode === 229 || !canPlay()) return;
     if (event.target?.closest?.('select, input, textarea, [contenteditable="true"]')) return;
     const key = gameKey(event);
     if (!gameKeys.has(key) || event.ctrlKey || event.metaKey || event.altKey) return;
     event.preventDefault();
-    const input = physicalKey(event) ?? key;
+    const input = keyCode(event) ?? key;
     if (event.repeat || heldInputs.has(input)) return;
     heldInputs.set(input, key);
     onInput?.(keyFor ? (key === 'q' && event.shiftKey ? 'Shift+' : '') + keyLabel(keyCode(event)) : key === 'q' && event.shiftKey ? 'Shift+Q' : (event.key?.startsWith('Arrow')
@@ -76,15 +75,12 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
     if (key === 't') queuedAction = 'escape';
   });
   window.addEventListener('keyup', event => {
-    const code = physicalKey(event);
-    if (code && heldInputs.delete(code)) return;
-    const key = gameKey(event);
-    if (!code) {
-      const legacyCode = event.keyCode >= 65 && event.keyCode <= 90
-        ? 'Key' + String.fromCharCode(event.keyCode)
-        : ({ 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown' })[event.keyCode];
-      if (heldInputs.delete(legacyCode)) return;
+    if (heldInputs.delete(keyCode(event))) return;
+    if (event.isComposing || event.keyCode === 229) {
+      clearInputs();
+      return;
     }
+    const key = gameKey(event);
     // IMEs can report a different or missing physical code on release.
     for (const [input, heldKey] of heldInputs) {
       if (heldKey === key) heldInputs.delete(input);

@@ -175,7 +175,7 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
     if (!pendingBinding) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (event.repeat) return;
+    if (event.repeat || event.isComposing || event.keyCode === 229) return;
     const { side, action } = pendingBinding;
     const code = keyCode(event);
     if (code === 'Escape') {

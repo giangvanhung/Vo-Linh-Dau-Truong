@@ -369,7 +369,7 @@ export function createArenaRenderer(canvas, config) {
 
     const age = fighter.awakeningDuration - fighter.awakeningFrames;
     const blend = Math.min(1, age / 14, fighter.awakeningFrames / 18);
-    const { body, color = '#ffcc53', scale = 1, overlay } = fighter.evolution;
+    const { body, color = '#ffcc53', scale = 1, overlay, spriteEdgePadding = 0 } = fighter.evolution;
     const size = 1 + blend * (scale - 1);
     const feet = ground + fighter.y;
     const aura = fighter.awakeningLevel === 2 && images.get(advancedAura);
@@ -384,7 +384,9 @@ export function createArenaRenderer(canvas, config) {
     }
     if (overlay?.behind) drawEvolutionOverlay(fighter, ground, time, blend, overlay);
     ctx.save();
-    ctx.translate(fighter.x, feet);
+    const padding = Math.min(w / 2, spriteEdgePadding * (fighter.sprite?.displaySize ?? 0) * size);
+    const spriteX = padding ? Math.max(padding, Math.min(w - padding, fighter.x)) : fighter.x;
+    ctx.translate(spriteX, feet);
     ctx.scale(size, size);
     ctx.translate(-fighter.x, -feet);
     drawFighter(fighter, ground, time);

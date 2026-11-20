@@ -3903,6 +3903,7 @@
             "damageMultiplier": 1.17,
             "poseSheet": "/assets/characters/dragon/evolution-two-poses.png",
             "sprite": "/assets/characters/dragon/evolution-two.png",
+            "spriteEdgePadding": 0.82,
             "bonusHp": 18
           }
         }
