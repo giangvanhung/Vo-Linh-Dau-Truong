@@ -8,6 +8,15 @@ const send = (socket, message) => {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
 };
 
+const networkPriority = { wifi: 0, ethernet: 1, other: 2, virtual: 3 };
+
+function networkType(name) {
+  if (/vpn|radmin|tailscale|zerotier|hamachi|wireguard|tap-windows|virtual|vethernet|vmware|wsl|hyper-v|wi-fi direct/i.test(name)) return 'virtual';
+  if (/wi[ -]?fi|wireless|wlan|802\.11/i.test(name)) return 'wifi';
+  if (/ethernet|^eth\d|^en[opsx]\d|^local area connection/i.test(name)) return 'ethernet';
+  return 'other';
+}
+
 export function attachLan(server) {
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 512 });
   const rooms = new Map();
@@ -48,9 +57,15 @@ export function attachLan(server) {
         for (const player of room.players) player?.close(4002, 'Room closed');
       });
       const origin = new URL(request.headers.origin);
-      const addresses = Object.values(networkInterfaces()).flat()
-        .filter(address => address.family === 'IPv4' && !address.internal)
-        .map(address => address.address);
+      const addresses = Object.entries(networkInterfaces()).flatMap(([name, entries]) =>
+        entries.filter(entry => entry.family === 'IPv4' && !entry.internal && !entry.address.startsWith('169.254.'))
+          .map(entry => ({ address: entry.address, name, type: networkType(name) })));
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)
+          && !addresses.some(entry => entry.address === origin.hostname)) {
+        addresses.push({ address: origin.hostname, name: '', type: 'other' });
+      }
+      addresses.sort((a, b) => networkPriority[a.type] - networkPriority[b.type]
+        || Number(b.address === origin.hostname) - Number(a.address === origin.hostname));
       const controllerLink = address => {
         const link = new URL('/controller', origin);
         link.hostname = address;
@@ -58,14 +73,19 @@ export function attachLan(server) {
         if (solo) link.searchParams.set('solo', '1');
         return link.href;
       };
-      const urls = [...new Set(addresses)].map(controllerLink);
-      if (!['localhost','127.0.0.1','[::1]'].includes(origin.hostname)) {
-        urls.unshift(controllerLink(origin.hostname));
+      const seen = new Set();
+      const links = [];
+      for (const { address, name, type } of addresses) {
+        if (seen.has(address)) continue;
+        seen.add(address);
+        links.push({ link: controllerLink(address), name, type });
       }
-      const links = [...new Set(urls)];
-      Promise.all(links.map(async link => ({ link, qr: await QRCode.toDataURL(link, { width: 180, margin: 2 }) })))
+      Promise.all(links.map(async option => ({
+        ...option,
+        qr: await QRCode.toDataURL(option.link, { width: 180, margin: 2 }),
+      })))
         .then(options => send(socket, { type: 'room', options }))
-        .catch(() => send(socket, { type: 'room', options: links.map(link => ({ link })) }));
+        .catch(() => send(socket, { type: 'room', options: links }));
       status(room);
       return;
     }

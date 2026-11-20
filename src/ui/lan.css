@@ -1,6 +1,10 @@
 #lan-pairing { font-size: 12px; line-height: 1.45; }
 #lan-pairing [hidden], .lan-details[hidden] { display: none; }
 #lan-link-box { display: grid; justify-items: center; gap: 6px; }
+#lan-address-label { display: grid; gap: 4px; min-width: 0; max-width: 100%; }
+#lan-address { max-width: 100%; }
+#lan-link-box p { margin: 0; max-width: 50ch; }
+#lan-address-hint { font-weight: 600; }
 #lan-link { color: #a1cef4; overflow-wrap: anywhere; }
 #lan-qr { background: white; border-radius: 4px; }
 .lan-details { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }

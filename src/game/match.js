@@ -156,6 +156,13 @@ export function startGame(config) {
 
   const pairing = byId('lan-pairing');
   const address = byId('lan-address');
+  const networkLabels = { wifi: 'Wi‑Fi', ethernet: 'Ethernet (cắm dây)', virtual: 'VPN / mạng ảo', other: 'Mạng khác' };
+  const networkHints = {
+    wifi: 'Dùng địa chỉ này khi điện thoại và máy tính kết nối cùng Wi‑Fi.',
+    ethernet: 'Dùng địa chỉ này khi dây mạng máy tính nối vào cùng router phát Wi‑Fi cho điện thoại.',
+    virtual: 'Địa chỉ VPN hoặc mạng ảo. Nếu điện thoại chỉ dùng Wi‑Fi, hãy chọn địa chỉ Wi‑Fi hoặc Ethernet.',
+    other: 'Nếu chưa rõ đây là mạng nào, xem tên bộ điều hợp trong cài đặt mạng của máy tính.',
+  };
   const soloLanButton = byId('solo-lan-button');
   let soloLan = false;
   let addresses = [];
@@ -173,6 +180,7 @@ export function startGame(config) {
     if (!option) return;
     const link = byId('lan-link');
     link.href = link.textContent = option.link;
+    byId('lan-address-hint').textContent = networkHints[option.type] ?? networkHints.other;
     const qr = byId('lan-qr');
     qr.hidden = !option.qr;
     if (option.qr) qr.src = option.qr;
@@ -181,8 +189,11 @@ export function startGame(config) {
     canPlay: () => (lan || soloLan) && phase === 'fight',
     onRoom(options) {
       addresses = options;
-      address.replaceChildren(...options.map(({ link }, index) => new Option(new URL(link).host, index)));
-      byId('lan-address-label').hidden = options.length < 2;
+      address.replaceChildren(...options.map(({ link, name, type }, index) => {
+        const label = networkLabels[type] ?? networkLabels.other;
+        const adapter = name && name.toLowerCase() !== type ? ` (${name})` : '';
+        return new Option(`${label}${adapter} · ${new URL(link).host}`, index);
+      }));
       roomReady = true;
       updateLanAddress();
       updateLanStatus();
