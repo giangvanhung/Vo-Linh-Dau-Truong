@@ -10,7 +10,8 @@ import { createHud, damageFormat } from '../ui/hud.js';
 import { createPanels } from '../ui/panels.js';
 import { createTrainingPanel } from '../ui/training-panel.js';
 import { applyStageEffects, stageForMatch } from './stages.js';
-import { TrainingSession } from './training.js';
+import { createTrainingActions, TrainingSession } from './training.js';
+import { TeamRoster } from './team-roster.js';
 import { superAttack } from './super-motion.js';
 import { applyControls } from './fighter-controls.js';
 import { createPickups, equippedAttack, gear } from './pickups.js';
@@ -52,7 +53,8 @@ export function startGame(config) {
   let lastTime, accumulator = 0, toastClock = 0, lastCompositionHint = -Infinity;
   let difficulty = 'normal', cpu;
   let bestOf = 3, damageHung = 0, damageMai = 0;
-  let localMode = '', teamCpuIds = [], activePlayer = 0, activeCpu = 0;
+  let localMode = '';
+  const team = new TeamRoster();
   const isPve = () => !practice && !lan && localMode !== 'versus';
   let hitstop = 0, shake = 0;
   let animationTime = 0;
@@ -73,14 +75,14 @@ export function startGame(config) {
   }
 
   function updateRoster() {
-    hud.updateRosterUI({ hung, mai, practice, difficulty, lan: lan || localMode === 'versus', team: localMode === 'team', activePlayer, activeCpu });
+    hud.updateRosterUI({ hung, mai, practice, difficulty, lan: lan || localMode === 'versus', team: localMode === 'team', activePlayer: team.activePlayer, activeCpu: team.activeCpu });
     updateScore();
   }
 
   function resetFighters() {
-    activePlayer = activeCpu = 0;
+    team.reset();
     hung = makeFighter(playerId, 'hung');
-    mai = makeFighter(localMode === 'team' ? teamCpuIds[0] : opponentId, 'mai');
+    mai = makeFighter(localMode === 'team' ? team.cpuIds[0] : opponentId, 'mai');
     if (practice) hung.awakeningUnlocked = true;
     seconds = roundLength;
     stageFrame = 0;
@@ -109,7 +111,7 @@ export function startGame(config) {
   }
 
   function startMatch() {
-    if (practice) resetTrainingActivity();
+    if (practice) training.resetActivity();
     audio.unlock();
     winsHung = winsMai = damageHung = damageMai = 0;
     round = 1;
@@ -126,7 +128,7 @@ export function startGame(config) {
   }
 
   function returnToMenu() {
-    resetTrainingActivity();
+    training.resetActivity();
     phase = 'menu';
     practice = lan = false;
     localMode = '';
@@ -181,11 +183,7 @@ export function startGame(config) {
     bestOf = roundFormats.includes(rounds) ? rounds : 3;
     playerId = player;
     const roster = Object.keys(config.characters);
-    if (localMode === 'team') {
-      const first = roster[Math.floor(Math.random() * roster.length)];
-      const remaining = roster.filter(id => id !== first);
-      teamCpuIds = [first, remaining[Math.floor(Math.random() * remaining.length)]];
-    }
+    if (localMode === 'team') team.selectCpu(roster);
     opponentId = opponent === 'random' ? roster[Math.floor(Math.random() * roster.length)] : opponent;
     difficulty = level;
     if (soloLan) {
@@ -297,44 +295,13 @@ export function startGame(config) {
     openControllerRoom();
   }
 
-  function resetTrainingActivity() {
-    training.recordState = 'idle';
-    training.jumpClock = 0;
-    training.inputs.length = 0;
-    training.clearStats();
-  }
-
-  const trainingPanel = createTrainingPanel(training, {
+  const trainingPanel = createTrainingPanel(training, createTrainingActions(training, {
     canUse: canTrain,
-    resetPosition() {
-      if (!canTrain()) return;
-      const health = [hung.hp, mai.hp];
-      const energy = [hung.meter, mai.meter];
-      resetTrainingActivity();
-      resetFighters();
-      [hung.hp, mai.hp] = health;
-      [hung.meter, mai.meter] = energy;
-      updateScore();
-    },
-    resetHealth() {
-      if (!canTrain()) return;
-      hung.hp = hung.maxHp;
-      mai.hp = mai.maxHp;
-      updateScore();
-    },
-    testAwakening() {
-      if (!canTrain()) return;
-      hung.gainMeter(config.combat.meterMax);
-      hung.awakeningUnlocked = true;
-      if (!hung.nextAwakening) hung.endAwakening();
-      updateScore();
-      canvas.focus({ preventScroll: true });
-    },
-    resetMeter() {
-      if (!canTrain()) return;
-      hung.meter = mai.meter = 0;
-    },
-  });
+    fighters: () => [hung, mai],
+    resetFighters,
+    updateScore,
+    focusArena: () => canvas.focus({ preventScroll: true }),
+  }));
 
   function boundAction(event, side) {
     const code = keyCode(event);
@@ -481,7 +448,7 @@ export function startGame(config) {
     const replay = practice ? training.step(input) : null;
     const autoFaceOpponent = !lan && localMode !== 'versus' && !replay;
     if (autoFaceOpponent) faceOpponent(mai, hung);
-    applyControls(hung, mai, localMode === 'team' && activePlayer ? second : input, controlRules);
+    applyControls(hung, mai, localMode === 'team' && team.activePlayer ? second : input, controlRules);
     if (lan) {
       applyControls(mai, hung, mergeInputs(second, lanHost.consume(1)), controlRules);
     } else if (localMode === 'versus') {
@@ -539,7 +506,7 @@ export function startGame(config) {
       const intended = walkingSteps[index];
       fighter.moving = Math.abs(step) > .1 && Math.abs(intended) > .1 && step * intended > 0
         && fighter.onGround && !fighter.disabled
-        && !fighter.attack && !fighter.dash && !fighter.blocking;
+        && fighter.canMoveDuringAttack && !fighter.dash && !fighter.blocking;
       if (fighter.moving) {
         fighter.walkDistance += Math.sign(step) * fighter.facing * Math.min(Math.abs(step), Math.abs(intended));
       } else {
@@ -575,23 +542,17 @@ export function startGame(config) {
   }
 
   function callReserves() {
-    const playerOut = hung.hp <= 0, cpuOut = mai.hp <= 0;
-    if (seconds <= 0 || (playerOut && activePlayer) || (cpuOut && activeCpu)) return false;
-    if (playerOut) {
-      activePlayer = 1;
-      hung = makeFighter(opponentId, 'hung');
-    }
-    if (cpuOut) {
-      activeCpu = 1;
-      mai = makeFighter(teamCpuIds[1], 'mai');
-      cpu = new CpuController(difficulty, config);
-    }
+    const reserves = team.callReserves(hung, mai, seconds, opponentId, makeFighter);
+    if (!reserves) return false;
+    hung = reserves.player;
+    mai = reserves.cpu;
+    if (reserves.cpuOut) cpu = new CpuController(difficulty, config);
     hung.x = fighterX('hung');
     mai.x = fighterX('mai');
     clearInputs();
     projectiles.length = 0;
     updateRoster();
-    toast(playerOut && cpuOut ? 'P2 VÀ CPU 2 VÀO SÂN' : playerOut ? 'P2 VÀO SÂN' : 'CPU 2 VÀO SÂN');
+    toast(reserves.message);
     return true;
   }
 
@@ -648,11 +609,7 @@ export function startGame(config) {
     panels.showBanner(knockout ? 'K.O.' : 'HẾT GIỜ', true);
     audio.cue(knockout ? 'ko' : 'time');
     let lead = Math.round(hung.hp * 100) * mai.maxHp - Math.round(mai.hp * 100) * hung.maxHp;
-    if (localMode === 'team') {
-      const playersLeft = Number(!activePlayer) + Number(hung.hp > 0);
-      const cpusLeft = Number(!activeCpu) + Number(mai.hp > 0);
-      lead = knockout ? playersLeft - cpusLeft : hung.hp / hung.maxHp - mai.hp / mai.maxHp + activeCpu - activePlayer;
-    }
+    if (localMode === 'team') lead = team.lead(hung, mai, knockout);
     if (lead > 0) winsHung++;
     if (lead < 0) winsMai++;
     updateScore();

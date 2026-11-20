@@ -19,6 +19,13 @@ export class TrainingSession {
     this.advantage = null;
   }
 
+  resetActivity() {
+    this.recordState = 'idle';
+    this.jumpClock = 0;
+    this.inputs.length = 0;
+    this.clearStats();
+  }
+
   noteInput(label) {
     this.inputs.push(label);
     if (this.inputs.length > 12) this.inputs.shift();
@@ -87,4 +94,36 @@ export class TrainingSession {
       this.jumpClock = 0;
     }
   }
+}
+
+export function createTrainingActions(training, { canUse, fighters, resetFighters, updateScore, focusArena }) {
+  return {
+    canUse,
+    resetPosition() {
+      if (!canUse()) return;
+      const vitals = fighters().map(({ hp, meter }) => ({ hp, meter }));
+      training.resetActivity();
+      resetFighters();
+      fighters().forEach((fighter, index) => Object.assign(fighter, vitals[index]));
+      updateScore();
+    },
+    resetHealth() {
+      if (!canUse()) return;
+      for (const fighter of fighters()) fighter.hp = fighter.maxHp;
+      updateScore();
+    },
+    testAwakening() {
+      if (!canUse()) return;
+      const [player] = fighters();
+      player.gainMeter(player.rules.meterMax);
+      player.awakeningUnlocked = true;
+      if (!player.nextAwakening) player.endAwakening();
+      updateScore();
+      focusArena();
+    },
+    resetMeter() {
+      if (!canUse()) return;
+      for (const fighter of fighters()) fighter.meter = 0;
+    },
+  };
 }

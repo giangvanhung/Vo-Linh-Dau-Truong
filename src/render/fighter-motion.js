@@ -32,6 +32,11 @@ export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
     const tension = clamp(fighter.chargeFrames / 18);
     ctx.scale(1 + tension * .045, 1 - tension * .055);
   } else if (name !== 'hit' && name !== 'ko') {
+    if (fighter.attack && fighter.canMoveDuringAttack) {
+      const stride = fighter.moving ? Math.sin(fighter.walkDistance / 8) : 0;
+      const drift = fighter.onGround ? 0 : fighter.airDirection * fighter.attack.facing;
+      ctx.transform(1, 0, -.07 * drift - .025 * stride, 1 - .025 * Math.abs(stride), 0, 0);
+    }
     const pickup = fighter.attack?.pickupWeapon;
     if (pickup) {
       const motion = strikePose(fighter.attack);

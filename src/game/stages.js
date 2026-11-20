@@ -16,7 +16,7 @@ export function applyStageEffects(world, fighter, startX, frame, dt) {
   if (fighter.hp <= 0 || !zone) return;
   const inside = zoneRanges(zone).some(range => overlapsSurface(fighter.x, world.width, range));
   if (zone.kind === 'slip') {
-    if (fighter.disabled || fighter.dash || fighter.attacking || fighter.blocking || fighter.charging || !fighter.onGround) {
+    if (fighter.disabled || fighter.dash || !fighter.canMoveDuringAttack || fighter.blocking || fighter.charging || !fighter.onGround) {
       fighter.slideVelocity = 0;
       return;
     }
@@ -30,8 +30,8 @@ export function applyStageEffects(world, fighter, startX, frame, dt) {
     if (zone.kind === 'wind' && !fighter.onGround) fighter.x += 105 * dt;
     if (zone.kind === 'mana' && fighter.onGround && fighter.y === 0) fighter.gainMeter(10 * dt);
     const cycle = Math.floor(frame / zone.cycle);
-    if (zone.kind === 'lava' && fighter.y >= -8 && fighter.lastLavaTick !== Math.floor(frame / 30)) {
-      fighter.lastLavaTick = Math.floor(frame / 30);
+    if (zone.kind === 'lava' && fighter.y >= -8 && frame - (fighter.lastLavaTick ?? -Infinity) >= 30) {
+      fighter.lastLavaTick = frame;
       fighter.hp = Math.max(0, fighter.hp - zone.damage);
       fighter.flash = .12;
       fighter.chargeFrames = 0;

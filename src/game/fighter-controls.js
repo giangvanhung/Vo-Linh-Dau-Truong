@@ -17,7 +17,7 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
     fighter.crouching = false;
     return;
   }
-  if (input.jump && fighter.onGround && !fighter.disabled && !fighter.attacking && !fighter.dash && !input.guard) {
+  if (input.jump && fighter.onGround && !fighter.disabled && fighter.canMoveDuringAttack && !fighter.dash && !input.guard) {
     fighter.vy = -jumpVelocity;
     fighter.airDirection = input.direction;
     fighter.superMotionFrames = 0;
@@ -47,8 +47,8 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
     useAttack(fighter, target, fighter.bufferedAttack);
     fighter.bufferedAttack = null;
   }
-  const canMove = !fighter.disabled && !fighter.dash && !fighter.attacking && !fighter.blocking;
-  fighter.crouching = canMove && input.crouch && fighter.onGround;
+  const canMove = !fighter.disabled && !fighter.dash && fighter.canMoveDuringAttack && !fighter.blocking;
+  fighter.crouching = canMove && !fighter.attacking && input.crouch && fighter.onGround;
   if (canMove) {
     const direction = fighter.onGround ? input.direction : fighter.airDirection;
     fighter.x += direction * fighter.moveSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;

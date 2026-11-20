@@ -86,17 +86,25 @@
             </details>
           </div>
           <button id="pause-button" class="panel-button pause-button" hidden>Tạm dừng <kbd>Esc</kbd></button>
-          <div class="center-callout game-panel" id="menu-panel">
-            <h1>Võ Linh<br><em>Đấu Trường</em></h1>
-            <div class="menu-buttons">
-              <button class="primary-button" id="versus-button">Đấu CPU · PvE</button>
-              <button class="panel-button" id="local-button">2 người · Bàn phím</button>
-              <button class="panel-button" id="team-button">2 người đấu 2 CPU</button>
-              <button class="panel-button" id="lan-button">Đấu 2 người qua LAN</button>
-              <button class="panel-button" id="practice-button">Luyện tập</button>
-              <button class="panel-button" id="equipment-button">Trang bị PvE</button>
-              <button class="panel-button" id="settings-button">Cài đặt</button>
-              <button class="panel-button" id="guide-button">Hướng dẫn</button>
+          <div class="game-panel" id="menu-panel" aria-labelledby="menu-title">
+            <div class="menu-layout">
+              <header class="menu-brand">
+                <h1 id="menu-title">Võ Linh <em>Đấu Trường</em></h1>
+              </header>
+              <nav class="menu-actions" aria-label="Menu chính">
+                <div class="menu-modes">
+                  <button type="button" class="menu-mode menu-mode-featured" id="versus-button"><span>Đấu CPU</span><small>Một người · PvE</small></button>
+                  <button type="button" class="menu-mode" id="local-button"><span>Đấu 2 người</span><small>Chung bàn phím</small></button>
+                  <button type="button" class="menu-mode" id="team-button"><span>Đấu đội</span><small>2 người gặp 2 CPU</small></button>
+                  <button type="button" class="menu-mode" id="lan-button"><span>Đấu qua mạng</span><small>2 tay cầm điện thoại</small></button>
+                  <button type="button" class="menu-mode" id="practice-button"><span>Luyện tập</span><small>Thử đòn và combo</small></button>
+                  <button type="button" class="menu-mode" id="equipment-button"><span>Trang bị PvE</span><small>Chọn đồ và nâng cấp</small></button>
+                </div>
+                <div class="menu-utilities">
+                  <button type="button" class="menu-utility" id="settings-button">Cài đặt</button>
+                  <button type="button" class="menu-utility" id="guide-button">Hướng dẫn</button>
+                </div>
+              </nav>
             </div>
           </div>
           <div class="center-callout game-panel" id="lan-panel" hidden>
@@ -214,6 +222,7 @@
             <p>Đấm nhẹ và đấm nặng dùng luân phiên tay trái/phải. Nút Đá luân phiên chân trái/phải theo nhịp riêng.</p>
             <p>Giữ <kbd data-binding="f">F</kbd> để nạp đầy nộ, rồi đứng vững và bấm <kbd data-binding="g">G</kbd> để tiến hóa. Trong trận thường, mỗi nhân vật có điều kiện riêng. Bấm phím tiến hóa để xem gợi ý. Trong Luyện tập, dùng nút Nạp cấp tiến hóa kế tiếp để nạp nhanh.</p>
             <p>Bấm Trái hoặc Phải để quay mặt và di chuyển. Khi thả nút, nhân vật giữ hướng vừa chọn. Đỡ đòn về phía đang nhìn.</p>
+            <p>Giữ hướng hoặc bấm Nhảy trong lúc đấm, đá hay dùng vũ khí để vừa di chuyển vừa đánh. Mỗi đòn giữ hướng đã chọn lúc bắt đầu.</p>
             <p><strong>Long Quyền Khí Pháo · 50 nộ</strong> — Khi đứng đất, bấm Xuống rồi bấm hướng muốn bắn cùng Đấm nhẹ. P1 mặc định dùng <kbd data-binding="s">S</kbd> rồi <kbd data-binding="a">A</kbd> hoặc <kbd data-binding="d">D</kbd> + <kbd data-binding="j">J</kbd>. P2 dùng ↓ rồi ← hoặc → + Num 1. Tay cầm dùng nút hướng hoặc joystick và Đấm nhẹ.</p>
             <section class="lower-grid">
               <div class="controls-card"><div class="section-heading"><span class="tiny-icon">⌘</span><h2>ĐIỀU KHIỂN</h2><span class="heading-note">HÙNG · NGƯỜI CHƠI</span></div><div class="controls-list">

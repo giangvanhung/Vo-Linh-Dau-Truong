@@ -1,6 +1,6 @@
 {
   "stage": {
-    "background": "/assets/backgrounds/rooftop/preview.png",
+    "background": "/assets/backgrounds/rooftop/preview.jpg",
     "parallax": [
       "/assets/backgrounds/rooftop/background.png",
       "/assets/backgrounds/rooftop/midground.png",
@@ -4429,7 +4429,7 @@
     "rooftop": {
       "name": "Sân thượng mưa",
       "description": "Vũng nước làm bước chạy trượt thêm.",
-      "background": "/assets/backgrounds/rooftop/preview.png",
+      "background": "/assets/backgrounds/rooftop/preview.jpg",
       "parallax": [
         "/assets/backgrounds/rooftop/background.png",
         "/assets/backgrounds/rooftop/midground.png",

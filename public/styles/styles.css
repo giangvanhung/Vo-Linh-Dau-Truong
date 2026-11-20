@@ -147,7 +147,6 @@
 .stage-wrap.panel-open .arena-tools { display: none; }
 .game-panel h1, .game-panel h2 { margin: 0 0 12px; line-height: 1.12; }
 .game-panel h1 { font: 700 clamp(30px, 5vw, 50px)/1.02 "Space Grotesk", sans-serif; }
-.menu-buttons { display: grid; gap: 7px; max-width: 230px; margin: auto; }
 .panel-button { border: 1px solid #665258; border-radius: 3px; background: #2a242d; color: #f1efed; padding: 8px 12px; cursor: pointer; }
 .panel-button:hover { background: #40323a; }
 .game-panel .primary-button { font-size: 12px; letter-spacing: .02em; }
@@ -329,7 +328,6 @@ body.game-expanded { overflow: hidden; }
 .tv-layout .game-panel .primary-button,
 .tv-layout .arena-tools summary { min-height: 42px; font-size: 15px; }
 .tv-layout .arena-tools summary { line-height: 42px; }
-.tv-layout .menu-buttons { max-width: 280px; }
 .tv-layout .game-panel h1 { font-size: 42px; }
 .tv-layout .game-panel button:focus,
 .tv-layout .game-panel input:focus,
@@ -344,8 +342,75 @@ body.game-expanded { overflow: hidden; }
 @media (max-width: 510px) { #binding-fields { grid-template-columns: 1fr; } }
 
 #bindings-panel { width: min(735px, calc(100% - 24px)); }
-#menu-panel .menu-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 330px; }
-#menu-panel .primary-button { grid-column: 1 / -1; }
+.stage-wrap #menu-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  padding: 18px 24px;
+  background: linear-gradient(90deg, #15131638, #151316a8 43%, #101017 76%),
+    #22212a url('/assets/backgrounds/rooftop/preview.jpg') center / cover no-repeat;
+}
+.menu-layout {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 30px;
+  min-height: 100%;
+  max-width: 1090px;
+  margin: auto;
+}
+.menu-brand { padding-left: 3%; }
+#menu-title {
+  margin: 0;
+  color: #fff3df;
+  font-size: 54px;
+  font-size: clamp(42px, 7vw, 90px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -.065em;
+  text-shadow: 0 3px 22px #0b0a12;
+}
+#menu-title em { display: block; color: #ffbe82; font: inherit; }
+.menu-modes, .menu-utilities { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.menu-mode, .menu-utility {
+  font-family: inherit;
+  text-align: left;
+  color: #f8efe7;
+  background: #22212cea;
+  border: 1px solid #5b515e;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.menu-mode { min-height: 64px; padding: 9px 12px; }
+.menu-mode span, .menu-mode small { display: block; }
+.menu-mode span { font-size: 15px; font-weight: 800; }
+.menu-mode small { margin-top: 3px; color: #d3c9d1; font-size: 11px; line-height: 1.25; }
+.menu-mode-featured { background: #f1ae75; color: #261c1c; border-color: #ffd2a3; }
+.menu-mode-featured small { color: #50302c; }
+.menu-utilities { margin-top: 10px; padding-top: 10px; border-top: 1px solid #fff3df35; }
+.menu-utility { min-height: 38px; padding: 5px 12px; font-size: 12px; font-weight: 600; }
+.menu-mode:hover, .menu-utility:hover { background: #393241; border-color: #d99c7a; }
+.menu-mode-featured:hover { background: #ffd09c; }
+.menu-mode:focus, .menu-utility:focus { outline: 2px solid #fff2d9; outline-offset: 2px; }
+.tv-layout .menu-mode { min-height: 72px; }
+.tv-layout .menu-mode span { font-size: 18px; }
+.tv-layout .menu-mode small, .tv-layout .menu-utility { font-size: 14px; }
+@media (max-width: 680px) {
+  .stage-wrap #menu-panel { padding: 12px 14px; background-position: left center; }
+  .menu-layout { grid-template-columns: minmax(0, 1fr); align-content: center; gap: 12px; max-width: 420px; }
+  .menu-brand { padding: 0; }
+  #menu-title { font-size: 28px; font-size: clamp(28px, 7.5vw, 43px); letter-spacing: -.05em; }
+  #menu-title em { display: inline; }
+  .menu-mode { min-height: 48px; padding: 5px 8px; }
+  .menu-mode span { font-size: 12px; }
+  .menu-mode small { font-size: 10px; }
+  .menu-utilities { margin-top: 8px; padding-top: 7px; }
+  .menu-utility { min-height: 34px; padding: 5px 8px; }
+}
 
 #round-format-picker[hidden], .hud .wins[hidden] { display: none; }
 .hud { height: auto; min-height: 88px; padding-block: 10px; background: #191a20; }

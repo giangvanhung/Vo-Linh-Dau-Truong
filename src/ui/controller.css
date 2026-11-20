@@ -28,7 +28,7 @@ body {
 .controller-hero {
   display: grid; align-content: end; gap: 4px; min-height: clamp(124px, 28svh, 220px);
   padding: 22px; background: linear-gradient(0deg, #1a1422, #1a14223d),
-    url('/assets/backgrounds/rooftop/preview.png') center / cover;
+    url('/assets/backgrounds/rooftop/preview.jpg') center / cover;
 }
 .controller-hero span { color: #ffbc84; font-size: .8rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase }
 .controller-hero h1 { margin: 0; font-size: clamp(2rem, 8vw, 3rem); line-height: 1 }

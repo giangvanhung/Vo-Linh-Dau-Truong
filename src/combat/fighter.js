@@ -61,6 +61,10 @@ export class Fighter {
   get disabled() { return this.freezeFrames > 0 || this.hitstun > 0 || this.guardBreak > 0 || this.escapeRecovery > 0 || this.hp <= 0; }
   get invulnerable() { return this.escapeProtection > 0 || (this.dash && this.dash.elapsed <= this.dash.invulnerableFrames); }
   get attacking() { return this.attack !== null; }
+  get canMoveDuringAttack() {
+    const attack = this.attack;
+    return !attack || (!attack.groundOnly && Boolean(attack.pickupWeapon || this.attacks[attack.id]));
+  }
   get attackActive() {
     const attack = this.attack;
     return attack && attack.elapsed >= attack.startup && attack.elapsed < attack.startup + attack.active;
