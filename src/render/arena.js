@@ -211,6 +211,56 @@ export function createArenaRenderer(canvas, config) {
     ctx.restore();
   }
 
+  function drawChargeAura(fighter, time) {
+    const build = Math.min(1, fighter.chargeFrames / 24);
+    const height = fighter.height * (.85 + build * .72);
+    const width = fighter.hurtbox.width * (.65 + build * .48);
+    const pulse = Math.sin(time / 42);
+    const light = ctx.createLinearGradient(0, -height, 0, 0);
+    light.addColorStop(0, 'transparent');
+    light.addColorStop(.45, fighter.glow);
+    light.addColorStop(1, '#fff3cb');
+
+    const ripple = (time / 480) % 1;
+    ctx.globalAlpha = (1 - ripple) * build * .7;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, width * (.8 + ripple), 4 + ripple * 8, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = light;
+    ctx.globalAlpha = .28 + build * .38;
+    ctx.beginPath();
+    ctx.moveTo(-width, 0);
+    ctx.quadraticCurveTo(-width * 1.12, -height * .32, -width * .74, -height * (.69 + pulse * .07));
+    ctx.lineTo(-width * .37, -height * .48);
+    ctx.lineTo(-width * .13, -height);
+    ctx.lineTo(width * .25, -height * .66);
+    ctx.lineTo(width * .62, -height * (.86 - pulse * .06));
+    ctx.quadraticCurveTo(width * .68, -height * .38, width, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    for (let i = 0; i < 12; i++) {
+      const rise = (time / 290 + i * .271) % 1;
+      const side = i % 2 ? 1 : -1;
+      const x = side * width * (.65 + (i % 4) * .14 - rise * .28);
+      const y = -rise * height;
+      ctx.globalAlpha = (1 - rise) * (.45 + build * .4);
+      ctx.fillStyle = i % 3 ? fighter.glow : '#fff3cb';
+      ctx.fillRect(x, y, 2, 6 + build * 9);
+    }
+
+    ctx.fillStyle = '#d3bc9a';
+    for (let i = 0; i < 6; i++) {
+      const lift = (time / 620 + i / 6) % 1;
+      const x = (i % 2 ? 1 : -1) * width * (.65 + lift * .58);
+      ctx.globalAlpha = (1 - lift) * build * .65;
+      ctx.fillRect(x, -lift * 25, 3, 3);
+    }
+  }
+
   function drawAura(fighter, ground, time) {
     const fullMeter = fighter.meter >= fighter.rules.meterMax;
     if (fighter.hp <= 0 || (!fighter.charging && !fighter.awakeningFrames && !fullMeter)) return;
@@ -218,13 +268,17 @@ export function createArenaRenderer(canvas, config) {
     ctx.save();
     ctx.translate(fighter.x, ground + fighter.y);
     ctx.strokeStyle = ctx.fillStyle = fighter.glow;
-    ctx.globalAlpha = fighter.charging ? .40 + fighter.chargeFrames / 200 : .78;
+    if (fighter.charging) {
+      drawChargeAura(fighter, time);
+      ctx.restore();
+      return;
+    }
+    ctx.globalAlpha = .78;
     ctx.lineWidth = fighter.awakeningFrames ? 3 : 2;
     ctx.beginPath();
-    const sweep = fighter.charging && !fullMeter ? Math.PI * 2 * Math.min(1, fighter.chargeFrames / 35) : Math.PI * 2;
-    ctx.ellipse(0, 0, 35 + pulse * 2, 9, 0, 0, sweep);
+    ctx.ellipse(0, 0, 35 + pulse * 2, 9, 0, 0, Math.PI * 2);
     ctx.stroke();
-    if (fighter.charging || fighter.awakeningFrames) {
+    if (fighter.awakeningFrames) {
       for (let i = 0; i < 8; i++) {
         const angle = time / 340 + i * Math.PI / 4;
         const height = (time / 27 + i * 9) % 66;

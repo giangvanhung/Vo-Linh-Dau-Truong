@@ -42,18 +42,18 @@ button.is-down, button:active { background: #f3a368; color: #23151d; border-colo
   overflow: auto;
   overscroll-behavior: contain;
 }
-.pad-expanded .direction { width: min(100%, 290px) }
+.pad-expanded .direction { width: min(100%, 310px) }
 .pad-expanded #stick { width: min(100%, clamp(112px, 59dvh, 290px)) }
-.pad-expanded .face { width: min(100%, 310px) }
-.pad-expanded .face button { min-height: clamp(40px, 15dvh, 88px) }
+.pad-expanded .face { width: min(100%, 330px) }
+.pad-expanded .face button { min-height: clamp(48px, 16dvh, 96px) }
 .direction, #stick { grid-column: 1; grid-row: 2; justify-self: center }
 .direction {
-  width: min(100%, 228px);
+  width: min(100%, 246px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 3px;
 }
-.direction button { font-size: 1.35rem; padding: 0; min-height: clamp(38px, 11dvh, 68px) }
+.direction button { font-size: 1.35rem; padding: 0; min-height: clamp(44px, 12dvh, 74px) }
 .direction button:nth-child(1) { grid-column: 2 }
 .direction button:nth-child(2) { grid-column: 1; grid-row: 2 }
 .direction button:nth-child(3) { grid-column: 2; grid-row: 3 }
@@ -81,13 +81,13 @@ button.is-down, button:active { background: #f3a368; color: #23151d; border-colo
 .actions { grid-column: 2; grid-row: 2; display: grid; gap: 8px }
 .face, .skills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px }
 .actions button { font-size: clamp(.68rem, 2.2vw, .95rem); padding: 3px }
-.face { width: min(100%, 266px); justify-self: center }
-.face button { border-radius: 50%; min-height: clamp(40px, 13dvh, 66px) }
+.face { width: min(100%, 286px); justify-self: center }
+.face button { border-radius: 50%; min-height: clamp(46px, 14dvh, 74px) }
 .face button:nth-child(1) { grid-column: 1; grid-row: 2 }
 .face button:nth-child(2) { grid-column: 2; grid-row: 1 }
 .face button:nth-child(3) { grid-column: 3; grid-row: 2 }
 .face button:nth-child(4) { grid-column: 2; grid-row: 3 }
-.skills button { min-height: clamp(32px, 9dvh, 48px) }
+.skills button { min-height: clamp(40px, 10dvh, 54px) }
 @media (orientation: landscape) {
   .actions { grid-template-columns: minmax(125px, 1fr) minmax(126px, 1fr); align-items: center }
   .face { grid-column: 2 }
