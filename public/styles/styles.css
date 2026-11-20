@@ -212,11 +212,11 @@
 .stage-picker legend { padding: 0; color: #eee2da; font-size: 12px; font-weight: 700; }
 #stage-cards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 #party-items-hint { color: #c5b9ab; font-size: 11px; margin: 6px 0 0; }
-@media (max-width: 510px) { #stage-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 #stage-cards .roster-card { grid-template-rows: auto 1fr; padding: 4px; min-height: 0; }
 #stage-cards .roster-portrait {
   width: 100%;
-  aspect-ratio: 2 / 1;
+  height: 48px;
+  height: clamp(26px, 7vh, 56px);
   object-fit: cover;
   image-rendering: auto;
   border-radius: 3px;
@@ -317,8 +317,10 @@
 #setup-panel fieldset + fieldset .roster-card.is-selected { border-color: #9fd9ff; background: #29465e; }
 #setup-panel .roster-card:focus-within { outline: 2px solid #fff2d9; outline-offset: 1px; }
 #setup-panel .stage-picker { margin-top: 0; }
-#setup-panel .setup-options { justify-content: flex-start; }
+#setup-panel .setup-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 620px; }
+#setup-panel .setup-options label { justify-content: space-between; min-height: 40px; }
 #setup-panel .setup-options [hidden] { display: none; }
+#setup-panel #team-rules { margin: 0 0 5px; }
 #setup-panel .setup-footer {
   flex: none;
   justify-content: flex-end;
@@ -334,6 +336,19 @@
   #setup-panel #setup-roster:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
   .setup-header, .setup-content, #setup-panel .setup-footer { padding-left: 8px; padding-right: 8px; }
   #setup-panel #start-button { min-width: 74px; }
+}
+@media (max-width: 680px), (max-height: 550px) {
+  #stage-cards { gap: 4px; }
+  #stage-cards .roster-card { display: block; padding: 2px; }
+  #stage-cards .roster-portrait { display: grid; height: 30px; }
+  #stage-cards .roster-card > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+  #setup-panel .setup-options label { font-size: 11px; }
+}
+@media (max-height: 550px) {
+  .game-card.setup-open .hud { display: none; }
+  .setup-header, .setup-content, #setup-panel .setup-footer { padding-top: 5px; padding-bottom: 5px; }
+  #setup-panel .setup-options { margin-top: 0; }
+  #setup-panel .setup-options label { min-height: 34px; }
 }
 
 .arena-display-controls {

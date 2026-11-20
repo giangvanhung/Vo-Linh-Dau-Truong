@@ -44,6 +44,7 @@ function choiceCard(group, id, name, image, checked, onSelect) {
 export function createPanels({ characters, stages, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile }) {
   const panels = [...document.querySelectorAll('.game-panel')];
   const stageWrap = panels[0].closest('.stage-wrap');
+  const gameCard = stageWrap.closest('.game-card');
   enableMenuNavigation();
   const refreshEquipment = createEquipmentPanel(characters, equipment);
   byId('equipment-button').addEventListener('click', () => {
@@ -133,6 +134,7 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
     if (name !== 'bindings') pendingBinding = null;
     for (const panel of panels) panel.hidden = panel.id !== name + '-panel';
     stageWrap.classList.toggle('panel-open', Boolean(name));
+    gameCard.classList.toggle('setup-open', name === 'setup');
     if (name) {
       const selector = name === 'setup' ? 'input[name="player-fighter"]:checked' : 'button, select';
       byId(name + '-panel').querySelector(selector)?.focus({ preventScroll: true });
