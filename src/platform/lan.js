@@ -69,7 +69,7 @@ export function createLanHost({ onRoom, onStatus, onClose, canPlay }) {
   return {
     open({ solo = false } = {}) {
       close();
-      const connection = socket = lanSocket(solo ? { role: 'host', solo: '1' } : { role: 'host' });
+      const connection = socket = lanSocket({ role: 'host', directionBatch: '1', ...(solo ? { solo: '1' } : {}) });
       connection.onmessage = ({ data }) => {
         if (socket !== connection) return;
         const message = JSON.parse(data);
@@ -78,6 +78,9 @@ export function createLanHost({ onRoom, onStatus, onClose, canPlay }) {
         const input = inputs[message.player - 1];
         if (message.type === 'reset') input?.clear();
         if (message.type === 'input' && canPlay()) input?.set(message.button, message.down);
+        if (message.type === 'direction' && input && canPlay()) {
+          for (const [button, down] of message.changes) input.set(button, down);
+        }
       };
       connection.onclose = () => {
         if (socket !== connection) return;

@@ -50,14 +50,14 @@ export function createHud(config) {
     const value = Math.floor(fighter.meter);
     if (meter.fill) meter.fill.style.width = fighter.meter / config.combat.meterMax * 100 + '%';
     meter.fill?.parentElement.classList.toggle('full', fighter.meter >= config.combat.meterMax);
-    if (meter.value) meter.value.textContent = value + '/' + config.combat.meterMax;
+    if (meter.value) setText(meter.value, value + '/' + config.combat.meterMax);
     for (const indicator of meter.skills.children) {
       const id = indicator.dataset.skill;
       const skill = fighter.skillFor(id);
       const cooldown = fighter.cooldowns[id];
       const ready = !cooldown && fighter.meter >= (skill.cost ?? 0);
       const status = cooldown ? (cooldown * FRAME_SECONDS).toFixed(1) + 's' : ready ? 'Sẵn sàng' : skill.cost + ' NL';
-      indicator.textContent = skill.label + ' · ' + status;
+      setText(indicator, skill.label + ' · ' + status);
       indicator.classList.toggle('ready', ready);
     }
     const status = [
@@ -71,14 +71,17 @@ export function createHud(config) {
       : fighter.awakeningUnlocked && !fighter.awakeningUsed ? 'Đã đạt điều kiện ' + transformation : '';
     const message = [focus, status].filter(Boolean).join(' · ');
     if (meter.focus.textContent !== message) meter.focus.textContent = message;
-    if (meter.dash) meter.dash.textContent = fighter.dashCooldown
+    if (meter.dash) setText(meter.dash, fighter.dashCooldown
       ? 'Lướt ' + (fighter.dashCooldown * FRAME_SECONDS).toFixed(1) + 's'
-      : 'Lướt sẵn sàng';
-    if (meter.escape) meter.escape.textContent = fighter.escapeCooldown
+      : 'Lướt sẵn sàng');
+    if (meter.escape) setText(meter.escape, fighter.escapeCooldown
       ? 'Thoát ' + (fighter.escapeCooldown * FRAME_SECONDS).toFixed(1) + 's'
-      : '';
+      : '');
   }
 
+  function setText(element, text) {
+    if (element.textContent !== text) element.textContent = text;
+  }
 
   return { updateRosterUI, updateUI, updateMeterUI };
 }

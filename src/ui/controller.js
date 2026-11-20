@@ -20,11 +20,13 @@ const clearBackground = document.querySelector('#clear-pad-bg');
 const backgroundFile = document.querySelector('#pad-bg-file');
 const portrait = matchMedia('(orientation: portrait)');
 const fullscreenRoot = document.documentElement;
+let nativeFullscreen = false;
 const directions = new Set();
 let stickPointer = null;
 let stickRect;
 const pointers = new Map();
 let socket, heartbeat, reconnectTimer;
+let directionBatch = false;
 
 function send(message) {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
@@ -234,6 +236,7 @@ function showNetwork(quality, message) {
 }
 
 function connectPlayer(player, retries = 0) {
+  directionBatch = false;
   const connection = socket = lanSocket({ room, player });
   let joined = false;
   let lastReply;
@@ -253,6 +256,7 @@ function connectPlayer(player, retries = 0) {
     }
     if (message.type !== 'joined') return;
     joined = true;
+    directionBatch = message.directionBatch === true;
     label.textContent = 'Đã kết nối P' + player;
     pad.hidden = leave.hidden = false;
     document.body.classList.add('pad-connected');
@@ -326,6 +330,13 @@ function fullscreenElement() {
   return document.fullscreenElement ?? document.webkitFullscreenElement;
 }
 
+function syncFullscreen() {
+  const active = fullscreenElement() === fullscreenRoot;
+  const exited = nativeFullscreen && !active;
+  nativeFullscreen = active;
+  if (exited) setExpanded(false);
+}
+
 async function exitFullscreen() {
   if (fullscreenElement() !== fullscreenRoot) return;
   const exit = document.exitFullscreen ?? document.webkitExitFullscreen;
@@ -345,6 +356,7 @@ async function toggleExpanded(enabled) {
   const request = fullscreenRoot.requestFullscreen ?? fullscreenRoot.webkitRequestFullscreen;
   try {
     await request?.call(fullscreenRoot);
+    syncFullscreen();
     if (!document.body.classList.contains('pad-expanded')) await exitFullscreen();
   } catch {
     // Keep the controller expanded within the browser viewport.
@@ -362,7 +374,10 @@ rotate.onclick = () => {
   if (enabled && !document.body.classList.contains('pad-expanded')) void toggleExpanded(true);
 };
 portrait.addEventListener?.('change', reset);
-window.addEventListener('resize', () => { stickRect = undefined; });
+window.addEventListener('resize', () => {
+  stickRect = undefined;
+  syncFullscreen();
+});
 
 light.onclick = () => {
   const enabled = document.body.classList.toggle('pad-light');
@@ -390,9 +405,7 @@ backgroundFile.addEventListener('change', () => {
 });
 
 for (const eventName of ['fullscreenchange', 'webkitfullscreenchange']) {
-  document.addEventListener(eventName, () => {
-    if (!fullscreenElement()) setExpanded(false);
-  });
+  document.addEventListener(eventName, syncFullscreen);
 }
 
 directionMode.onclick = () => {
@@ -410,12 +423,16 @@ function centerStick() {
 }
 
 function updateDirections(next) {
+  const changes = [];
   for (const button of directions) {
-    if (!next.has(button)) send({ type: 'input', button, down: false });
+    if (!next.has(button)) changes.push([button, false]);
   }
   for (const button of next) {
-    if (!directions.has(button)) send({ type: 'input', button, down: true });
+    if (!directions.has(button)) changes.push([button, true]);
   }
+  if (!changes.length) return;
+  if (directionBatch && changes.length > 1) send({ type: 'direction', changes });
+  else for (const [button, down] of changes) send({ type: 'input', button, down });
   directions.clear();
   for (const button of next) directions.add(button);
 }
@@ -485,5 +502,12 @@ window.addEventListener('pagehide', () => {
   stopScan();
   if (socket || reconnectTimer) leaveRoom();
 });
-document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    reset();
+    void toggleExpanded(false);
+  }
+  syncFullscreen();
+});
+window.addEventListener('pageshow', syncFullscreen);
 if (!room) showJoin('Quét mã QR trên máy tính để mở tay cầm.');

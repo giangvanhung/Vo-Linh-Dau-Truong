@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { WebSocket, WebSocketServer } from 'ws';
 
 const buttons = new Set(['a','d','w','s','p','j','k','l','q','r','t','u','i','o','f','g','enhanced']);
+const directionButtons = new Set(['a', 'd', 'w', 's']);
 const send = (socket, message) => {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
 };
@@ -34,6 +35,7 @@ export function attachLan(server) {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
+    socket.setNoDelay(true);
     sockets.handleUpgrade(request, socket, head, client => {
       sockets.emit('connection', client, path, request);
     });
@@ -51,7 +53,8 @@ export function attachLan(server) {
       if (rooms.size >= 32) return socket.close(1013, 'Server busy');
       const id = randomBytes(12).toString('base64url');
       const solo = url.searchParams.get('solo') === '1';
-      const room = { host: socket, players: solo ? [null] : [null, null] };
+      const room = { host: socket, players: solo ? [null] : [null, null],
+        directionBatch: url.searchParams.get('directionBatch') === '1' };
       rooms.set(id, room);
       socket.on('close', () => {
         rooms.delete(id);
@@ -111,7 +114,7 @@ export function attachLan(server) {
       send(room.host, { type: 'reset', player });
       status(room);
     });
-    send(socket, { type: 'joined', player });
+    send(socket, { type: 'joined', player, directionBatch: room.directionBatch });
     status(room);
     socket.on('message', raw => {
       socket.lastInput = Date.now();
@@ -121,6 +124,12 @@ export function attachLan(server) {
           send(socket, { type: 'heartbeat', sentAt: message.sentAt });
         }
         if (message.type === 'reset') send(room.host, { type: 'reset', player });
+        if (room.directionBatch && message.type === 'direction' && Array.isArray(message.changes)
+          && message.changes.length <= directionButtons.size
+          && message.changes.every(change => Array.isArray(change) && change.length === 2
+            && directionButtons.has(change[0]) && typeof change[1] === 'boolean')) {
+          send(room.host, { type: 'direction', player, changes: message.changes });
+        }
         if (message.type === 'input' && buttons.has(message.button) && typeof message.down === 'boolean') {
           send(room.host, { type: 'input', player, button: message.button, down: message.down });
         }

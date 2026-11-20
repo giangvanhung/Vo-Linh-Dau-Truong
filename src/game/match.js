@@ -40,6 +40,7 @@ export function startGame(config) {
   let difficulty = 'normal', cpu;
   let hitstop = 0, shake = 0;
   let animationTime = 0;
+  let previousPositions = [];
   const particles = [], floaters = [], projectiles = [], trails = [];
   let screenEffect = null;
 
@@ -340,6 +341,7 @@ export function startGame(config) {
     const canBuffer = !fighter.disabled && !input.guard && !input.action && !input.charge;
     if (!canBuffer) fighter.bufferedAttack = null;
     if (input.action === 'awaken' && fighter.awaken()) {
+      audio.cue('awaken');
       toast(fighter.name + (fighter.evolving ? ' · TIẾN HÓA!' : ' · ĐỘT PHÁ!'));
       const color = fighter.evolving ? fighter.awakening.evolution.color ?? '#ffcc53' : fighter.glow;
       burst(fighter.x, fighter.y - 16, fighter.evolving ? 42 : 26, color);
@@ -368,7 +370,7 @@ export function startGame(config) {
       fighter.bufferedAttack = null;
       if (!useAttack(fighter, target, input.attack) && canBuffer && fighter.attack && fighter.attacks[input.attack]) {
         const { startup, active, recovery, elapsed } = fighter.attack;
-        if (startup + active + recovery - elapsed <= 6) fighter.bufferedAttack = input.attack;
+        if (startup + active + recovery - elapsed <= 8) fighter.bufferedAttack = input.attack;
       }
     } else if (fighter.bufferedAttack && !fighter.attack) {
       useAttack(fighter, target, fighter.bufferedAttack);
@@ -593,6 +595,7 @@ export function startGame(config) {
     const previousHP = [hung.hp, mai.hp];
     const previousSecond = Math.ceil(seconds);
     while (accumulator >= FRAME_SECONDS) {
+      previousPositions = [hung, mai].map(fighter => ({ fighter, x: fighter.x, y: fighter.y }));
       update(FRAME_SECONDS);
       accumulator -= FRAME_SECONDS;
     }
@@ -606,7 +609,17 @@ export function startGame(config) {
     hud.updateMeterUI(hung, 'hung');
     hud.updateMeterUI(mai, 'mai');
     trainingPanel.update(practice && ['countdown', 'fight', 'paused'].includes(phase), mai);
-    render({ stage, stageFrame, fighters: [hung, mai], projectiles, particles, floaters, trails, shake, screenEffect, animationTime, debug: practice && training.debug });
+    const fighters = [hung, mai];
+    const debug = practice && training.debug;
+    const remaining = 1 - accumulator / FRAME_SECONDS;
+    const offsets = fighters.map((fighter, index) => {
+      const previous = previousPositions[index];
+      if (previous?.fighter !== fighter || phase !== 'fight' || hitstop || debug) return [0, 0];
+      const dx = previous.x - fighter.x, dy = previous.y - fighter.y;
+      if (Math.hypot(dx, dy) > 24) return [0, 0]; // Snap across teleports.
+      return [dx * remaining, dy * remaining];
+    });
+    render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, animationTime, debug });
     if (toastClock <= 0) ui.toast.classList.remove('show');
     requestAnimationFrame(frame);
   }

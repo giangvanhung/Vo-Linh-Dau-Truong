@@ -60,6 +60,7 @@ export class Fighter {
   }
 
   get charging() { return this.chargeFrames > 0; }
+  get awakeningDuration() { return this.awakening?.durationFrames ?? 480; }
   get evolving() { return this.awakeningFrames > 0 && Boolean(this.awakening?.evolution); }
   get awakeningReady() {
     return this.awakening && this.awakeningUnlocked && !this.awakeningUsed && this.meter >= this.rules.meterMax;
@@ -83,7 +84,7 @@ export class Fighter {
     this.meter = 0;
     this.chargeFrames = 0;
     this.awakeningUsed = true;
-    this.awakeningFrames = 480;
+    this.awakeningFrames = this.awakeningDuration;
     this.attackLock = .32;
     const bonusHp = this.awakening.evolution?.bonusHp;
     if (bonusHp) {

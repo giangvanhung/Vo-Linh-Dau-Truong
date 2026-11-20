@@ -20,6 +20,9 @@
       "awakening": {
         "condition": "Đỡ đòn rồi đấm nặng trúng",
         "evolution": {
+          "body": "armor",
+          "color": "#ffbd54",
+          "scale": 1.18,
           "bonusHp": 20,
           "punchMultiplier": 1.3,
           "lifeSteal": 0.1
@@ -248,6 +251,8 @@
       "awakening": {
         "condition": "Lộn né qua đòn rồi phản công trúng",
         "evolution": {
+          "body": "sword",
+          "scale": 0.94,
           "wings": "/assets/effects/mai-evolution-wings.png",
           "color": "#9cdcff"
         },
@@ -472,6 +477,16 @@
     },
     "linh": {
       "awakening": {
+        "evolution": {
+          "color": "#be9aff",
+          "scale": 1,
+          "overlay": {
+            "image": "/assets/effects/linh-evolution.png",
+            "x": 0.05,
+            "y": 0.23,
+            "width": 0.91
+          }
+        },
         "condition": "Nối đá vào Lôi Bộ thành combo",
         "skill": "closeSkill",
         "label": "Lôi Bộ · Phản Lôi",
@@ -720,6 +735,16 @@
     },
     "ngoc": {
       "awakening": {
+        "evolution": {
+          "color": "#ffcf77",
+          "scale": 1.09,
+          "overlay": {
+            "image": "/assets/effects/ngoc-evolution.png",
+            "x": 0.49,
+            "y": 0.62,
+            "width": 0.76
+          }
+        },
         "condition": "Phá thế thủ của đối phương",
         "skill": "rangedSkill",
         "label": "Địa Chấn · Trụ Ngọc",
@@ -960,6 +985,16 @@
     },
     "vy": {
       "awakening": {
+        "evolution": {
+          "color": "#ff627f",
+          "scale": 0.96,
+          "overlay": {
+            "image": "/assets/effects/vy-evolution.png",
+            "x": 0.53,
+            "y": 0.61,
+            "width": 0.88
+          }
+        },
         "condition": "Đá thấp trúng rồi đổi bên",
         "skill": "rangedSkill",
         "label": "Cánh Sen · Sen Nở",
@@ -1203,6 +1238,16 @@
     },
     "lam": {
       "awakening": {
+        "evolution": {
+          "color": "#a9eaff",
+          "scale": 1.03,
+          "overlay": {
+            "image": "/assets/effects/lam-evolution.png",
+            "x": 0,
+            "y": 1.13,
+            "width": 0.7
+          }
+        },
         "condition": "Đóng băng đối thủ",
         "skill": "rangedSkill",
         "label": "Hàn Tinh · Băng Tỏa",
@@ -1447,6 +1492,17 @@
     },
     "diep": {
       "awakening": {
+        "evolution": {
+          "color": "#8efb9c",
+          "scale": 1.02,
+          "overlay": {
+            "image": "/assets/effects/diep-evolution.png",
+            "behind": true,
+            "x": -0.13,
+            "y": 0.53,
+            "width": 1.23
+          }
+        },
         "condition": "Làm đối thủ choáng do tích độc",
         "skill": "rangedSkill",
         "label": "Bình Độc · Độc Vụ",

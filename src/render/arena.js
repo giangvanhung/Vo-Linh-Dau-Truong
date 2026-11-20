@@ -14,8 +14,9 @@ export function createArenaRenderer(canvas, config) {
   paths.add(sparkSheet);
   paths.add(evolutionFist);
   for (const character of Object.values(config.characters)) {
-    const wings = character.awakening?.evolution?.wings;
+    const { wings, overlay } = character.awakening?.evolution ?? {};
     if (wings) paths.add(wings);
+    if (overlay) paths.add(overlay.image);
   }
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
@@ -47,10 +48,10 @@ export function createArenaRenderer(canvas, config) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  function render({ stage, stageFrame, fighters, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime }) {
+  function render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime }) {
     const w = canvas.width, h = canvas.height, ground = h * config.stage.groundRatio;
     ctx.clearRect(0, 0, w, h);
-    const center = (fighters[0].x + fighters[1].x) / 2;
+    const center = (fighters[0].x + offsets[0][0] + fighters[1].x + offsets[1][0]) / 2;
     const width = background.clientWidth, height = background.clientHeight;
     if (width && height) {
       if (background.width !== width) background.width = width;
@@ -69,14 +70,29 @@ export function createArenaRenderer(canvas, config) {
       ctx.fillRect(Math.min(trail.from, trail.to), ground + trail.y - 11, Math.abs(trail.to - trail.from), 11);
     }
     ctx.globalAlpha = 1;
-    for (const f of fighters) drawContactShadow(f, stage, w, ground);
+    fighters.forEach((fighter, index) => {
+      ctx.save();
+      ctx.translate(offsets[index][0], 0);
+      drawContactShadow(fighter, stage, w, ground);
+      ctx.restore();
+    });
     for (const shot of projectiles) drawProjectile(shot, ground);
-    for (const f of fighters) drawAura(f, ground, animationTime);
-    for (const f of fighters) {
+    for (const [index, f] of fighters.entries()) {
+      ctx.save();
+      ctx.translate(...offsets[index]);
+      drawAura(f, ground, animationTime);
+      ctx.restore();
+    }
+    for (const [index, f] of fighters.entries()) {
+      ctx.save();
+      ctx.translate(...offsets[index]);
       if (f.evolving && f.hp > 0) drawEvolutionWings(f, ground, animationTime);
-      drawFighter(f, ground, animationTime);
+      drawEvolutionBody(f, ground, animationTime);
       if (f.attack?.evolvedPunch) drawEvolutionFist(f, ground, animationTime);
-      if (f.hp <= 0 || (!f.freezeFrames && !f.poisonFrames)) continue;
+      if (f.hp <= 0 || (!f.freezeFrames && !f.poisonFrames)) {
+        ctx.restore();
+        continue;
+      }
       ctx.save();
       ctx.strokeStyle = f.freezeFrames ? '#a7f0ff' : '#ace781';
       ctx.fillStyle = ctx.strokeStyle;
@@ -97,6 +113,7 @@ export function createArenaRenderer(canvas, config) {
           ctx.fillRect(f.x + Math.cos(i * 2.1 + rise / 10) * 25, y - rise, 3, 3);
         }
       }
+      ctx.restore();
       ctx.restore();
     }
     for (const p of particles) { ctx.globalAlpha = Math.max(0, p.life / .35); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); }
@@ -287,6 +304,18 @@ export function createArenaRenderer(canvas, config) {
     ctx.strokeStyle = ctx.fillStyle = fighter.glow;
     if (fighter.charging || fighter.evolving) {
       const color = fighter.evolving ? fighter.awakening.evolution.color ?? '#ffcc53' : fighter.glow;
+      if (fighter.evolving) {
+        ctx.save();
+        ctx.translate(0, -fighter.y);
+        ctx.scale(1, .22);
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 64 + pulse * 5);
+        glow.addColorStop(0, color + '66');
+        glow.addColorStop(1, color + '00');
+        ctx.globalAlpha = Math.min(1, fighter.awakeningFrames / 18) / (1 + Math.abs(fighter.y) / 90);
+        ctx.fillStyle = glow;
+        ctx.fillRect(-70, -70, 140, 140);
+        ctx.restore();
+      }
       ctx.strokeStyle = color;
       drawChargeAura(fighter, time, fighter.evolving ? 1 : Math.min(1, fighter.chargeFrames / 24), color);
       ctx.restore();
@@ -312,7 +341,7 @@ export function createArenaRenderer(canvas, config) {
     const image = images.get(fighter.awakening.evolution.wings);
     if (!image) return;
     const pulse = Math.sin(time / 105);
-    const progress = Math.min(1, (480 - fighter.awakeningFrames + 1) / 12, fighter.awakeningFrames / 20);
+    const progress = Math.min(1, (fighter.awakeningDuration - fighter.awakeningFrames + 1) / 12, fighter.awakeningFrames / 20);
     const width = fighter.height * (1.42 + pulse * .09) * (.62 + .38 * progress);
     const height = width * image.height / image.width;
     ctx.save();
@@ -321,6 +350,114 @@ export function createArenaRenderer(canvas, config) {
     ctx.rotate(pulse * .055);
     ctx.globalAlpha = progress * (.94 + pulse * .06);
     ctx.drawImage(image, -width * .66, -height * .83, width, height);
+    ctx.restore();
+  }
+
+  function drawEvolutionBody(fighter, ground, time) {
+    if (!fighter.evolving || fighter.hp <= 0) {
+      drawFighter(fighter, ground, time);
+      return;
+    }
+
+    const age = fighter.awakeningDuration - fighter.awakeningFrames;
+    const blend = Math.min(1, age / 14, fighter.awakeningFrames / 18);
+    const { body, color = '#ffcc53', scale = 1, overlay } = fighter.awakening.evolution;
+    const size = 1 + blend * (scale - 1);
+    const feet = ground + fighter.y;
+    if (overlay?.behind) drawEvolutionOverlay(fighter, ground, time, blend, overlay);
+    ctx.save();
+    ctx.translate(fighter.x, feet);
+    ctx.scale(size, size);
+    ctx.translate(-fighter.x, -feet);
+    drawFighter(fighter, ground, time);
+    ctx.restore();
+
+    if (body) drawEvolutionEquipment(fighter, ground, time, blend, body, color);
+    if (overlay && !overlay.behind) drawEvolutionOverlay(fighter, ground, time, blend, overlay);
+
+    if (age < 24) {
+      const wave = age / 24;
+      ctx.save();
+      ctx.globalAlpha = (1 - wave) * .85;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3 - 2 * wave;
+      ctx.beginPath();
+      ctx.ellipse(fighter.x, feet, 14 + wave * 100, 4 + wave * 18, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawEvolutionEquipment(fighter, ground, time, blend, body, color) {
+    const torso = ground + fighter.hurtbox.y + fighter.hurtbox.height * .36;
+    ctx.save();
+    ctx.translate(fighter.x, torso);
+    ctx.scale(fighter.attack?.facing ?? fighter.dash?.facing ?? fighter.facing, 1);
+    ctx.globalAlpha = blend;
+    ctx.strokeStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 9;
+    ctx.lineWidth = 1.5;
+    if (body === 'armor') {
+      if (!fighter.dash?.roll) {
+        ctx.fillStyle = '#5b301e';
+        ctx.beginPath();
+        ctx.moveTo(-18, -9);
+        ctx.lineTo(-9, -13);
+        ctx.lineTo(0, -6);
+        ctx.lineTo(10, -13);
+        ctx.lineTo(19, -8);
+        ctx.lineTo(11, 8);
+        ctx.lineTo(0, 14);
+        ctx.lineTo(-11, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      if (fighter.attack?.evolvedPunch) {
+        const box = fighter.attackBoxFor(fighter.attack, fighter.attack.facing);
+        const reach = Math.min(1, fighter.attack.elapsed / Math.max(1, fighter.attack.startup));
+        const tip = (fighter.attack.facing > 0 ? box.x + box.width - fighter.x : fighter.x - box.x) * reach;
+        ctx.beginPath();
+        ctx.moveTo(9, 4);
+        ctx.lineTo(tip * .55, Math.sin(time / 19) * 7);
+        ctx.lineTo(tip, ground + box.y + box.height / 2 - torso);
+        ctx.stroke();
+      }
+    } else if (body === 'sword') {
+      const angle = time / 240;
+      ctx.translate(Math.cos(angle) * 35, Math.sin(angle) * 13);
+      ctx.rotate(-.55 + Math.sin(angle) * .24);
+      ctx.fillStyle = '#dafaff';
+      ctx.beginPath();
+      ctx.moveTo(0, -30);
+      ctx.lineTo(5, -14);
+      ctx.lineTo(2, 11);
+      ctx.lineTo(-4, 15);
+      ctx.lineTo(-5, -11);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillRect(-8, 11, 16, 2);
+    }
+    ctx.restore();
+  }
+
+  function drawEvolutionOverlay(fighter, ground, time, blend, overlay) {
+    const image = images.get(overlay.image);
+    if (!image) return;
+    const facing = fighter.attack?.facing ?? fighter.dash?.facing ?? fighter.facing;
+    const pulse = Math.sin(time / 115);
+    const active = fighter.attackActive;
+    const width = fighter.height * overlay.width * (1 + pulse * .04 + (active ? .12 : 0));
+    const height = width * image.height / image.width;
+    ctx.save();
+    ctx.translate(fighter.x + facing * fighter.height * (overlay.x + (active ? .12 : 0)),
+      ground + fighter.y - fighter.height * overlay.y + pulse * 3);
+    ctx.scale(facing, 1);
+    ctx.rotate(pulse * .09);
+    ctx.globalAlpha = blend * (active ? 1 : .87);
+    ctx.drawImage(image, -width / 2, -height / 2, width, height);
     ctx.restore();
   }
 
