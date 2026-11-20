@@ -2,15 +2,16 @@ import { FRAME_SECONDS, Fighter, findHit, applyHit, updateProjectiles } from '..
 import { updateFacing, pushboxesOverlap, separateFighters } from '../combat/positioning.js';
 import { CpuController } from '../combat/cpu.js';
 import { GameAudio } from '../platform/audio.js';
-import { createKeyboard } from '../platform/keyboard.js';
+import { createKeyboard, defaultBindings, keyCode } from '../platform/keyboard.js';
 import { createLanHost, mergeInputs } from '../platform/lan.js';
-import { loadSettings, persistSettings } from '../platform/settings.js';
+import { loadSettings, persistSettings, roundFormats } from '../platform/settings.js';
 import { createArenaRenderer } from '../render/arena.js';
 import { createHud, damageFormat } from '../ui/hud.js';
 import { createPanels } from '../ui/panels.js';
 import { createTrainingPanel } from '../ui/training-panel.js';
 import { applyStageEffects, stageForMatch } from './stages.js';
 import { TrainingSession } from './training.js';
+import { applyControls } from './fighter-controls.js';
 import { createPickups, equippedHeavy, gear } from './pickups.js';
 
 export function startGame(config) {
@@ -22,8 +23,12 @@ export function startGame(config) {
   const settings = loadSettings();
   const training = new TrainingSession();
   const canTrain = () => practice && phase === 'fight';
+  const controlRules = { jumpVelocity: config.stage.jumpVelocity, useAttack, activateAwakening, toast };
   const audio = new GameAudio();
   audio.configure(settings);
+  for (const event of ['click', 'keydown']) {
+    window.addEventListener(event, () => audio.unlock(), { capture: true });
+  }
   const world = { width: canvas.width, height: canvas.height, gravity: config.stage.gravity };
   let stage = stageForMatch(config.stage, config.stages.rooftop, true);
   let stageFrame = 0;
@@ -41,6 +46,8 @@ export function startGame(config) {
   let phaseTime = 0, nextRound = false;
   let lastTime, accumulator = 0, toastClock = 0;
   let difficulty = 'normal', cpu;
+  let bestOf = 3, damageHung = 0, damageMai = 0;
+  let localMode = '', teamCpuIds = [], activePlayer = 0, activeCpu = 0;
   let hitstop = 0, shake = 0;
   let animationTime = 0;
   let previousPositions = [];
@@ -49,14 +56,24 @@ export function startGame(config) {
 
   function fighterX(side) { return world.width * config.stage[side === 'hung' ? 'playerStartRatio' : 'cpuStartRatio']; }
   function updateScore() {
-    hud.updateUI({ hung, mai, practice, seconds, round, winsHung, winsMai });
+    hud.updateUI({ hung, mai, practice, seconds, round, winsHung, winsMai, bestOf, damageHung, damageMai });
+  }
+
+  function makeFighter(id, side) {
+    const fighter = new Fighter(config.characters[id], fighterX(side), side === 'hung' ? 1 : -1, config.combat);
+    fighter.characterId = id;
+    return fighter;
+  }
+
+  function updateRoster() {
+    hud.updateRosterUI({ hung, mai, practice, difficulty, lan: lan || localMode === 'versus', team: localMode === 'team', activePlayer, activeCpu });
+    updateScore();
   }
 
   function resetFighters() {
-    hung = new Fighter(config.characters[playerId], fighterX('hung'), 1, config.combat);
-    mai = new Fighter(config.characters[opponentId], fighterX('mai'), -1, config.combat);
-    hung.characterId = playerId;
-    mai.characterId = opponentId;
+    activePlayer = activeCpu = 0;
+    hung = makeFighter(playerId, 'hung');
+    mai = makeFighter(localMode === 'team' ? teamCpuIds[0] : opponentId, 'mai');
     seconds = roundLength;
     stageFrame = 0;
     pickups.reset();
@@ -67,8 +84,7 @@ export function startGame(config) {
     floaters.length = projectiles.length = trails.length = 0;
     screenEffect = null;
     ui.toast.classList.remove('show');
-    hud.updateRosterUI({ hung, mai, practice, difficulty, lan });
-    updateScore();
+    updateRoster();
   }
 
   function beginRound() {
@@ -80,40 +96,41 @@ export function startGame(config) {
     panels.showBanner('3');
     panels.setPauseAvailable(true);
     ui['status-text'].textContent = 'CHUẨN BỊ';
-    audio.setPlaying(true);
     audio.cue('countdown');
   }
 
   function startMatch() {
     if (practice) resetTrainingActivity();
     audio.unlock();
-    winsHung = winsMai = 0;
+    winsHung = winsMai = damageHung = damageMai = 0;
     round = 1;
     beginRound();
   }
 
-  function openSetup(isPractice) {
+  function openSetup(isPractice, mode = '') {
     practice = isPractice;
+    localMode = mode;
     phase = 'setup';
-    soloLanButton.hidden = lan;
+    soloLanButton.hidden = lan || Boolean(localMode);
     soloLanButton.textContent = soloLan ? 'Mã QR tay cầm P1' : 'Kết nối tay cầm P1';
-    panels.showSetup(practice, lan);
+    panels.showSetup(practice, lan, localMode);
   }
 
   function returnToMenu() {
     resetTrainingActivity();
     phase = 'menu';
     practice = lan = false;
+    localMode = '';
+    bestOf = 3;
     soloLan = false;
     roomReady = false;
     lanHost.close();
     byId('lan-details').hidden = true;
     byId('lan-details').open = false;
     byId('network-mode').textContent = 'OFFLINE';
-    winsHung = winsMai = 0;
+    winsHung = winsMai = damageHung = damageMai = 0;
     round = 1;
     resetFighters();
-    audio.setPlaying(false);
     panels.showBanner('');
     panels.setPauseAvailable(false);
     ui['status-text'].textContent = 'CHỌN CHẾ ĐỘ CHƠI';
@@ -128,14 +145,12 @@ export function startGame(config) {
       panels.restoreBanner();
       panels.setPauseAvailable(true);
       audio.unlock();
-      audio.setPlaying(true);
     } else if (phase === 'countdown' || phase === 'fight') {
       pausedPhase = phase;
       phase = 'paused';
       clearInputs();
       panels.hideBanner();
       panels.setPauseAvailable(false);
-      audio.setPlaying(false);
       panels.show('pause');
     }
   }
@@ -146,11 +161,17 @@ export function startGame(config) {
     audio.unlock();
   }
 
-  function selectMatch(player, opponent, level, stageId, hazards, items) {
+  function selectMatch(player, opponent, level, stageId, hazards, items, rounds) {
     setStage(stageId, hazards);
     partyItems = items;
+    bestOf = roundFormats.includes(rounds) ? rounds : 3;
     playerId = player;
     const roster = Object.keys(config.characters);
+    if (localMode === 'team') {
+      const first = roster[Math.floor(Math.random() * roster.length)];
+      const remaining = roster.filter(id => id !== first);
+      teamCpuIds = [first, remaining[Math.floor(Math.random() * remaining.length)]];
+    }
     opponentId = opponent === 'random' ? roster[Math.floor(Math.random() * roster.length)] : opponent;
     difficulty = level;
     if (soloLan) {
@@ -160,7 +181,7 @@ export function startGame(config) {
     startMatch();
   }
 
-  const panels = createPanels({ characters: config.characters, stages: config.stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings });
+  const panels = createPanels({ characters: config.characters, stages: config.stages, settings, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile: (id, file) => audio.setMusicFile(id, file) });
 
   const pairing = byId('lan-pairing');
   const address = byId('lan-address');
@@ -306,11 +327,19 @@ export function startGame(config) {
     },
   });
 
+  function boundAction(event, side) {
+    const code = keyCode(event);
+    const action = Object.keys(settings.bindings[side]).find(id => settings.bindings[side][id] === code);
+    if (action || side || lan || localMode) return action;
+    const arrowAction = ({ ArrowLeft: 'a', ArrowRight: 'd', ArrowUp: 'w', ArrowDown: 's' })[code];
+    return settings.bindings[0][arrowAction] === defaultBindings[0][arrowAction] ? arrowAction : undefined;
+  }
+
   const keyboard = createKeyboard({
     canPlay: () => phase === 'fight',
     canPause: () => ['fight', 'countdown', 'paused'].includes(phase),
     onPause: togglePause,
-    allowArrows: () => !lan,
+    keyFor: event => boundAction(event, 0),
     onInput: label => { if (canTrain()) training.noteInput(label); },
     onClear: () => {
       hung.crouching = false;
@@ -318,15 +347,10 @@ export function startGame(config) {
     },
   });
 
-  const secondPlayerKeys = {
-    ArrowLeft: 'a', ArrowRight: 'd', ArrowUp: 'w', ArrowDown: 's',
-    KeyZ: 'j', KeyX: 'k', KeyC: 'l', KeyV: 'p', KeyB: 'q', KeyH: 'r', BracketLeft: 'f', BracketRight: 'g',
-    KeyN: 'u', KeyM: 'i', Comma: 'o', Period: 't',
-  };
   const keyboardP2 = createKeyboard({
-    canPlay: () => lan && phase === 'fight',
+    canPlay: () => (lan || localMode) && phase === 'fight',
     canPause: () => false,
-    keyFor: event => secondPlayerKeys[event.code],
+    keyFor: event => boundAction(event, 1),
     onClear: () => {
       mai.crouching = false;
       mai.setGuard(false);
@@ -361,44 +385,6 @@ export function startGame(config) {
     burst(fighter.x, fighter.y - 16, advanced ? 64 : 38, color);
     shake = Math.max(shake, advanced ? .34 : .24);
     return true;
-  }
-
-  function applyControls(fighter, target, input) {
-    fighter.setGuard(input.guard);
-    const canBuffer = !fighter.disabled && !input.guard && !input.action && !input.charge;
-    if (!canBuffer) fighter.bufferedAttack = null;
-    if (input.action === 'awaken' && activateAwakening(fighter)) return;
-    const charge = input.charge && !input.guard && !input.jump && !input.attack && !input.action && !input.direction && !input.crouch;
-    fighter.charge(charge);
-    if (fighter.charging) {
-      fighter.crouching = false;
-      return;
-    }
-    if (input.jump && fighter.onGround && !fighter.disabled && !fighter.attacking && !fighter.dash && !input.guard) {
-      fighter.vy = -config.stage.jumpVelocity;
-      fighter.onGround = false;
-    }
-    if (input.action === 'dash' || input.action === 'enhancedDash') {
-      const enhanced = input.action === 'enhancedDash';
-      if (fighter.startDash(enhanced) && enhanced) toast('LƯỚT CƯỜNG HÓA');
-    } else if (input.action === 'roll') {
-      fighter.startDash(false, input.direction || -fighter.facing);
-    } else if (input.action === 'escape' && fighter.escapeFrom(target)) {
-      toast(fighter.name.toUpperCase() + ' THOÁT COMBO!');
-    }
-    if (input.attack) {
-      fighter.bufferedAttack = null;
-      if (!useAttack(fighter, target, input.attack) && canBuffer && fighter.attack && fighter.attacks[input.attack]) {
-        const { startup, active, recovery, elapsed } = fighter.attack;
-        if (startup + active + recovery - elapsed <= 8) fighter.bufferedAttack = input.attack;
-      }
-    } else if (fighter.bufferedAttack && !fighter.attack) {
-      useAttack(fighter, target, fighter.bufferedAttack);
-      fighter.bufferedAttack = null;
-    }
-    const canMove = !fighter.disabled && !fighter.dash && !fighter.attacking && !fighter.blocking;
-    fighter.crouching = canMove && input.crouch && fighter.onGround;
-    if (canMove) fighter.x += input.direction * fighter.moveSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;
   }
 
   function update(dt) {
@@ -464,21 +450,24 @@ export function startGame(config) {
     const bodiesTouchingVertically = pushboxesOverlap(hung, mai, config.stage.pushboxHeightRatio);
     updateFacing(hung, mai);
     const local = keyboard.consumeActions();
+    const second = keyboardP2.consumeActions();
     const input = lan || soloLan ? mergeInputs(local, lanHost.consume(0)) : local;
     const replay = practice ? training.step(input) : null;
-    applyControls(hung, mai, input);
+    applyControls(hung, mai, localMode === 'team' && activePlayer ? second : input, controlRules);
     if (lan) {
-      applyControls(mai, hung, mergeInputs(keyboardP2.consumeActions(), lanHost.consume(1)));
+      applyControls(mai, hung, mergeInputs(second, lanHost.consume(1)), controlRules);
+    } else if (localMode === 'versus') {
+      applyControls(mai, hung, second, controlRules);
     } else if (replay) {
       mai.lowGuardOnly = false;
-      applyControls(mai, hung, { ...replay, direction: -replay.direction });
+      applyControls(mai, hung, { ...replay, direction: -replay.direction }, controlRules);
     } else if (practice && training.mode !== 'cpu') {
       training.controlDummy(mai, dt, config.stage.jumpVelocity);
     } else if (practice) {
       mai.lowGuardOnly = false;
       mai.crouching = false;
     }
-    if (!lan && !replay && (!practice || training.mode === 'cpu')) {
+    if (!lan && localMode !== 'versus' && !replay && (!practice || training.mode === 'cpu')) {
       const usedAwakening = Math.abs(mai.x - hung.x) > 165 && activateAwakening(mai);
       if (!usedAwakening) cpu.update(dt, mai, hung, projectiles, world, id => useAttack(mai, hung, id), () => {
         if (!mai.escapeFrom(hung)) return false;
@@ -553,11 +542,39 @@ export function startGame(config) {
     if (practice) {
       if (hung.hp <= 0) hung.hp = hung.maxHp;
       if (mai.hp <= 0) mai.hp = mai.maxHp;
-    } else if (hung.hp <= 0 || mai.hp <= 0 || seconds <= 0) finishRound();
+    } else if (seconds <= 0 || hung.hp <= 0 || mai.hp <= 0) {
+      if (localMode !== 'team' || !callReserves()) finishRound();
+    }
+  }
+
+  function callReserves() {
+    const playerOut = hung.hp <= 0, cpuOut = mai.hp <= 0;
+    if (seconds <= 0 || (playerOut && activePlayer) || (cpuOut && activeCpu)) return false;
+    if (playerOut) {
+      activePlayer = 1;
+      hung = makeFighter(opponentId, 'hung');
+    }
+    if (cpuOut) {
+      activeCpu = 1;
+      mai = makeFighter(teamCpuIds[1], 'mai');
+      cpu = new CpuController(difficulty, config);
+    }
+    hung.x = fighterX('hung');
+    mai.x = fighterX('mai');
+    updateFacing(hung, mai);
+    clearInputs();
+    projectiles.length = 0;
+    updateRoster();
+    toast(playerOut && cpuOut ? 'P2 VÀ CPU 2 VÀO SÂN' : playerOut ? 'P2 VÀO SÂN' : 'CPU 2 VÀO SÂN');
+    return true;
   }
 
   function hitEffects(hit) {
     const { attacker, blocked, broken, combo, damage, x, y } = hit;
+    if (!practice) {
+      if (attacker === hung) damageHung += Math.round(damage * 100);
+      if (attacker === mai) damageMai += Math.round(damage * 100);
+    }
     if (hit.inflicted) {
       const effects = { freeze: ['ĐÓNG BĂNG', '#b1eeff'], shatter: ['VỠ BĂNG', '#a9e4ff'], poisonStun: ['CHOÁNG DO ĐỘC', '#b9f28a'] };
       const [label, color] = effects[hit.inflicted];
@@ -600,20 +617,25 @@ export function startGame(config) {
     mai.blocking = false;
     panels.setPauseAvailable(false);
     ui.toast.classList.remove('show');
-    audio.setPlaying(false);
     const knockout = hung.hp <= 0 || mai.hp <= 0;
     panels.showBanner(knockout ? 'K.O.' : 'HẾT GIỜ', true);
     audio.cue(knockout ? 'ko' : 'time');
-    const lead = Math.round(hung.hp * 100) * mai.maxHp - Math.round(mai.hp * 100) * hung.maxHp;
+    let lead = Math.round(hung.hp * 100) * mai.maxHp - Math.round(mai.hp * 100) * hung.maxHp;
+    if (localMode === 'team') {
+      const playersLeft = Number(!activePlayer) + Number(hung.hp > 0);
+      const cpusLeft = Number(!activeCpu) + Number(mai.hp > 0);
+      lead = knockout ? playersLeft - cpusLeft : hung.hp / hung.maxHp - mai.hp / mai.maxHp + activeCpu - activePlayer;
+    }
     if (lead > 0) winsHung++;
     if (lead < 0) winsMai++;
     updateScore();
-    nextRound = Math.max(winsHung, winsMai) < config.stage.winsToMatch;
-    const winner = lead > 0 ? hung : mai;
-    ui['status-text'].textContent = lead === 0 ? 'HIỆP HÒA · ĐẤU LẠI' : winner.name.toUpperCase() + ' THẮNG HIỆP';
+    nextRound = Math.max(winsHung, winsMai) < Math.ceil(bestOf / 2);
+    const winner = localMode === 'team' ? (lead > 0 ? 'ĐỘI NGƯỜI CHƠI' : 'ĐỘI CPU') : (lead > 0 ? hung : mai).name.toUpperCase();
+    ui['status-text'].textContent = lead === 0 ? 'HIỆP HÒA · ĐẤU LẠI' : winner + ' THẮNG HIỆP';
+    const headToHead = lan || localMode === 'versus';
     panels.setResult(
-      lan ? 'P' + (winsHung > winsMai ? '1' : '2') + ' thắng trận' : winsHung > winsMai ? 'Chiến thắng' : 'Thất bại',
-      `${hung.name} (${lan ? 'P1' : 'bạn'}) ${winsHung} – ${winsMai} ${mai.name} (${lan ? 'P2' : 'CPU'})`,
+      localMode === 'team' ? (winsHung > winsMai ? 'Đội người chơi thắng' : 'Đội CPU thắng') : headToHead ? 'P' + (winsHung > winsMai ? '1' : '2') + ' thắng trận' : winsHung > winsMai ? 'Chiến thắng' : 'Thất bại',
+      `${hung.name} (${headToHead ? 'P1' : 'bạn'}) ${winsHung} – ${winsMai} ${mai.name} (${headToHead ? 'P2' : 'CPU'})`,
     );
     if (nextRound && lead !== 0) round++;
   }
@@ -622,13 +644,14 @@ export function startGame(config) {
     if (lastTime !== undefined) accumulator += Math.min((now - lastTime) / 1000, .1);
     lastTime = now;
     const previousHP = [hung.hp, mai.hp];
+    const previousDamage = damageHung + damageMai;
     const previousSecond = Math.ceil(seconds);
     while (accumulator >= FRAME_SECONDS) {
       previousPositions = [hung, mai].map(fighter => ({ fighter, x: fighter.x, y: fighter.y }));
       update(FRAME_SECONDS);
       accumulator -= FRAME_SECONDS;
     }
-    if (previousHP[0] !== hung.hp || previousHP[1] !== mai.hp || previousSecond !== Math.ceil(seconds)) updateScore();
+    if (previousHP[0] !== hung.hp || previousHP[1] !== mai.hp || previousSecond !== Math.ceil(seconds) || previousDamage !== damageHung + damageMai) updateScore();
     if (phase === 'fight') {
       const status = hung.hitstun > 0
         ? 'CHOÁNG · GIỮ A/D ĐỂ DI CHUYỂN KHI HẾT CHOÁNG'

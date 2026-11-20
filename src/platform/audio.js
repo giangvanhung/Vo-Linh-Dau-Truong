@@ -1,3 +1,5 @@
+import { musicChoices } from './settings.js';
+
 const assetRoot = '/assets/audio/';
 const samples = {
   hit: ['punch', .8], heavy: ['heavy', .95], kick: ['kick', .95],
@@ -7,33 +9,37 @@ const samples = {
 
 export class GameAudio {
   buffers = new Map();
+  musicFiles = new Map();
+
+  setMusicFile(id, file) {
+    const previous = this.musicFiles.get(id);
+    this.musicFiles.set(id, URL.createObjectURL(file));
+    this.unlock();
+    if (previous) URL.revokeObjectURL(previous);
+  }
 
   configure(settings) {
     this.settings = settings;
-    if (!this.context) return;
-    this.effects.gain.value = settings.sound ? settings.effects / 100 : 0;
+    if (this.effects) this.effects.gain.value = settings.sound ? settings.effects / 100 : 0;
     this.syncMusic();
   }
 
   unlock() {
     if (!this.settings.sound) return;
+    this.musicUnlocked = true;
+    this.syncMusic();
     try {
       if (!this.context) {
         const Context = window.AudioContext ?? window.webkitAudioContext;
         this.context = new Context();
-        this.track = new Audio(assetRoot + 'arena-synthwave.mp3');
-        this.track.loop = true;
-        this.music = this.context.createGain();
         this.effects = this.context.createGain();
-        this.context.createMediaElementSource(this.track).connect(this.music);
-        this.music.connect(this.context.destination);
         this.effects.connect(this.context.destination);
         this.configure(this.settings);
         for (const name of new Set(Object.values(samples).map(([name]) => name))) {
           this.loadSample(name);
         }
       }
-      this.context.resume().catch(() => {});
+      if (this.context.state !== 'running') this.context.resume().catch(() => {});
     } catch {
       // The game remains playable in browsers without Web Audio.
     }
@@ -50,10 +56,23 @@ export class GameAudio {
   }
 
   syncMusic() {
-    const volume = this.settings.sound && this.playing ? this.settings.music / 100 : 0;
-    this.music.gain.value = volume * .65;
-    if (volume) this.track.play().catch(() => {});
-    else this.track.pause();
+    if (!this.musicUnlocked) return;
+    const id = this.settings.musicTrack;
+    const choice = musicChoices[id];
+    const src = choice.file ? assetRoot + choice.file : this.musicFiles.get(id);
+    const volume = this.settings.sound ? this.settings.music / 100 : 0;
+    if (src && volume > 0) {
+      if (this.trackSource !== src) {
+        this.track?.pause();
+        this.track = new Audio(src);
+        this.track.loop = true;
+        this.trackSource = src;
+      }
+      this.track.volume = volume * .65;
+      if (this.track.paused) this.track.play().catch(() => {});
+    } else {
+      this.track?.pause();
+    }
   }
 
   tone(output, frequency, duration, volume, type = 'sine', end = frequency, delay = 0) {
@@ -69,11 +88,6 @@ export class GameAudio {
     note.connect(envelope).connect(output);
     note.start(now);
     note.stop(now + duration);
-  }
-
-  setPlaying(playing) {
-    this.playing = playing;
-    if (this.context) this.syncMusic();
   }
 
   cue(name) {

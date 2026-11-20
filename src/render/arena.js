@@ -1,22 +1,21 @@
 import { activeZone, overlapsSurface, zoneRanges } from '../game/stages.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
+import { createCombatEffects } from './combat-effects.js';
+import { createStageBackground } from './stage-background.js';
 import { gear } from '../game/pickups.js';
 
 export function createArenaRenderer(canvas, config) {
   const ctx = canvas.getContext('2d');
-  const background = document.getElementById('arena-background');
-  const backdrop = background.getContext('2d', { alpha: false });
+  const drawBackground = createStageBackground(document.getElementById('arena-background'));
   const w = canvas.width, h = canvas.height;
 
   const drawSprite = createSpriteRenderer(ctx, config.characters);
   const images = new Map();
+  const { drawProjectile, drawCombatEffects } = createCombatEffects(ctx, images);
   const sparkSheet = '/assets/effects/combat-sparks.png';
   const evolutionFist = '/assets/effects/hung-evolution-fist.png';
   const advancedAura = '/assets/effects/evolution-level-two.png';
   const paths = new Set();
-  for (const stage of Object.values(config.stages)) {
-    for (const path of [stage.background, ...stage.parallax]) paths.add(path);
-  }
   paths.add(sparkSheet);
   paths.add(evolutionFist);
   paths.add(advancedAura);
@@ -28,36 +27,6 @@ export function createArenaRenderer(canvas, config) {
     if (character.weapon) paths.add(character.weapon.image);
   }
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
-
-  function drawStage(ctx, stage, w, h, ground, center) {
-    const layers = stage.parallax.map(path => images.get(path));
-    const composite = images.get(stage.background);
-    ctx.fillStyle = '#191922';
-    ctx.fillRect(0, 0, w, h);
-    const floor = stage.artGroundRatio ?? .724;
-    // Cover both sides of the floor line so cropping never moves it away from the fighters.
-    const minHeight = Math.max(ground / floor, (h - ground) / (1 - floor));
-    const draw = (image, shift = 0, overscan = 1) => {
-      const scale = Math.max(w * overscan / image.width, minHeight / image.height);
-      const width = image.width * scale;
-      const height = image.height * scale;
-      const top = ground - height * floor;
-      ctx.drawImage(image, (w - width) / 2 + shift, top, width, height);
-    };
-    if (layers.length && layers.every(Boolean)) {
-      layers.forEach((image, index) => {
-        const shift = (w / 2 - center) * [.035, .075, .12][index];
-        draw(image, Math.max(-w * .05, Math.min(w * .05, shift)), 1.10);
-      });
-    } else if (composite || layers[0]) {
-      draw(composite ?? layers[0], 0);
-    } else {
-      ctx.fillStyle = '#302b37';
-      ctx.fillRect(0, ground, w, h - ground);
-    }
-    ctx.fillStyle = 'rgba(12, 13, 22, .29)';
-    ctx.fillRect(0, 0, w, h);
-  }
 
   function render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime, drop }) {
     const ground = h * config.stage.groundRatio;
@@ -71,14 +40,8 @@ export function createArenaRenderer(canvas, config) {
     ctx.setTransform(pixelWidth / w, 0, 0, pixelHeight / h, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const center = (fighters[0].x + offsets[0][0] + fighters[1].x + offsets[1][0]) / 2;
-    const width = background.clientWidth, height = background.clientHeight;
-    if (width && height) {
-      if (background.width !== width) background.width = width;
-      if (background.height !== height) background.height = height;
-      const stageTop = canvas.parentElement.offsetTop;
-      const floor = stageTop + (displayHeight - h * scale) / 2 + ground * scale;
-      drawStage(backdrop, stage, width, height, floor, center / w * width);
-    }
+    const floor = canvas.parentElement.offsetTop + (displayHeight - h * scale) / 2 + ground * scale;
+    drawBackground(stage, floor, center / w);
     ctx.save();
     applyShake(shake, screenEffect);
     drawTerrain(stage, stageFrame, w, ground);
@@ -515,92 +478,6 @@ export function createArenaRenderer(canvas, config) {
     ctx.rotate(time / 115 * attack.facing);
     ctx.globalAlpha = fighter.attackActive ? 1 : .7;
     ctx.drawImage(image, -size / 2, -size / 2, size, size);
-    ctx.restore();
-  }
-
-  function drawProjectile({ x, y, facing, attack, attacker }, ground) {
-    const { color, width, height, pierce, shape } = attack.projectile;
-    ctx.save();
-    ctx.shadowColor = ctx.fillStyle = color;
-    ctx.shadowBlur = 10;
-    ctx.translate(x, ground + y);
-    ctx.scale(facing, 1);
-    const weapon = !attack.pickupWeapon && attacker.weapon?.projectile && images.get(attacker.weapon.image);
-    if (weapon) {
-      const size = width * 1.08;
-      const imageHeight = size * weapon.height / weapon.width;
-      ctx.rotate(.58);
-      ctx.drawImage(weapon, -size / 2, -imageHeight / 2, size, imageHeight);
-      ctx.restore();
-      return;
-    }
-    ctx.beginPath();
-    const outlines = {
-      ice: [[-.5,0], [-.15,-.49], [.38,-.3], [.5,0], [.34,.39], [-.19,.5]],
-      vial: [[-.28,-.5], [.25,-.5], [.25,-.24], [.5,.05], [.32,.5], [-.38,.5], [-.5,.02], [-.28,-.24]],
-      pool: [[-.50,.22], [-.36,-.10], [-.18,.02], [-.06,-.45], [.11,.02], [.36,-.16], [.5,.29], [.28,.5], [-.33,.46]],
-      embers: [[-.5,.5], [-.34,-.25], [-.16,.23], [0,-.5], [.16,.24], [.32,-.21], [.5,.5]],
-      fire: [[-.5,0], [-.30,-.35], [.12,-.5], [.5,-.22], [.45,.29], [.10,.5], [-.33,.30]],
-      wind: [[-.5,.42], [-.12,-.35], [.5,-.44], [.14,.1], [.39,.36], [-.09,.2]],
-      pillar: [[-.5,.5], [-.38,.17], [-.22,.12], [-.16,-.4], [.08,-.5], [.24,-.06], [.38,.08], [.5,.5]],
-      bloom: [[-.5,0], [-.34,-.42], [-.08,-.31], [.18,-.5], [.44,-.15], [.5,.17], [.2,.45], [-.13,.32], [-.34,.5]],
-      bolt: [[-.5,-.35], [.04,-.5], [-.06,-.1], [.5,-.16], [.01,.5], [.1,.14], [-.5,.26]],
-      stone: [[-.5,.5], [-.38,-.08], [-.16,-.21], [0,-.5], [.24,-.29], [.5,.5]],
-      petal: [[-.5,0], [-.15,-.41], [.16,-.46], [.5,-.19], [.26,.26], [-.05,.49]],
-    };
-    const outline = outlines[shape];
-    if (outline) {
-      outline.forEach(([px, py]) => ctx.lineTo(px * width, py * height));
-      ctx.closePath();
-    } else {
-      ctx.ellipse(0, 0, width / 2, height / 2, pierce ? -.22 : 0, 0, Math.PI * 2);
-    }
-    ctx.fill();
-    if (!['pool', 'embers', 'pillar', 'bloom'].includes(shape) && attack.projectile.speed) {
-      ctx.globalAlpha = .45;
-      ctx.fillRect(-width * .7, -height * .08, width * .8, Math.max(2, height * .16));
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#fff2d4';
-      ctx.fillRect(-width * .12, -height * .08, width * .33, Math.max(1, height * .13));
-    }
-    ctx.restore();
-  }
-
-  function drawCombatEffects(fighter, ground) {
-    if (fighter.hp <= 0) return;
-    const attack = fighter.attack;
-    const item = gear[attack?.pickupWeapon ?? (fighter.weaponUses ? fighter.pickupWeapon : '')];
-    if (fighter.shieldHp > 0 || item?.image) {
-      const equipment = fighter.shieldHp > 0 ? [gear.shield, item] : [item];
-      ctx.save();
-      ctx.translate(fighter.x, ground + fighter.y);
-      ctx.scale(attack?.facing ?? fighter.facing, 1);
-      for (const [index, entry] of equipment.entries()) {
-        const image = images.get(entry?.image);
-        if (!image) continue;
-        const guard = entry === gear.shield;
-        const size = guard ? 34 : fighter.attackActive && entry === gear.sword ? 83 : 56;
-        const height = size * image.height / image.width;
-        ctx.drawImage(image, (index || !guard ? 18 : -35) - size / 4, -fighter.hurtbox.height * .68 - height / 2, size, height);
-      }
-      ctx.restore();
-    }
-    if (!attack || attack.projectile || (!fighter.skills[attack.id] && !attack.pickupWeapon && !attack.showArc)) return;
-    const pulse = attack.pulses?.some(({from, to}) => attack.elapsed - attack.startup >= from && attack.elapsed - attack.startup < to);
-    const active = fighter.attackActive && (!attack.pulses || pulse);
-    const warning = attack.elapsed < attack.startup && attack.elapsed >= attack.startup - 6;
-    if (!active && !warning) return;
-    ctx.save();
-    ctx.strokeStyle = attack.effect?.color ?? (fighter.evolving ? fighter.evolution.color : fighter.glow);
-    ctx.lineWidth = active ? attack.id === 'ultimate' ? 4 : 2.5 : 1;
-    ctx.globalAlpha = active ? .84 : .32;
-    for (const box of fighter.attackBoxes) {
-      ctx.beginPath();
-      ctx.ellipse(box.x + box.width / 2, ground + box.y + box.height / 2,
-        box.width / 2, box.height / 2, 0, active && !attack.radial ? -.85 : 0,
-        active && !attack.radial ? 2.7 : Math.PI * 2);
-      ctx.stroke();
-    }
     ctx.restore();
   }
 

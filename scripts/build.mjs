@@ -1,4 +1,4 @@
-import { cp, mkdir, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { bundleGame } from './game-bundle.mjs';
 
 const source = path => new URL('../' + path, import.meta.url);
@@ -16,7 +16,9 @@ await Promise.all([
 ]);
 await mkdir(dist('src/vendor/'), { recursive: true });
 await Promise.all([
+  readFile(source('data/fighters.json'), 'utf8').then(text =>
+    writeFile(dist('data/fighters.json'), JSON.stringify(JSON.parse(text)))),
   cp(source('node_modules/jsqr/dist/jsQR.js'), dist('src/vendor/jsqr.js')),
   writeFile(dist('src/platform/relay-url.js'), `export const relayUrl = ${JSON.stringify(relay.origin)};\n`),
 ]);
-await writeFile(dist('src/game.bundle.js'), await bundleGame(dist('')));
+await writeFile(dist('src/game.bundle.js'), await bundleGame(dist(''), { minify: true }));

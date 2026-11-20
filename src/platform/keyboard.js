@@ -1,3 +1,25 @@
+export const defaultBindings = [
+  {a:'KeyA', d:'KeyD', w:'KeyW', s:'KeyS', j:'KeyJ', k:'KeyK', l:'KeyL', p:'KeyP', q:'KeyQ', r:'KeyR', f:'KeyF', g:'KeyG', u:'KeyU', i:'KeyI', o:'KeyO', t:'KeyT'},
+  {a:'ArrowLeft', d:'ArrowRight', w:'ArrowUp', s:'ArrowDown', j:'Numpad1', k:'Numpad2', l:'Numpad3', p:'Numpad4', q:'Numpad5', r:'Numpad6', f:'Numpad0', g:'NumpadAdd', u:'Numpad7', i:'Numpad8', o:'Numpad9', t:'NumpadDecimal'},
+];
+export const bindingLabels = {
+  a:'Trái', d:'Phải', w:'Nhảy', s:'Cúi', j:'Đòn nhẹ', k:'Đòn nặng', l:'Đá', p:'Đỡ',
+  q:'Lướt', r:'Lộn né', f:'Tụ khí', g:'Tiến hóa', u:'Chiêu gần', i:'Chiêu xa', o:'Tuyệt kỹ', t:'Thoát combo',
+};
+export function keyCode(event) {
+  return event.code && event.code !== 'Unidentified' ? event.code
+    : event.key?.toLowerCase() === 'đ' ? 'KeyD'
+    : /^[a-z]$/i.test(event.key) ? 'Key' + event.key.toUpperCase() : event.key;
+}
+export function assignable(code) {
+  return /^(Key[A-Z]|Digit[0-9]|Numpad([0-9]|Add|Decimal|Subtract|Multiply|Divide|Enter)|Arrow(Left|Right|Up|Down)|Comma|Period|BracketLeft|BracketRight|Slash|Minus|Equal|Semicolon|Quote)$/.test(code);
+}
+export function keyLabel(code) {
+  return ({ArrowLeft:'←', ArrowRight:'→', ArrowUp:'↑', ArrowDown:'↓', BracketLeft:'[', BracketRight:']', Comma:',', Period:'.'})[code]
+    ?? ({NumpadAdd:'Num +', NumpadDecimal:'Num .', NumpadSubtract:'Num −', NumpadMultiply:'Num ×', NumpadDivide:'Num /', NumpadEnter:'Num Enter'})[code]
+    ?? code.replace(/^(Key|Digit)/,'').replace(/^Numpad/, 'Num ');
+}
+
 const attackKeys = { j: 'light', k: 'heavy', l: 'kick', u: 'closeSkill', i: 'rangedSkill', o: 'ultimate' };
 const movementAliases = { ArrowLeft: 'a', ArrowRight: 'd', ArrowUp: 'w', ArrowDown: 's' };
 const gameKeys = new Set(['a', 'd', 'w', 's', 'p', 'q', 'r', 't', 'f', 'g', ...Object.keys(attackKeys)]);
@@ -47,7 +69,7 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
     const input = physicalKey(event) ?? key;
     if (event.repeat || heldInputs.has(input)) return;
     heldInputs.set(input, key);
-    onInput?.(key === 'q' && event.shiftKey ? 'Shift+Q' : (event.key?.startsWith('Arrow')
+    onInput?.(keyFor ? (key === 'q' && event.shiftKey ? 'Shift+' : '') + keyLabel(keyCode(event)) : key === 'q' && event.shiftKey ? 'Shift+Q' : (event.key?.startsWith('Arrow')
       ? { a: '←', d: '→', w: '↑', s: '↓' }[key] : key.toUpperCase()));
     if (key === 'w') queuedJump = true;
     if (attackKeys[key]) queuedAttack = attackKeys[key];

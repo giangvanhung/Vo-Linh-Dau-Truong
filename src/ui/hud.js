@@ -7,7 +7,7 @@ export const damageFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigi
 export function createHud(config) {
   const byId = id => document.getElementById(id);
   const ui = {};
-  for (const id of ["round-label","hung-wins","mai-wins","hung-health","mai-health","hung-hp","mai-hp","timer","score-hung","score-mai"]) {
+  for (const id of ["round-label","match-format","guide-format","hung-damage-score","mai-damage-score","hung-wins","mai-wins","hung-health","mai-health","hung-hp","mai-hp","timer","score-hung","score-mai"]) {
     ui[id] = byId(id);
   }
   const meterUI = {};
@@ -20,21 +20,22 @@ export function createHud(config) {
     skills: document.getElementById(side + '-skills'),
   };
 
-  function updateRosterUI({ hung, mai, practice, difficulty, lan }) {
+  function updateRosterUI({ hung, mai, practice, difficulty, lan, team, activePlayer, activeCpu }) {
     for (const [side, fighter] of [['hung', hung], ['mai', mai]]) {
       const hud = document.querySelector('.player-' + side);
       hud.querySelector('strong').textContent = fighter.name.toUpperCase();
       hud.style.setProperty('--fighter-color', fighter.color);
       ui['score-' + side].parentElement.querySelector('.score-name').textContent = fighter.name.toUpperCase();
     }
-    document.querySelector('.player-mai .player-side').textContent = practice ? 'BÙ NHÌN' : lan ? 'NGƯỜI CHƠI 2' : 'CPU · ' + difficultyLabels[difficulty].toUpperCase();
+    document.querySelector('.player-hung .player-side').textContent = team ? 'P' + (activePlayer + 1) + (activePlayer ? ' · Cuối' : ' · Còn P2') : 'NGƯỜI CHƠI 1';
+    document.querySelector('.player-mai .player-side').textContent = team ? 'CPU ' + (activeCpu + 1) + (activeCpu ? ' · Cuối' : ' · Còn CPU 2') : practice ? 'BÙ NHÌN' : lan ? 'NGƯỜI CHƠI 2' : 'CPU · ' + difficultyLabels[difficulty].toUpperCase();
     document.querySelector('.controls-card .heading-note').textContent = hung.name.toUpperCase() + ' · NGƯỜI CHƠI';
     byId('kick-control').textContent = hung.attacks.kick.label;
     byId('close-control').textContent = hung.skills.closeSkill.label;
     byId('range-control').textContent = hung.skills.rangedSkill.label;
     byId('ultimate-control').textContent = hung.skills.ultimate.label + ' · ' + hung.skills.ultimate.cost;
   }
-  function updateUI({ hung, mai, practice, seconds, round, winsHung, winsMai }) {
+  function updateUI({ hung, mai, practice, seconds, round, winsHung, winsMai, bestOf, damageHung, damageMai }) {
     for (const [side, fighter] of [['hung', hung], ['mai', mai]]) {
       const bar = ui[side + '-health'];
       const width = 100 * fighter.hp / fighter.maxHp + '%';
@@ -45,14 +46,27 @@ export function createHud(config) {
     }
     ui['hung-health'].classList.toggle('critical', hung.hp <= hung.maxHp * .25);
     ui['mai-health'].classList.toggle('critical', mai.hp <= mai.maxHp * .25);
-    ui['hung-hp'].textContent = damageFormat.format(hung.hp);
-    ui['mai-hp'].textContent = damageFormat.format(mai.hp);
-    ui.timer.textContent = practice ? '∞' : String(Math.ceil(seconds)).padStart(2, '0');
-    ui['score-hung'].textContent = winsHung;
-    ui['score-mai'].textContent = winsMai;
-    ui['round-label'].textContent = practice ? 'LUYỆN TẬP' : `HIỆP ${String(round).padStart(2, '0')}`;
-    ui['hung-wins'].innerHTML = `${winsHung > 0 ? '<span class="won">◆</span>' : '◇'} ${winsHung > 1 ? '<span class="won">◆</span>' : '◇'}`;
-    ui['mai-wins'].innerHTML = `${winsMai > 0 ? '<span class="won">◆</span>' : '◇'} ${winsMai > 1 ? '<span class="won">◆</span>' : '◇'}`;
+    setText(ui['hung-hp'], damageFormat.format(hung.hp) + ' / ' + damageFormat.format(hung.maxHp));
+    setText(ui['mai-hp'], damageFormat.format(mai.hp) + ' / ' + damageFormat.format(mai.maxHp));
+    setText(ui.timer, practice ? '∞' : String(Math.ceil(seconds)).padStart(2, '0'));
+    setText(ui['score-hung'], String(winsHung));
+    setText(ui['score-mai'], String(winsMai));
+    setText(ui['hung-damage-score'], damageFormat.format(damageHung / 100));
+    setText(ui['mai-damage-score'], damageFormat.format(damageMai / 100));
+    const needed = Math.ceil(bestOf / 2);
+    const format = practice ? 'TẬP TỰ DO' : 'BO' + bestOf + ' · THẮNG ' + needed;
+    setText(ui['match-format'], format);
+    setText(ui['guide-format'], format);
+    setText(ui['round-label'], practice ? 'LUYỆN TẬP' : 'HIỆP ' + String(round).padStart(2, '0'));
+    for (const [side, wins] of [['hung', winsHung], ['mai', winsMai]]) {
+      const marker = ui[side + '-wins'];
+      marker.hidden = practice;
+      const label = wins + ' / ' + needed + ' hiệp thắng';
+      if (marker.getAttribute('aria-label') === label) continue;
+      marker.setAttribute('aria-label', label);
+      marker.innerHTML = '<b>' + wins + '</b>' + Array.from({ length: needed }, (_, index) =>
+        index < wins ? '<i class="won"></i>' : '<i></i>').join('');
+    }
     ui.timer.style.color = seconds < 10 ? '#ef876b' : '';
   }
 

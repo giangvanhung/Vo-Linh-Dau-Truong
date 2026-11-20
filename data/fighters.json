@@ -97,27 +97,35 @@
           ]
         },
         "rangedSkill": {
-          "label": "Hỏa Cầu",
-          "damage": 8,
-          "startup": 18,
+          "label": "Lam Long Chưởng",
+          "damage": 13,
+          "startup": 30,
           "active": 1,
-          "recovery": 30,
+          "recovery": 34,
           "range": 30,
-          "knockback": 100,
+          "knockback": 190,
           "hitstun": 20,
           "hitstop": 2,
           "guardDamage": 18,
           "cooldownFrames": 420,
           "cancelInto": [],
           "projectile": {
-            "speed": 390,
-            "width": 49,
-            "height": 21,
+            "speed": 590,
+            "width": 142,
+            "height": 38,
             "pierce": false,
-            "color": "#ff783e",
+            "color": "#55bfff",
             "yOffset": 58,
             "lifetimeFrames": 64,
-            "shape": "fire"
+            "shape": "waveBeam"
+          },
+          "effect": {
+            "color": "#7fdcff",
+            "particles": 19,
+            "flashSeconds": 0.17,
+            "flashOpacity": 0.12,
+            "shakeIntensity": 18,
+            "shakeSeconds": 0.18
           }
         },
         "ultimate": {
@@ -3294,6 +3302,1048 @@
           "level": "low"
         }
       }
+    },
+    "robot": {
+      "awakening": {
+        "unlockAttack": "heavy",
+        "condition": "Đánh trúng bằng Nắm Đấm Thủy Lực khi đối thủ hở thủ",
+        "skill": "rangedSkill",
+        "durationFrames": 480,
+        "label": "Động Cơ Tăng Áp",
+        "changes": {
+          "damage": 16,
+          "projectile": {
+            "width": 38,
+            "speed": 680
+          }
+        },
+        "evolution": {
+          "color": "#ff9d47",
+          "scale": 1.04,
+          "damageMultiplier": 1.08
+        },
+        "levelTwo": {
+          "skill": "rangedSkill",
+          "durationFrames": 540,
+          "label": "Lõi Nhiệt Tối Đa",
+          "changes": {
+            "damage": 19,
+            "projectile": {
+              "width": 48,
+              "speed": 720
+            }
+          },
+          "evolution": {
+            "color": "#ff9d47",
+            "scale": 1.12,
+            "damageMultiplier": 1.17
+          }
+        }
+      },
+      "sprite": {
+        "still": "/assets/characters/robot/avatar.png",
+        "displaySize": 135
+      },
+      "name": "K-07 Đấm Thép",
+      "hp": 117,
+      "width": 38,
+      "height": 99,
+      "color": "#ff9d47",
+      "glow": "#ff9d47",
+      "cpu": true,
+      "skills": {
+        "closeSkill": {
+          "label": "Cú Nện Pít-tông",
+          "damage": 18,
+          "startup": 13,
+          "active": 7,
+          "recovery": 24,
+          "range": 52,
+          "knockback": 205,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": -18,
+              "far": 52,
+              "top": 99,
+              "height": 89
+            }
+          ],
+          "cooldownFrames": 255,
+          "radial": false
+        },
+        "rangedSkill": {
+          "label": "Xung Điện",
+          "damage": 13,
+          "startup": 15,
+          "active": 1,
+          "recovery": 25,
+          "range": 43,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 9,
+              "far": 43,
+              "top": 80,
+              "height": 30
+            }
+          ],
+          "cooldownFrames": 278,
+          "projectile": {
+            "speed": 640,
+            "width": 28,
+            "height": 22.400000000000002,
+            "yOffset": 57.419999999999995,
+            "color": "#ff9d47",
+            "lifetimeFrames": 72,
+            "pierce": false
+          }
+        },
+        "ultimate": {
+          "label": "Quá Tải Lò Lõi",
+          "damage": 10,
+          "startup": 27,
+          "active": 23,
+          "recovery": 30,
+          "range": 97,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": -24,
+              "far": 97,
+              "top": 136,
+              "height": 127
+            }
+          ],
+          "cost": 100,
+          "groundOnly": true,
+          "pulses": [
+            {
+              "from": 0,
+              "to": 7,
+              "knockback": 15,
+              "hitstun": 16
+            },
+            {
+              "from": 7,
+              "to": 15,
+              "knockback": 25,
+              "hitstun": 17
+            },
+            {
+              "from": 15,
+              "to": 23,
+              "knockback": 310,
+              "damage": 16,
+              "hitstun": 26
+            }
+          ],
+          "effect": {
+            "color": "#ff9d47",
+            "particles": 14,
+            "shakeIntensity": 19,
+            "shakeSeconds": 0.14,
+            "trailSeconds": 0.23
+          },
+          "radial": false
+        }
+      },
+      "moveSpeed": 205,
+      "hurtboxSize": {
+        "width": 37,
+        "height": 99
+      },
+      "dash": {
+        "frames": 10,
+        "distance": 132,
+        "invulnerableFrames": 5
+      },
+      "enhancedDash": {
+        "cost": 25,
+        "frames": 13,
+        "distance": 204,
+        "invulnerableFrames": 8
+      },
+      "dashCooldownFrames": 51,
+      "profile": {
+        "role": "Robot quyền Anh bọc thép",
+        "strength": "Đòn nặng phá thế thủ mạnh, xung điện đi nhanh.",
+        "weakness": "Chậm chân và dễ bị áp sát sau cú nện."
+      },
+      "attacks": {
+        "light": {
+          "label": "Jab Pít-tông",
+          "damage": 6,
+          "startup": 6,
+          "active": 5,
+          "recovery": 11,
+          "range": 52,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [
+            "kick"
+          ],
+          "limbBoxes": [
+            {
+              "near": 8,
+              "far": 52,
+              "top": 83,
+              "height": 29
+            }
+          ],
+          "showArc": true
+        },
+        "heavy": {
+          "label": "Nắm Đấm Thủy Lực",
+          "damage": 14,
+          "startup": 16,
+          "active": 5,
+          "recovery": 24,
+          "range": 72,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 41,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 6,
+              "far": 72,
+              "top": 99,
+              "height": 52
+            }
+          ],
+          "showArc": true
+        },
+        "kick": {
+          "label": "Đá Móc Bọc Thép",
+          "damage": 8,
+          "startup": 9,
+          "active": 5,
+          "recovery": 13,
+          "range": 54,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 3,
+              "far": 54,
+              "top": 43,
+              "height": 27
+            }
+          ],
+          "level": "low"
+        }
+      }
+    },
+    "corgi": {
+      "awakening": {
+        "unlockAttack": "closeSkill",
+        "condition": "Đánh trúng bằng Chảo Xoay khi đối thủ hở thủ",
+        "skill": "closeSkill",
+        "durationFrames": 480,
+        "label": "Chảo Lửa Hồng",
+        "changes": {
+          "range": 88,
+          "damage": 15,
+          "limbBoxes": [
+            {
+              "near": -74,
+              "far": 88,
+              "top": 76,
+              "height": 66
+            }
+          ]
+        },
+        "evolution": {
+          "color": "#8ad5a5",
+          "scale": 1.04,
+          "damageMultiplier": 1.08
+        },
+        "levelTwo": {
+          "skill": "closeSkill",
+          "durationFrames": 540,
+          "label": "Bếp Trưởng Tốc Hành",
+          "changes": {
+            "range": 102,
+            "damage": 17,
+            "limbBoxes": [
+              {
+                "near": -74,
+                "far": 102,
+                "top": 76,
+                "height": 66
+              }
+            ]
+          },
+          "evolution": {
+            "color": "#8ad5a5",
+            "scale": 1.12,
+            "damageMultiplier": 1.17
+          }
+        }
+      },
+      "sprite": {
+        "still": "/assets/characters/corgi/avatar.png",
+        "displaySize": 104
+      },
+      "name": "Bếp Trưởng Bánh Bao",
+      "hp": 88,
+      "width": 38,
+      "height": 76,
+      "color": "#8ad5a5",
+      "glow": "#8ad5a5",
+      "cpu": true,
+      "skills": {
+        "closeSkill": {
+          "label": "Chảo Xoay",
+          "damage": 13,
+          "startup": 8,
+          "active": 7,
+          "recovery": 24,
+          "range": 74,
+          "knockback": 205,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": -74,
+              "far": 74,
+              "top": 76,
+              "height": 66
+            }
+          ],
+          "cooldownFrames": 255,
+          "radial": true
+        },
+        "rangedSkill": {
+          "label": "Bánh Bao Bay",
+          "damage": 10,
+          "startup": 20,
+          "active": 1,
+          "recovery": 25,
+          "range": 43,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 9,
+              "far": 43,
+              "top": 80,
+              "height": 30
+            }
+          ],
+          "cooldownFrames": 278,
+          "projectile": {
+            "speed": 295,
+            "width": 33,
+            "height": 26.400000000000002,
+            "yOffset": 44.08,
+            "color": "#8ad5a5",
+            "lifetimeFrames": 72,
+            "pierce": false
+          }
+        },
+        "ultimate": {
+          "label": "Tiệc Chảo Ba Món",
+          "damage": 8,
+          "startup": 27,
+          "active": 23,
+          "recovery": 30,
+          "range": 86,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": -24,
+              "far": 86,
+              "top": 113,
+              "height": 104
+            }
+          ],
+          "cost": 100,
+          "groundOnly": true,
+          "pulses": [
+            {
+              "from": 0,
+              "to": 7,
+              "knockback": 15,
+              "hitstun": 16
+            },
+            {
+              "from": 7,
+              "to": 15,
+              "knockback": 25,
+              "hitstun": 17
+            },
+            {
+              "from": 15,
+              "to": 23,
+              "knockback": 310,
+              "damage": 16,
+              "hitstun": 26
+            }
+          ],
+          "effect": {
+            "color": "#8ad5a5",
+            "particles": 14,
+            "shakeIntensity": 19,
+            "shakeSeconds": 0.14,
+            "trailSeconds": 0.23
+          },
+          "radial": false
+        }
+      },
+      "moveSpeed": 328,
+      "hurtboxSize": {
+        "width": 37,
+        "height": 76
+      },
+      "dash": {
+        "frames": 10,
+        "distance": 132,
+        "invulnerableFrames": 5
+      },
+      "enhancedDash": {
+        "cost": 25,
+        "frames": 13,
+        "distance": 204,
+        "invulnerableFrames": 8
+      },
+      "dashCooldownFrames": 51,
+      "profile": {
+        "role": "Corgi đầu bếp cầm chảo",
+        "strength": "Chạy nhanh, vóc thấp và đòn chảo xoay ra nhanh.",
+        "weakness": "Ít máu, bánh bao bay chậm."
+      },
+      "attacks": {
+        "light": {
+          "label": "Gõ Chảo",
+          "damage": 6,
+          "startup": 4,
+          "active": 5,
+          "recovery": 11,
+          "range": 52,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [
+            "kick"
+          ],
+          "limbBoxes": [
+            {
+              "near": 8,
+              "far": 52,
+              "top": 83,
+              "height": 29
+            }
+          ],
+          "showArc": true
+        },
+        "heavy": {
+          "label": "Chảo Úp",
+          "damage": 14,
+          "startup": 16,
+          "active": 5,
+          "recovery": 24,
+          "range": 72,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 31,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 6,
+              "far": 72,
+              "top": 79,
+              "height": 52
+            }
+          ],
+          "showArc": true
+        },
+        "kick": {
+          "label": "Trượt Dép",
+          "damage": 8,
+          "startup": 9,
+          "active": 5,
+          "recovery": 13,
+          "range": 54,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 3,
+              "far": 54,
+              "top": 43,
+              "height": 27
+            }
+          ],
+          "level": "low"
+        }
+      }
+    },
+    "dragon": {
+      "awakening": {
+        "unlockAttack": "closeSkill",
+        "condition": "Đánh trúng bằng Long Trảo khi đối thủ hở thủ",
+        "skill": "closeSkill",
+        "durationFrames": 480,
+        "label": "Vảy Ngọc Hiện Thân",
+        "changes": {
+          "range": 96,
+          "damage": 19,
+          "limbBoxes": [
+            {
+              "near": -18,
+              "far": 96,
+              "top": 103,
+              "height": 93
+            }
+          ]
+        },
+        "evolution": {
+          "color": "#6adbbd",
+          "scale": 1.04,
+          "damageMultiplier": 1.08
+        },
+        "levelTwo": {
+          "skill": "closeSkill",
+          "durationFrames": 540,
+          "label": "Thanh Long Hiện Thế",
+          "changes": {
+            "range": 110,
+            "damage": 21,
+            "limbBoxes": [
+              {
+                "near": -18,
+                "far": 110,
+                "top": 103,
+                "height": 93
+              }
+            ]
+          },
+          "evolution": {
+            "color": "#6adbbd",
+            "scale": 1.19,
+            "damageMultiplier": 1.17,
+            "sprite": "/assets/characters/dragon/evolution-two.png",
+            "bonusHp": 18
+          }
+        }
+      },
+      "sprite": {
+        "still": "/assets/characters/dragon/avatar.png",
+        "displaySize": 133
+      },
+      "name": "Lục Long Trầm Vân",
+      "hp": 106,
+      "width": 38,
+      "height": 103,
+      "color": "#6adbbd",
+      "glow": "#6adbbd",
+      "cpu": true,
+      "skills": {
+        "closeSkill": {
+          "label": "Long Trảo",
+          "damage": 17,
+          "startup": 16,
+          "active": 7,
+          "recovery": 24,
+          "range": 82,
+          "knockback": 205,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": -18,
+              "far": 82,
+              "top": 103,
+              "height": 93
+            }
+          ],
+          "cooldownFrames": 255,
+          "radial": false
+        },
+        "rangedSkill": {
+          "label": "Ngọc Long Châu",
+          "damage": 14,
+          "startup": 20,
+          "active": 1,
+          "recovery": 25,
+          "range": 43,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 9,
+              "far": 43,
+              "top": 80,
+              "height": 30
+            }
+          ],
+          "cooldownFrames": 278,
+          "projectile": {
+            "speed": 432,
+            "width": 41,
+            "height": 32.800000000000004,
+            "yOffset": 59.739999999999995,
+            "color": "#6adbbd",
+            "lifetimeFrames": 72,
+            "pierce": false
+          }
+        },
+        "ultimate": {
+          "label": "Thiên Long Giáng Thế",
+          "damage": 10,
+          "startup": 35,
+          "active": 23,
+          "recovery": 30,
+          "range": 111,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": -24,
+              "far": 111,
+              "top": 140,
+              "height": 131
+            }
+          ],
+          "cost": 100,
+          "groundOnly": true,
+          "pulses": [
+            {
+              "from": 0,
+              "to": 7,
+              "knockback": 15,
+              "hitstun": 16
+            },
+            {
+              "from": 7,
+              "to": 15,
+              "knockback": 25,
+              "hitstun": 17
+            },
+            {
+              "from": 15,
+              "to": 23,
+              "knockback": 310,
+              "damage": 16,
+              "hitstun": 26
+            }
+          ],
+          "effect": {
+            "color": "#6adbbd",
+            "particles": 14,
+            "shakeIntensity": 19,
+            "shakeSeconds": 0.14,
+            "trailSeconds": 0.23
+          },
+          "radial": false
+        }
+      },
+      "moveSpeed": 254,
+      "hurtboxSize": {
+        "width": 37,
+        "height": 103
+      },
+      "dash": {
+        "frames": 10,
+        "distance": 132,
+        "invulnerableFrames": 5
+      },
+      "enhancedDash": {
+        "cost": 25,
+        "frames": 13,
+        "distance": 204,
+        "invulnerableFrames": 8
+      },
+      "dashCooldownFrames": 51,
+      "profile": {
+        "role": "Võ sư hóa Thanh Long",
+        "strength": "Móng rồng áp đảo tầm trung. Cấp 2 hóa Thanh Long và tăng máu.",
+        "weakness": "Tuyệt kỹ lên đòn chậm."
+      },
+      "attacks": {
+        "light": {
+          "label": "Long Chỉ",
+          "damage": 6,
+          "startup": 6,
+          "active": 5,
+          "recovery": 11,
+          "range": 52,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [
+            "kick"
+          ],
+          "limbBoxes": [
+            {
+              "near": 8,
+              "far": 52,
+              "top": 83,
+              "height": 29
+            }
+          ],
+          "showArc": true
+        },
+        "heavy": {
+          "label": "Vảy Rồng Quét",
+          "damage": 14,
+          "startup": 16,
+          "active": 5,
+          "recovery": 24,
+          "range": 72,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 31,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 6,
+              "far": 72,
+              "top": 99,
+              "height": 52
+            }
+          ],
+          "showArc": true
+        },
+        "kick": {
+          "label": "Giáng Chân",
+          "damage": 8,
+          "startup": 9,
+          "active": 5,
+          "recovery": 13,
+          "range": 54,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 3,
+              "far": 54,
+              "top": 43,
+              "height": 27
+            }
+          ],
+          "level": "low"
+        }
+      }
+    },
+    "shadow": {
+      "awakening": {
+        "unlockAttack": "rangedSkill",
+        "condition": "Đánh trúng bằng Mực Tím khi đối thủ hở thủ",
+        "skill": "closeSkill",
+        "durationFrames": 480,
+        "label": "Hộ Vệ Thức Tỉnh",
+        "changes": {
+          "range": 81,
+          "damage": 17,
+          "limbBoxes": [
+            {
+              "near": -36,
+              "far": 81,
+              "top": 99,
+              "height": 89
+            }
+          ]
+        },
+        "evolution": {
+          "color": "#c48aff",
+          "scale": 1.04,
+          "damageMultiplier": 1.08,
+          "overlay": {
+            "image": "/assets/effects/shadow-guardian.png",
+            "behind": true,
+            "width": 1.26,
+            "x": -0.33,
+            "y": 0.77
+          }
+        },
+        "levelTwo": {
+          "skill": "closeSkill",
+          "durationFrames": 540,
+          "label": "Song Ảnh Đồng Bộ",
+          "changes": {
+            "range": 95,
+            "damage": 19,
+            "limbBoxes": [
+              {
+                "near": -50,
+                "far": 95,
+                "top": 99,
+                "height": 89
+              }
+            ]
+          },
+          "evolution": {
+            "color": "#c48aff",
+            "scale": 1.12,
+            "damageMultiplier": 1.17,
+            "overlay": {
+              "image": "/assets/effects/shadow-guardian.png",
+              "behind": true,
+              "width": 1.62,
+              "x": -0.33,
+              "y": 0.98
+            }
+          }
+        }
+      },
+      "sprite": {
+        "still": "/assets/characters/shadow/avatar.png",
+        "displaySize": 130
+      },
+      "name": "Tử Ảnh Lam Chi",
+      "hp": 96,
+      "width": 38,
+      "height": 99,
+      "color": "#c48aff",
+      "glow": "#c48aff",
+      "cpu": true,
+      "skills": {
+        "closeSkill": {
+          "label": "Ảnh Trảo",
+          "damage": 15,
+          "startup": 13,
+          "active": 7,
+          "recovery": 24,
+          "range": 67,
+          "knockback": 205,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": -18,
+              "far": 67,
+              "top": 99,
+              "height": 89
+            }
+          ],
+          "cooldownFrames": 255,
+          "radial": false
+        },
+        "rangedSkill": {
+          "label": "Mực Tím",
+          "damage": 14,
+          "startup": 20,
+          "active": 1,
+          "recovery": 25,
+          "range": 43,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 9,
+              "far": 43,
+              "top": 80,
+              "height": 30
+            }
+          ],
+          "cooldownFrames": 278,
+          "projectile": {
+            "speed": 490,
+            "width": 35,
+            "height": 28,
+            "yOffset": 57.419999999999995,
+            "color": "#c48aff",
+            "lifetimeFrames": 72,
+            "pierce": false
+          }
+        },
+        "ultimate": {
+          "label": "Hộ Vệ Xé Không",
+          "damage": 9,
+          "startup": 27,
+          "active": 23,
+          "recovery": 30,
+          "range": 109,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": -80,
+              "far": 109,
+              "top": 136,
+              "height": 127
+            }
+          ],
+          "cost": 100,
+          "groundOnly": true,
+          "pulses": [
+            {
+              "from": 0,
+              "to": 7,
+              "knockback": 15,
+              "hitstun": 16
+            },
+            {
+              "from": 7,
+              "to": 15,
+              "knockback": 25,
+              "hitstun": 17
+            },
+            {
+              "from": 15,
+              "to": 23,
+              "knockback": 310,
+              "damage": 16,
+              "hitstun": 26
+            }
+          ],
+          "effect": {
+            "color": "#c48aff",
+            "particles": 14,
+            "shakeIntensity": 19,
+            "shakeSeconds": 0.14,
+            "trailSeconds": 0.23
+          },
+          "radial": true
+        }
+      },
+      "moveSpeed": 273,
+      "hurtboxSize": {
+        "width": 37,
+        "height": 99
+      },
+      "dash": {
+        "frames": 10,
+        "distance": 132,
+        "invulnerableFrames": 5
+      },
+      "enhancedDash": {
+        "cost": 25,
+        "frames": 13,
+        "distance": 204,
+        "invulnerableFrames": 8
+      },
+      "dashCooldownFrames": 51,
+      "profile": {
+        "role": "Võ sĩ punk gọi Hộ Vệ Bóng",
+        "strength": "Tiến hóa gọi Hộ Vệ đứng sau lưng, tăng sát thương và mở rộng Ảnh Trảo.",
+        "weakness": "Tầm đòn thường ngắn."
+      },
+      "attacks": {
+        "light": {
+          "label": "Cắt Bóng",
+          "damage": 6,
+          "startup": 6,
+          "active": 5,
+          "recovery": 11,
+          "range": 52,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [
+            "kick"
+          ],
+          "limbBoxes": [
+            {
+              "near": 8,
+              "far": 52,
+              "top": 83,
+              "height": 29
+            }
+          ],
+          "showArc": true
+        },
+        "heavy": {
+          "label": "Xé Màn Đêm",
+          "damage": 14,
+          "startup": 16,
+          "active": 5,
+          "recovery": 24,
+          "range": 72,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 31,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 6,
+              "far": 72,
+              "top": 99,
+              "height": 52
+            }
+          ],
+          "showArc": true
+        },
+        "kick": {
+          "label": "Gót Bóng",
+          "damage": 8,
+          "startup": 9,
+          "active": 5,
+          "recovery": 13,
+          "range": 54,
+          "knockback": 135,
+          "hitstun": 20,
+          "hitstop": 3,
+          "guardDamage": 19,
+          "cancelInto": [],
+          "limbBoxes": [
+            {
+              "near": 3,
+              "far": 54,
+              "top": 43,
+              "height": 27
+            }
+          ],
+          "level": "low"
+        }
+      }
     }
   },
   "combat": {
@@ -3469,6 +4519,30 @@
         "active": 150,
         "color": "#83cdc0"
       }
+    },
+    "market": {
+      "name": "Chợ Sáng",
+      "description": "Sân lát đá trước những sạp trái cây, mái bạt và hàng nón lá.",
+      "background": "/assets/backgrounds/vietnam-market.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "platforms": []
+    },
+    "crossroads": {
+      "name": "Ngã Tư Đèn Đỏ",
+      "description": "Đường phố nắng ấm bên vạch qua đường, xe máy và xe cà phê.",
+      "background": "/assets/backgrounds/vietnam-crossroads.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.745,
+      "platforms": []
+    },
+    "meadow": {
+      "name": "Đồng Cỏ Cao Nguyên",
+      "description": "Sân cỏ rộng dưới nắng, nhìn ra đồi và ruộng bậc thang.",
+      "background": "/assets/backgrounds/highland-meadow.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.72,
+      "platforms": []
     }
   }
 }
