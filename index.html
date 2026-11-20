@@ -20,7 +20,14 @@
       </header>
 
       <section class="game-card" aria-label="Sân đấu">
-        <div class="arena-topline"><span><span class="live-dot"></span> ĐẤU TRƯỜNG LINH GIỚI</span><span class="round-label" id="round-label">HIỆP 01</span><span class="best-of">BO3 <span>·</span> THẮNG 2</span></div>
+        <div class="arena-topline">
+          <span><span class="live-dot"></span> ĐẤU TRƯỜNG LINH GIỚI</span>
+          <span class="round-label" id="round-label">HIỆP 01</span>
+          <div class="arena-display-controls">
+            <span class="best-of">BO3 <span>·</span> THẮNG 2</span>
+            <button type="button" class="panel-button" id="game-fullscreen" aria-pressed="false">Toàn màn hình</button>
+          </div>
+        </div>
 
         <div class="hud">
           <div class="player-hud player-hung">
@@ -62,7 +69,7 @@
                   <label id="lan-address-label" hidden>Địa chỉ mạng <select id="lan-address"></select></label>
                   <a id="lan-link"></a>
                 </div>
-                <p>P1 dùng A/D, W/S và F G J K L P Q R T U I O như thường. P2 dùng phím mũi tên, Z/X/C để đánh, V đỡ, B lướt, Shift+B lướt mạnh, H lộn né, [ tụ khí và ] đột phá, N/M dùng kỹ năng, dấu phẩy dùng ultimate và dấu chấm thoát combo.</p>
+                <p id="lan-keyboard-help">P1 dùng A/D, W/S và F G J K L P Q R T U I O như thường. P2 dùng phím mũi tên, Z/X/C để đánh, V đỡ, B lướt, Shift+B lướt mạnh, H lộn né, [ tụ khí và ] đột phá, N/M dùng kỹ năng, dấu phẩy dùng ultimate và dấu chấm thoát combo.</p>
               </div>
             </div>
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="lan-start">Chọn nhân vật</button></div>
@@ -76,6 +83,8 @@
               <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
             </div>
             <p id="stage-description"></p>
+            <div id="solo-lan-pairing"></div>
+            <button type="button" class="panel-button" id="solo-lan-button" aria-controls="solo-lan-pairing">Kết nối tay cầm P1</button>
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="start-button">Vào trận</button></div>
           </div>
           <div class="center-callout game-panel" id="settings-panel" hidden>

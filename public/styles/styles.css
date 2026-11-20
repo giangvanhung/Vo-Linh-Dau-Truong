@@ -85,3 +85,42 @@
 .player-mai .focus-status { text-align: right; }
 
 @media (max-width: 460px) { .roster-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.arena-display-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#game-fullscreen {
+  padding: 4px 8px;
+  min-height: 27px;
+  font-size: .7rem;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+
+body.game-expanded { overflow: hidden; }
+.game-expanded .game-card {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+}
+
+.game-expanded .game-card > :not(.stage-wrap) { flex: none; }
+.game-expanded .game-card .stage-wrap {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+@media (max-width: 430px) {
+  .arena-display-controls .best-of { display: none; }
+}

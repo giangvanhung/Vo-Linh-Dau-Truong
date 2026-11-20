@@ -90,6 +90,7 @@ export function startGame(config) {
   function openSetup(isPractice) {
     practice = isPractice;
     phase = 'setup';
+    soloLanButton.hidden = lan;
     panels.showSetup(practice, lan);
   }
 
@@ -97,6 +98,7 @@ export function startGame(config) {
     resetTrainingActivity();
     phase = 'menu';
     practice = lan = false;
+    soloLan = false;
     lanHost.close();
     byId('lan-details').hidden = true;
     byId('lan-details').open = false;
@@ -143,6 +145,10 @@ export function startGame(config) {
     const roster = Object.keys(config.characters);
     opponentId = opponent === 'random' ? roster[Math.floor(Math.random() * roster.length)] : opponent;
     difficulty = level;
+    if (soloLan) {
+      byId('lan-details').append(pairing);
+      byId('lan-details').hidden = false;
+    }
     startMatch();
   }
 
@@ -150,13 +156,16 @@ export function startGame(config) {
 
   const pairing = byId('lan-pairing');
   const address = byId('lan-address');
+  const soloLanButton = byId('solo-lan-button');
+  let soloLan = false;
   let addresses = [];
   let connected = [false, false];
   let roomReady = false;
   function updateLanStatus() {
     if (!roomReady) return;
     byId('lan-status').textContent = (addresses.length ? '' : 'Không tìm thấy địa chỉ IPv4 LAN. ')
-      + connected.map((online, index) => 'P' + (index + 1) + (online ? ' có tay cầm' : ' dùng bàn phím')).join(' · ');
+      + connected.slice(0, soloLan ? 1 : 2)
+        .map((online, index) => 'P' + (index + 1) + (online ? ' có tay cầm' : ' dùng bàn phím')).join(' · ');
   }
   function updateLanAddress() {
     const option = addresses[Number(address.value)];
@@ -169,7 +178,7 @@ export function startGame(config) {
     if (option.qr) qr.src = option.qr;
   }
   const lanHost = createLanHost({
-    canPlay: () => lan && phase === 'fight',
+    canPlay: () => (lan || soloLan) && phase === 'fight',
     onRoom(options) {
       addresses = options;
       address.replaceChildren(...options.map(({ link }, index) => new Option(new URL(link).host, index)));
@@ -187,28 +196,40 @@ export function startGame(config) {
       byId('lan-status').textContent = 'Mất kết nối phòng. Bàn phím vẫn dùng được. Về menu để tạo phòng mới.';
       byId('network-mode').textContent = 'LAN · MẤT KẾT NỐI';
       byId('lan-link-box').hidden = true;
+      if (soloLan) soloLanButton.hidden = false;
       ui['status-text'].textContent = 'MẤT KẾT NỐI PHÒNG LAN';
     },
   });
   address.addEventListener('change', updateLanAddress);
+  soloLanButton.addEventListener('click', () => {
+    soloLan = true;
+    soloLanButton.hidden = true;
+    byId('solo-lan-pairing').append(pairing);
+    openControllerRoom();
+  });
   byId('lan-start').addEventListener('click', () => {
     byId('lan-details').append(pairing);
     byId('lan-details').hidden = false;
     openSetup(false);
   });
+  function openControllerRoom() {
+    addresses = [];
+    connected = [false, false];
+    roomReady = false;
+    byId('lan-keyboard-help').hidden = soloLan;
+    byId('lan-status').textContent = 'Đang tạo phòng…';
+    byId('lan-link-box').hidden = true;
+    byId('network-mode').textContent = soloLan ? 'TAY CẦM LAN' : 'LAN';
+    lanHost.open({ solo: soloLan });
+  }
+
   function openLan() {
     lan = true;
     practice = false;
     phase = 'lan';
-    addresses = [];
-    connected = [false, false];
-    roomReady = false;
     byId('lan-lobby').append(pairing);
-    byId('lan-status').textContent = 'Đang tạo phòng…';
-    byId('lan-link-box').hidden = true;
-    byId('network-mode').textContent = 'LAN';
     panels.show('lan');
-    lanHost.open();
+    openControllerRoom();
   }
 
   function resetTrainingActivity() {
@@ -396,7 +417,7 @@ export function startGame(config) {
     const bodiesTouchingVertically = pushboxesOverlap(hung, mai, config.stage.pushboxHeightRatio);
     updateFacing(hung, mai);
     const local = keyboard.consumeActions();
-    const input = lan ? mergeInputs(local, lanHost.consume(0)) : local;
+    const input = lan || soloLan ? mergeInputs(local, lanHost.consume(0)) : local;
     const replay = practice ? training.step(input) : null;
     applyControls(hung, mai, input);
     if (lan) {

@@ -40,7 +40,8 @@ export function attachLan(server) {
     if (url.searchParams.get('role') === 'host') {
       if (rooms.size >= 32) return socket.close(1013, 'Server busy');
       const id = randomBytes(12).toString('base64url');
-      const room = { host: socket, players: [null, null] };
+      const solo = url.searchParams.get('solo') === '1';
+      const room = { host: socket, players: solo ? [null] : [null, null] };
       rooms.set(id, room);
       socket.on('close', () => {
         rooms.delete(id);
@@ -50,15 +51,16 @@ export function attachLan(server) {
       const addresses = Object.values(networkInterfaces()).flat()
         .filter(address => address.family === 'IPv4' && !address.internal)
         .map(address => address.address);
-      const urls = [...new Set(addresses)].map(address => {
+      const controllerLink = address => {
         const link = new URL('/controller', origin);
         link.hostname = address;
         link.searchParams.set('room', id);
+        if (solo) link.searchParams.set('solo', '1');
         return link.href;
-      });
+      };
+      const urls = [...new Set(addresses)].map(controllerLink);
       if (!['localhost','127.0.0.1','[::1]'].includes(origin.hostname)) {
-        const direct = new URL('/controller?room=' + id, origin).href;
-        urls.unshift(direct);
+        urls.unshift(controllerLink(origin.hostname));
       }
       const links = [...new Set(urls)];
       Promise.all(links.map(async link => ({ link, qr: await QRCode.toDataURL(link, { width: 180, margin: 2 }) })))
@@ -70,7 +72,7 @@ export function attachLan(server) {
 
     const room = rooms.get(url.searchParams.get('room'));
     const index = ['1', '2'].indexOf(url.searchParams.get('player'));
-    if (!room || index < 0) return socket.close(4002, 'Room closed');
+    if (!room || index < 0 || index >= room.players.length) return socket.close(4002, 'Slot unavailable');
     if (room.players[index]) return socket.close(4003, 'Slot occupied');
     room.players[index] = socket;
     const player = index + 1;

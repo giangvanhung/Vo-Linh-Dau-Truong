@@ -64,9 +64,9 @@ export function createLanHost({ onRoom, onStatus, onClose, canPlay }) {
     clear();
   }
   return {
-    open() {
+    open({ solo = false } = {}) {
       close();
-      const connection = socket = lanSocket({ role: 'host' });
+      const connection = socket = lanSocket(solo ? { role: 'host', solo: '1' } : { role: 'host' });
       connection.onmessage = ({ data }) => {
         if (socket !== connection) return;
         const message = JSON.parse(data);
