@@ -2,42 +2,141 @@ import { catalog, equipmentStats, maxLevel, rarities, saveEquipment, sets, slots
   upgradeCost, upgradeEquipment, validLoadout } from '../game/equipment.js';
 
 const byId = id => document.getElementById('equipment-' + id);
+const itemIcons = { weapon: '⚔', armor: '⛨', ring: '◈', charm: '✦' };
+const itemImages = {
+  weapon: '/assets/effects/party-sword.png',
+  armor: '/assets/effects/party-shield.png',
+};
+
+function tile(slot, entry, label, detail, selected) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'equipment-tile';
+  button.dataset.tier = entry?.tier ?? '';
+  button.setAttribute('aria-pressed', String(selected));
+  const icon = document.createElement(entry && itemImages[slot] ? 'img' : 'span');
+  icon.className = 'equipment-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  if (icon.tagName === 'IMG') {
+    icon.alt = '';
+    icon.draggable = false;
+    icon.src = slot === 'weapon' && entry.set === 'tide' ? '/assets/effects/fox-spear.png' : itemImages[slot];
+  } else icon.textContent = itemIcons[slot];
+  const name = document.createElement('strong');
+  name.textContent = label;
+  const sub = document.createElement('small');
+  sub.textContent = detail;
+  button.append(icon, name, sub);
+  return button;
+}
 
 export function createEquipmentPanel(characters, state) {
   const fighter = byId('fighter');
-  const slot = byId('slot');
   const item = byId('item');
+  const worn = byId('worn');
+  const portrait = byId('portrait');
   const equip = byId('equip');
   const upgrade = byId('upgrade');
   const notice = byId('notice');
   for (const [id, character] of Object.entries(characters)) fighter.add(new Option(character.name, id));
-  for (const [id, label] of Object.entries(slots)) slot.add(new Option(label, id));
+  let slot = 'weapon';
+  let selected = '';
+  let draggedItem = null;
   const currentLoadout = () => validLoadout(state.inventory, state.loadouts[fighter.value]);
   const itemLabel = id => catalog[id].name + ' · ' + rarities[catalog[id].tier] + ' · +' + (state.inventory[id] - 1);
 
-  function fillItems(selected = currentLoadout()[slot.value] ?? '') {
-    item.options.length = 0;
-    item.add(new Option('Để trống', ''));
-    for (const [id, entry] of Object.entries(catalog)) {
-      if (entry.slot === slot.value && state.inventory[id]) item.add(new Option(itemLabel(id), id));
+  function applySelection() {
+    if ((currentLoadout()[slot] ?? '') === selected) return;
+    state.loadouts[fighter.value] = validLoadout(state.inventory, { ...currentLoadout(), [slot]: selected });
+    const saved = saveEquipment(state);
+    render();
+    notice.textContent = saved ? 'Đã lưu bộ trang bị.' : 'Trang bị chỉ được lưu trong phiên này.';
+    item.querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
+  }
+
+  function renderTiles(loadout) {
+    const active = document.activeElement;
+    const focused = worn.contains(active) || item.contains(active) ? active.dataset.gearFocus : null;
+    worn.replaceChildren();
+    item.replaceChildren();
+    for (const [id, label] of Object.entries(slots)) {
+      const entry = catalog[loadout[id]];
+      const button = tile(id, entry, label, entry?.name ?? 'Ô trống', id === slot);
+      button.dataset.gearFocus = 'slot-' + id;
+      button.addEventListener('click', () => {
+        slot = id;
+        refresh();
+      });
+      const acceptsDrop = () => draggedItem?.fighterId === fighter.value && catalog[draggedItem.id]?.slot === id;
+      button.addEventListener('dragover', event => {
+        if (!acceptsDrop()) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+        button.classList.add('equipment-drop-target');
+      });
+      button.addEventListener('dragleave', event => {
+        if (!button.contains(event.relatedTarget)) button.classList.remove('equipment-drop-target');
+      });
+      button.addEventListener('drop', event => {
+        if (!acceptsDrop()) return;
+        event.preventDefault();
+        slot = id;
+        selected = draggedItem.id;
+        draggedItem = null;
+        button.classList.remove('equipment-drop-target');
+        applySelection();
+      });
+      worn.append(button);
     }
-    item.value = selected;
+    const items = Object.values(catalog)
+      .filter(entry => entry.slot === slot && state.inventory[entry.id])
+      .sort((a, b) => b.tier - a.tier);
+    for (const entry of [...items, null]) {
+      const id = entry?.id ?? '';
+      const detail = entry ? (loadout[slot] === id ? 'Đang mặc · ' : '') + '+' + (state.inventory[id] - 1) : 'Tháo trang bị';
+      const button = tile(slot, entry, entry?.name ?? 'Ô trống', detail, selected === id);
+      button.dataset.gearFocus = 'item-' + id;
+      if (entry) {
+        button.draggable = true;
+        button.addEventListener('dragstart', event => {
+          if (!event.dataTransfer) return;
+          draggedItem = { id, fighterId: fighter.value };
+          event.dataTransfer.setData('text/plain', entry.name);
+          event.dataTransfer.effectAllowed = 'copy';
+        });
+        button.addEventListener('dragend', () => {
+          draggedItem = null;
+          for (const target of worn.children) target.classList.remove('equipment-drop-target');
+        });
+      }
+      button.addEventListener('click', () => {
+        selected = id;
+        notice.textContent = '';
+        render();
+      });
+      item.append(button);
+    }
+    if (focused) [...worn.children, ...item.children].find(button => button.dataset.gearFocus === focused)
+      ?.focus({ preventScroll: true });
   }
 
   function render() {
     const loadout = currentLoadout();
-    const next = { ...loadout, [slot.value]: item.value };
+    renderTiles(loadout);
+    const next = { ...loadout, [slot]: selected };
     const current = equipmentStats(state, loadout);
     const after = equipmentStats(state, next);
-    const candidate = catalog[item.value];
-    const level = state.inventory[item.value] ?? 0;
+    const candidate = catalog[selected];
+    const level = state.inventory[selected] ?? 0;
     const canUpgrade = Boolean(candidate) && level < maxLevel;
     const cost = canUpgrade ? upgradeCost(candidate, level) : null;
     const improved = canUpgrade
-      ? equipmentStats({ inventory: { ...state.inventory, [item.value]: level + 1 } }, next).stats : null;
-    byId('wallet').textContent = state.gold + ' gold · ' + state.material + ' nguyên liệu · ' + state.wins + ' trận thắng PvE';
-    byId('worn').textContent = Object.entries(slots).map(([id, label]) =>
-      label + ' ' + (loadout[id] ? itemLabel(loadout[id]) : 'trống')).join(' / ');
+      ? equipmentStats({ inventory: { ...state.inventory, [selected]: level + 1 } }, next).stats : null;
+    byId('wallet').textContent = state.gold + ' vàng · ' + state.material + ' nguyên liệu · ' + state.wins + ' trận thắng';
+    byId('inventory-title').textContent = 'Kho · ' + slots[slot];
+    byId('selection').textContent = candidate?.name ?? 'Ô ' + slots[slot].toLowerCase() + ' trống';
+    byId('rarity').textContent = candidate ? rarities[candidate.tier] + ' · +' + (level - 1) : '';
+    byId('rarity').dataset.tier = candidate?.tier ?? '';
     const setLabel = counts => Object.entries(sets).map(([id, set]) => {
       const count = counts[id];
       return set.name + ' ' + count + '/4' + (count >= 4 ? ' (mốc 2 + 4)' : count >= 2 ? ' (mốc 2)' : '');
@@ -53,40 +152,39 @@ export function createEquipmentPanel(characters, state) {
       heading.scope = 'row';
       heading.textContent = label;
       row.append(heading);
-      for (const value of [current.stats[stat], after.stats[stat], improved?.[stat]]) {
+      const values = [current.stats[stat], after.stats[stat], improved?.[stat]];
+      for (const [index, value] of values.entries()) {
         const cell = document.createElement('td');
         cell.textContent = value === undefined ? '—' : '+' + value + (stat === 'hp' ? '' : '%');
+        if (index > 0 && value !== undefined) {
+          if (value > values[index - 1]) cell.className = 'equipment-gain';
+          if (value < values[index - 1]) cell.className = 'equipment-loss';
+        }
         row.append(cell);
       }
       table.append(row);
     }
-    equip.disabled = (loadout[slot.value] ?? '') === item.value;
-    equip.textContent = item.value ? 'Trang bị' : 'Tháo';
+    equip.disabled = (loadout[slot] ?? '') === selected;
+    equip.textContent = selected ? 'Trang bị' : 'Tháo';
     upgrade.disabled = !cost || cost.gold > state.gold || cost.material > state.material;
-    upgrade.textContent = cost ? 'Nâng cấp · ' + cost.gold + ' gold, ' + cost.material + ' NL'
+    upgrade.textContent = cost ? 'Nâng cấp · ' + cost.gold + ' vàng, ' + cost.material + ' NL'
       : candidate ? 'Đã tối đa +4' : 'Nâng cấp';
   }
 
-  function refresh(selected) {
+  function refresh() {
     notice.textContent = '';
-    fillItems(selected);
+    selected = currentLoadout()[slot] ?? '';
+    portrait.src = '/assets/characters/' + fighter.value + '/avatar.png';
     render();
   }
   fighter.addEventListener('change', () => refresh());
-  slot.addEventListener('change', () => refresh());
-  item.addEventListener('change', () => { notice.textContent = ''; render(); });
-  equip.addEventListener('click', () => {
-    state.loadouts[fighter.value] = validLoadout(state.inventory, { ...currentLoadout(), [slot.value]: item.value });
-    const saved = saveEquipment(state);
-    render();
-    notice.textContent = saved ? 'Đã lưu bộ trang bị.' : 'Trang bị chỉ được lưu trong phiên này.';
-  });
+  equip.addEventListener('click', applySelection);
   upgrade.addEventListener('click', () => {
-    const selected = item.value;
     if (!upgradeEquipment(state, selected)) return;
     const saved = saveEquipment(state);
-    refresh(selected);
+    render();
     notice.textContent = saved ? 'Đã nâng ' + itemLabel(selected) + '.' : 'Nâng cấp chỉ được lưu trong phiên này.';
+    if (upgrade.disabled) item.querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
   });
   return () => refresh();
 }

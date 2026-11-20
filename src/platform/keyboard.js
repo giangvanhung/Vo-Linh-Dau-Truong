@@ -7,6 +7,10 @@ export const bindingLabels = {
   q:'Lướt', r:'Lộn né', f:'Tụ khí', g:'Tiến hóa', u:'Chiêu gần', i:'Chiêu xa', o:'Tuyệt kỹ', t:'Thoát combo',
 };
 const legacyArrows = { 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown' };
+export const ambiguousCompositionKey = event =>
+  (event.isComposing || event.keyCode === 229 || event.key === 'Process')
+  && (!event.code || event.code === 'Unidentified');
+
 export function keyCode(event) {
   if (event.code && event.code !== 'Unidentified') return event.code;
   if (event.keyCode >= 65 && event.keyCode <= 90) return 'Key' + String.fromCharCode(event.keyCode);
@@ -26,8 +30,9 @@ export function keyLabel(code) {
 const attackKeys = { j: 'light', k: 'heavy', l: 'kick', u: 'closeSkill', i: 'rangedSkill', o: 'ultimate' };
 const movementAliases = { ArrowLeft: 'a', ArrowRight: 'd', ArrowUp: 'w', ArrowDown: 's' };
 const gameKeys = new Set(['a', 'd', 'w', 's', 'p', 'q', 'r', 't', 'f', 'g', ...Object.keys(attackKeys)]);
+const continuousKeys = new Set(['a', 'd', 's', 'p', 'f']);
 
-export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, keyFor, allowArrows = () => true }) {
+export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, onCompositionIssue, keyFor, allowArrows = () => true }) {
   let queuedAttack = null, queuedAction = null, queuedJump = false;
   let downPressed = false;
   const heldInputs = new Map();
@@ -56,14 +61,19 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
       if (!event.repeat) onPause();
       return;
     }
-    if (event.isComposing || event.keyCode === 229 || !canPlay()) return;
+    if (!canPlay() || event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.target?.closest?.('select, input, textarea, [contenteditable="true"]')) return;
+    if (ambiguousCompositionKey(event)) {
+      if (!event.repeat) onCompositionIssue?.();
+      return;
+    }
     const key = gameKey(event);
-    if (!gameKeys.has(key) || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (!gameKeys.has(key)) return;
     event.preventDefault();
     const input = keyCode(event) ?? key;
-    if (event.repeat || heldInputs.has(input)) return;
+    if (heldInputs.has(input) || (event.repeat && !continuousKeys.has(key))) return;
     heldInputs.set(input, key);
+    if (event.repeat) return;
     onInput?.(keyFor ? (key === 'q' && event.shiftKey ? 'Shift+' : '') + keyLabel(keyCode(event)) : key === 'q' && event.shiftKey ? 'Shift+Q' : (event.key?.startsWith('Arrow')
       ? { a: '←', d: '→', w: '↑', s: '↓' }[key] : key.toUpperCase()));
     if (key === 'w') queuedJump = true;
@@ -76,7 +86,8 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
   });
   window.addEventListener('keyup', event => {
     if (heldInputs.delete(keyCode(event))) return;
-    if (event.isComposing || event.keyCode === 229) {
+    if (ambiguousCompositionKey(event)) {
+      if (canPlay() && heldInputs.size) onCompositionIssue?.();
       clearInputs();
       return;
     }
@@ -105,7 +116,6 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, k
 
   window.addEventListener('blur', clearInputs);
   window.addEventListener('pagehide', clearInputs);
-  window.addEventListener('compositionstart', clearInputs, { capture: true });
   document.addEventListener('focusin', event => {
     if (event.target?.closest?.('select, input, textarea, [contenteditable="true"]')) clearInputs();
   });

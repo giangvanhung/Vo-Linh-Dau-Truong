@@ -1,7 +1,7 @@
 import { enableMenuNavigation } from './menu-navigation.js';
 import { createEquipmentPanel } from './equipment-panel.js';
 
-import { assignable, bindingLabels, defaultBindings, keyCode, keyLabel } from '../platform/keyboard.js';
+import { ambiguousCompositionKey, assignable, bindingLabels, defaultBindings, keyCode, keyLabel } from '../platform/keyboard.js';
 import { musicChoices, roundFormats } from '../platform/settings.js';
 
 const byId = id => document.getElementById(id);
@@ -175,7 +175,7 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
     if (!pendingBinding) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (event.repeat || event.isComposing || event.keyCode === 229) return;
+    if (event.repeat || ambiguousCompositionKey(event)) return;
     const { side, action } = pendingBinding;
     const code = keyCode(event);
     if (code === 'Escape') {

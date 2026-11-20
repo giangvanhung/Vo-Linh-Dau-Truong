@@ -97,7 +97,7 @@ export function createCombatEffects(ctx, images) {
       ctx.drawImage(shield, -44, -fighter.hurtbox.height * .68 - height / 2, width, height);
       ctx.restore();
     }
-    if (!attack || attack.projectile || (!fighter.skills[attack.id] && !attack.pickupWeapon && !attack.showArc)) return;
+    if (!attack || attack.projectile || attack.pickupWeapon || (!fighter.skills[attack.id] && !attack.showArc)) return;
     const pulse = attack.pulses?.some(({from, to}) => attack.elapsed - attack.startup >= from && attack.elapsed - attack.startup < to);
     const active = fighter.attackActive && (!attack.pulses || pulse);
     const warning = attack.elapsed < attack.startup && attack.elapsed >= attack.startup - 6;

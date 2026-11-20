@@ -12,6 +12,9 @@ export function createArenaRenderer(canvas, config) {
   const ctx = canvas.getContext('2d');
   const drawBackground = createStageBackground(document.getElementById('arena-background'));
   const w = canvas.width, h = canvas.height;
+  // Leave room for wide attack poses and evolved bodies beyond the arena walls.
+  const wallClearance = 128;
+  const viewScale = w / (w + 2 * wallClearance);
 
   const drawSprite = createSpriteRenderer(ctx, config.characters);
   const images = new Map();
@@ -47,7 +50,7 @@ export function createArenaRenderer(canvas, config) {
     const floor = canvas.parentElement.offsetTop + (displayHeight - h * scale) / 2 + ground * scale;
     drawBackground(stage, floor, center / w);
     ctx.save();
-    applyShake(shake, screenEffect);
+    applyArenaView(ground, shake, screenEffect);
     drawTerrain(stage, stageFrame, w, ground);
     if (ball) drawBall(ball, ground);
     if (drop) {
@@ -165,7 +168,7 @@ export function createArenaRenderer(canvas, config) {
     }
     if (debug) {
       ctx.save();
-      applyShake(shake, screenEffect);
+      applyArenaView(ground, shake, screenEffect);
       drawCollisionBoxes(fighters, projectiles, ground);
       ctx.restore();
     }
@@ -195,7 +198,9 @@ export function createArenaRenderer(canvas, config) {
     ctx.restore();
   }
 
-  function applyShake(shake, screenEffect) {
+  function applyArenaView(ground, shake, screenEffect) {
+    ctx.translate((1 - viewScale) * w / 2, (1 - viewScale) * ground);
+    ctx.scale(viewScale, viewScale);
     if (shake) ctx.translate(Math.sin(shake * 180) * shake * 25, 0);
     if (screenEffect && screenEffect.elapsed < screenEffect.shakeSeconds) {
       const remaining = screenEffect.shakeSeconds - screenEffect.elapsed;
@@ -369,7 +374,7 @@ export function createArenaRenderer(canvas, config) {
 
     const age = fighter.awakeningDuration - fighter.awakeningFrames;
     const blend = Math.min(1, age / 14, fighter.awakeningFrames / 18);
-    const { body, color = '#ffcc53', scale = 1, overlay, spriteEdgePadding = 0 } = fighter.evolution;
+    const { body, color = '#ffcc53', scale = 1, overlay } = fighter.evolution;
     const size = 1 + blend * (scale - 1);
     const feet = ground + fighter.y;
     const aura = fighter.awakeningLevel === 2 && images.get(advancedAura);
@@ -384,9 +389,7 @@ export function createArenaRenderer(canvas, config) {
     }
     if (overlay?.behind) drawEvolutionOverlay(fighter, ground, time, blend, overlay);
     ctx.save();
-    const padding = Math.min(w / 2, spriteEdgePadding * (fighter.sprite?.displaySize ?? 0) * size);
-    const spriteX = padding ? Math.max(padding, Math.min(w - padding, fighter.x)) : fighter.x;
-    ctx.translate(spriteX, feet);
+    ctx.translate(fighter.x, feet);
     ctx.scale(size, size);
     ctx.translate(-fighter.x, -feet);
     drawFighter(fighter, ground, time);

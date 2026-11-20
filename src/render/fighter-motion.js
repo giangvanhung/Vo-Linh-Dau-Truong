@@ -32,6 +32,14 @@ export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
     const tension = clamp(fighter.chargeFrames / 18);
     ctx.scale(1 + tension * .045, 1 - tension * .055);
   } else if (name !== 'hit' && name !== 'ko') {
+    const pickup = fighter.attack?.pickupWeapon;
+    if (pickup) {
+      const motion = strikePose(fighter.attack);
+      const age = fighter.attack.elapsed - fighter.attack.startup;
+      const recoil = pickup === 'blaster' && age >= 0 ? Math.max(0, 1 - age / 8) : 0;
+      ctx.transform(1, 0, -.16 * motion + .12 * recoil, 1 - (pickup === 'broom' ? .13 : .04) * Math.max(0, motion), 0, 0);
+      return;
+    }
     const motion = fighter.attack ? strikePose(fighter.attack) : 0;
     const rear = fighter.attack?.limbSide === 'right';
     const twist = rear ? (still ? .22 : .11) : (still ? .15 : .045);

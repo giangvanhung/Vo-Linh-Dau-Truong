@@ -1,3 +1,5 @@
+import { overlapsSurface } from './stages.js';
+
 export const gear = {
   shield: { label: 'Giáp hộ vệ', color: '#63bac0', image: '/assets/effects/party-shield.png' },
   heal: { label: 'Hồi máu', color: '#a5d48a', symbol: '+' },
@@ -13,20 +15,32 @@ export const gear = {
 const crateDrops = Object.keys(gear);
 
 export function createPickups(random = Math.random) {
+  let enabled = false;
   let drop = null;
-  let nextDrop = 300;
+  let nextDrop = 180;
+  let expiresAt = 0;
   return {
     get drop() { return drop; },
-    reset() {
+    reset(itemsEnabled) {
+      enabled = itemsEnabled === true;
       drop = null;
-      nextDrop = 300;
+      nextDrop = 180;
     },
-    update(fighters, frame, worldWidth) {
+    update(fighters, frame, { width, platforms = [] }) {
+      if (!enabled) return null;
+      if (drop && frame >= expiresAt) {
+        drop = null;
+        nextDrop = frame + 120;
+      }
       if (!drop && frame >= nextDrop) {
-        drop = { x: worldWidth * (.24 + random() * .52), y: -330 };
+        const x = width * (.24 + random() * .52);
+        const surface = platforms.reduce((top, platform) =>
+          overlapsSurface(x, width, platform.range) ? Math.min(top, platform.y) : top, 0);
+        drop = { x, y: Math.min(-330, surface - 100), restY: surface - 14 };
+        expiresAt = frame + 720;
       }
       if (!drop) return null;
-      drop.y = Math.min(-14, drop.y + 4);
+      drop.y = Math.min(drop.restY, drop.y + 4);
       const fighter = fighters.filter(f => f.hp > 0 && Math.abs(f.x - drop.x) < 32
         && Math.abs(f.y - drop.y + 22) < 42)
         .sort((a, b) => Math.abs(a.x - drop.x) - Math.abs(b.x - drop.x))[0];
@@ -46,16 +60,17 @@ export function createPickups(random = Math.random) {
   };
 }
 
-export function equippedHeavy(fighter) {
+export function equippedAttack(fighter, action) {
+  if (action !== 'light' && action !== 'heavy') return null;
   const kind = fighter.pickupWeapon;
   if (!fighter.weaponUses || !kind) return null;
   const { label, color, swing } = gear[kind];
   const common = { label, color, pickupWeapon: kind, damage: 15, startup: 15, recovery: 25,
     hitstun: 18, knockback: 230, hitstop: 3, guardDamage: 23, cancelInto: [],
     effect: { color, particles: 13, trailSeconds: .14 } };
-  if (kind === 'blaster') return { ...common, active: 1, level: 'mid',
+  if (kind === 'blaster') return { ...common, animation: 'skill_2', active: 1, level: 'mid',
     projectile: { color, shape: 'bolt', speed: 730, width: 54, height: 22, yOffset: 60, lifetimeFrames: 74 } };
   const { low, near = 5, far = 108, ...stats } = swing ?? {};
-  return { ...common, ...stats, active: 6, level: low ? 'low' : 'mid',
+  return { ...common, ...stats, animation: 'heavy_punch', active: 6, level: low ? 'low' : 'mid',
     limbBoxes: [{ near, far, top: low ? 40 : 90, height: low ? 33 : 53 }] };
 }

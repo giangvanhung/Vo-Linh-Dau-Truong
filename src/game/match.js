@@ -13,7 +13,7 @@ import { applyStageEffects, stageForMatch } from './stages.js';
 import { TrainingSession } from './training.js';
 import { superAttack } from './super-motion.js';
 import { applyControls } from './fighter-controls.js';
-import { createPickups, equippedHeavy, gear } from './pickups.js';
+import { createPickups, equippedAttack, gear } from './pickups.js';
 import { createStageBall, updateStageBall } from './stage-ball.js';
 import { awardEquipment, equipFighter, loadEquipment, rarities, saveEquipment } from './equipment.js';
 
@@ -49,7 +49,7 @@ export function startGame(config) {
   let hung, mai, phase = 'menu', seconds = roundLength, winsHung = 0, winsMai = 0, round = 1;
   let playerId = 'hung', opponentId = 'mai', practice = false, lan = false, pausedPhase;
   let phaseTime = 0, nextRound = false;
-  let lastTime, accumulator = 0, toastClock = 0;
+  let lastTime, accumulator = 0, toastClock = 0, lastCompositionHint = -Infinity;
   let difficulty = 'normal', cpu;
   let bestOf = 3, damageHung = 0, damageMai = 0;
   let localMode = '', teamCpuIds = [], activePlayer = 0, activeCpu = 0;
@@ -85,7 +85,7 @@ export function startGame(config) {
     seconds = roundLength;
     stageFrame = 0;
     ball = createStageBall(stage, world.width);
-    pickups.reset();
+    pickups.reset(partyItems);
     hitstop = shake = toastClock = 0;
     clearInputs();
     cpu = new CpuController(difficulty, config);
@@ -130,6 +130,7 @@ export function startGame(config) {
     phase = 'menu';
     practice = lan = false;
     localMode = '';
+    partyItems = false;
     bestOf = 3;
     soloLan = false;
     roomReady = false;
@@ -348,10 +349,18 @@ export function startGame(config) {
     return settings.bindings[0][arrowAction] === defaultBindings[0][arrowAction] ? arrowAction : undefined;
   }
 
+  function showCompositionHint() {
+    const now = performance.now();
+    if (now - lastCompositionHint < 12000) return;
+    lastCompositionHint = now;
+    toast('Bộ gõ có thể đang chặn phím. Nếu dùng UniKey, hãy chuyển sang E.', 5);
+  }
+
   const keyboard = createKeyboard({
     canPlay: () => phase === 'fight',
     canPause: () => ['fight', 'countdown', 'paused'].includes(phase),
     onPause: togglePause,
+    onCompositionIssue: showCompositionHint,
     keyFor: event => boundAction(event, 0),
     onInput: label => { if (canTrain()) training.noteInput(label); },
     onClear: () => {
@@ -364,6 +373,7 @@ export function startGame(config) {
   const keyboardP2 = createKeyboard({
     canPlay: () => (lan || localMode) && phase === 'fight',
     canPause: () => false,
+    onCompositionIssue: showCompositionHint,
     keyFor: event => boundAction(event, 1),
     onClear: () => {
       mai.crouching = false;
@@ -381,7 +391,7 @@ export function startGame(config) {
 
   function useAttack(fighter, target, id) {
     const skill = id === 'motionSuper' ? superAttack : fighter.skillFor(id);
-    const equipment = id === 'heavy' ? equippedHeavy(fighter) : null;
+    const equipment = equippedAttack(fighter, id);
     const started = fighter.startAttack(id, equipment ?? skill ?? fighter.attacks[id], target);
     if (started && equipment) {
       fighter.weaponUses--;
@@ -550,7 +560,7 @@ export function startGame(config) {
     ].filter(Boolean);
     const hits = contacts.map(applyHit);
     hits.forEach(hitEffects);
-    const pickup = partyItems && pickups.update([hung, mai], stageFrame, world.width);
+    const pickup = pickups.update([hung, mai], stageFrame, world);
     if (pickup) {
       const { label, color } = gear[pickup.kind];
       toast(pickup.fighter.name + ' · ' + label.toUpperCase());
