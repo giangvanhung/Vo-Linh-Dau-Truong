@@ -1,5 +1,5 @@
 import { weaponMotion } from './weapon-motion.js';
-import { strikePose } from './fighter-motion.js';
+import { overheadChopPose, strikePose } from './fighter-motion.js';
 
 // Each outline uses the original artwork scaled to 96 px wide.
 // The first point is the shoulder or hip and serves as the rotation pivot.
@@ -47,14 +47,171 @@ function trace(ctx, points) {
 }
 
 const hungRearArm = [[34,39],[30,39],[27,43],[24,50],[24,55],[29,59],[45,59],[51,55],[51,50],[47,47],[39,49],[35,50]];
+const hungFrontArm = [[59,40],[66,35],[73,34],[83,35],[85,42],[81,49],[72,49],[66,47]];
+const hungRearLeg = [[44,70],[35,70],[29,80],[24,88],[25,96],[19,106],[16,113],[17,116],[34,116],[35,111],[36,99],[42,91],[49,80]];
+const hungFrontLeg = [[55,71],[49,80],[56,92],[66,98],[70,111],[70,116],[88,116],[89,112],[80,107],[80,94],[74,82],[66,74]];
 
-export function drawHungRearPunch(ctx, sheet, attack, scale, drawWeapon) {
+export function drawHungOverheadChop(ctx, sheet, attack, scale, drawWeapon, adorn) {
+  const { lift, drive } = overheadChopPose(attack);
+  const drawCell = () => ctx.drawImage(sheet, 0, 0, 128, 128, 0, 0, 128, 128);
+  const front = [76 - lift * 19 + drive * 15, 42 - lift * 21 + drive * 25];
+  const rear = [front[0] - 9, front[1] + 5];
+  ctx.save();
+  // Wind back onto the rear leg, then shift the shoulders and weight over the front foot.
+  ctx.transform(1 + drive * .08, 0, lift * .21 - drive * .29, 1 + lift * .055 - drive * .16, 0, 0);
+  ctx.save();
+  ctx.translate(-53 * scale, -116 * scale);
+  ctx.scale(scale, scale);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, 128, 128);
+  trace(ctx, hungRearArm);
+  trace(ctx, hungFrontArm);
+  ctx.clip('evenodd');
+  drawCell();
+  ctx.restore();
+  const hands = [
+    { arm: hungRearArm, from: [45, 53], to: rear },
+    { arm: hungFrontArm, from: [76, 42], to: front },
+  ];
+  for (const { arm, from, to } of hands) {
+    const [x, y] = arm[0];
+    const rest = Math.atan2(from[1] - y, from[0] - x);
+    const reach = Math.hypot(to[0] - x, to[1] - y) / Math.hypot(from[0] - x, from[1] - y);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.atan2(to[1] - y, to[0] - x));
+    ctx.scale(reach, 1);
+    ctx.rotate(-rest);
+    ctx.translate(-x, -y);
+    ctx.beginPath();
+    trace(ctx, arm);
+    ctx.clip();
+    drawCell();
+    ctx.restore();
+  }
+  ctx.restore();
+  const local = ([x, y]) => [(x - 53) * scale, (y - 116) * scale];
+  drawWeapon(local(front));
+  adorn(local(front), local(rear));
+  ctx.restore();
+}
+
+export function drawHungStride(ctx, sheet, fighter, scale, drawWeapon, adorn, movementPose) {
+  const jump = fighter.runJump;
+  const low = fighter.crouching && !jump;
+  const jumpFrames = movementPose?.jumpFrames ?? jump?.frames ?? 0;
+  const cycleLength = low ? 34 : 72;
+  const cycles = (jump?.stride ?? movementPose?.stride ?? fighter.walkDistance) / cycleLength;
+  const phase = cycles * 2 * Math.PI;
+  const stride = Math.cos(phase);
+  const armSwing = low ? .16 : .28;
+  const blend = jump ? Math.min(1, jumpFrames / 7, Math.max(0, (600 - fighter.vy) / 220)) : 0;
+  const tuck = blend * blend * (3 - 2 * blend);
+  const bodyBob = Math.cos(phase * 2 - .8) * (low ? .65 : 1.3) * (1 - tuck);
+  const lean = -.084 + .018 * stride + .05 * tuck;
+  const legs = [
+    { outline: hungRearLeg, foot: [25, 115], offset: .5, tuckAngle: .39 },
+    { outline: hungFrontLeg, foot: [81, 115], offset: 0, tuckAngle: -.89 },
+  ].map(({ outline, foot, offset, tuckAngle }) => {
+    const cycle = ((cycles + offset) % 1 + 1) % 1;
+    const support = .62;
+    const step = cycleLength * support / 2;
+    const swing = Math.max(0, (cycle - support) / (1 - support));
+    const forward = cycle < support ? step - cycleLength * cycle : -step + step * 2 * swing * swing * (3 - 2 * swing);
+    const clearance = Math.sin(Math.PI * swing) * (low ? 5 : 7);
+    const [hipX, hipY] = outline[0];
+    const [footX, footY] = foot;
+    const rest = Math.atan2(footY - hipY, footX - hipX);
+    const dx = 53 + forward + lean * (clearance + bodyBob) - hipX;
+    const dy = 116 - clearance - bodyBob - hipY;
+    return {
+      outline,
+      angle: (Math.atan2(dy, dx) - rest) * (1 - tuck) + tuckAngle * tuck,
+      rest,
+      length: Math.hypot(dx, dy) / Math.hypot(footX - hipX, footY - hipY) * (1 - tuck) + tuck,
+    };
+  });
+  const arms = [
+    { outline: hungRearArm, angle: armSwing * stride * (1 - tuck) - .35 * tuck, fist: [45, 53] },
+    { outline: hungFrontArm, angle: -armSwing * stride * (1 - tuck) + .28 * tuck, fist: [76, 42] },
+  ];
+  const limbs = [...legs, ...arms];
+  const position = ({ outline: [[x, y]], angle }, [px, py]) => [
+    x + (px - x) * Math.cos(angle) - (py - y) * Math.sin(angle),
+    y + (px - x) * Math.sin(angle) + (py - y) * Math.cos(angle),
+  ];
+  const drawCell = () => ctx.drawImage(sheet, 0, 0, 128, 128, 0, 0, 128, 128);
+  ctx.save();
+  if (low) ctx.scale(1, .67 - Math.abs(stride) * .025);
+  ctx.transform(1, 0, lean, 1, 0, bodyBob * scale);
+  ctx.save();
+  ctx.translate(-53 * scale, -116 * scale);
+  ctx.scale(scale, scale);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, 128, 128);
+  for (const limb of limbs) trace(ctx, limb.outline);
+  ctx.clip('evenodd');
+  drawCell();
+  ctx.restore();
+  for (const { outline, angle, rest = 0, length = 1 } of limbs) {
+    const [x, y] = outline[0];
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle + rest);
+    ctx.scale(length, 1);
+    ctx.rotate(-rest);
+    ctx.translate(-x, -y);
+    ctx.beginPath();
+    trace(ctx, outline);
+    ctx.clip();
+    drawCell();
+    ctx.restore();
+  }
+  ctx.restore();
+  const [rear, front] = arms.map(arm => {
+    const [x, y] = position(arm, arm.fist);
+    return [(x - 53) * scale, (y - 116) * scale];
+  });
+  drawWeapon(front);
+  adorn(front, rear);
+  ctx.restore();
+}
+
+export function drawHungAlternateStrike(ctx, sheet, attack, scale, drawWeapon, adorn, plantLead = false) {
+  const low = attack.lowStance;
+  const sweep = attack.animation === 'sweep';
+  const kick = attack.id === 'kick';
+  const rear = attack.limbSide === 'right';
+  const limb = kick ? (rear ? hungRearLeg : hungFrontLeg) : rear ? hungRearArm : hungFrontArm;
+  const [endX, endY] = kick ? (rear ? [25, 111] : [81, 111]) : rear ? [45, 53] : [76, 42];
   const extension = strikePose(attack);
-  const angle = -.9 * extension;
-  const stretch = 1 + 2.25 * Math.max(0, extension);
-  const [px, py] = hungRearArm[0];
-  const rest = Math.atan2(53 - py, 45 - px);
-  const reach = Math.hypot(45 - px, 53 - py) * stretch;
+  const turningKick = kick && (!low || sweep);
+  const drive = Math.max(0, extension);
+  const windup = attack.elapsed < attack.startup ? Math.sin(Math.PI * attack.elapsed / attack.startup) : 0;
+  const supportLeg = rear || plantLead ? hungFrontLeg : hungRearLeg;
+  const [footX, footY] = rear || plantLead ? [81, 115] : [25, 115];
+  const [px, py] = limb[0];
+  const rest = Math.atan2(endY - py, endX - px);
+  const activeProgress = Math.max(0, Math.min(1, (attack.elapsed - attack.startup) / attack.active));
+  const strikeAngle = sweep ? .41 - .45 * activeProgress : low ? .26 : -.19 - .28 * activeProgress;
+  const angle = kick ? (strikeAngle - rest) * extension : (-.12 - rest) * extension;
+  const stretch = 1 + (kick ? .38 : rear ? 2.25 : 1.75) * Math.max(0, extension);
+  const reach = Math.hypot(endX - px, endY - py) * stretch;
+  ctx.save();
+  if (low) {
+    ctx.transform(1, 0, sweep ? -.22 * extension : -.06 * extension, sweep ? .56 : .64, 0, 0);
+  }
+  if (!kick || turningKick) {
+    const yaw = turningKick ? Math.sin(Math.PI * Math.min(1, attack.elapsed / attack.startup)) : windup;
+    const width = 1 - .24 * yaw + .09 * drive;
+    const lean = .24 * yaw - (rear ? .27 : .20) * drive;
+    const height = 1 - .055 * yaw;
+    const anchorX = plantLead ? (footX - 53) * scale : 0;
+    const anchorY = plantLead ? (footY - 116) * scale : 0;
+    ctx.transform(width, 0, lean, height, (1 - width) * anchorX - lean * anchorY, (1 - height) * anchorY);
+  }
   ctx.save();
   ctx.translate(-53 * scale, -116 * scale);
   ctx.scale(scale, scale);
@@ -62,24 +219,71 @@ export function drawHungRearPunch(ctx, sheet, attack, scale, drawWeapon) {
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, 128, 128);
-  trace(ctx, hungRearArm);
+  trace(ctx, limb);
+  if (!kick || turningKick) trace(ctx, supportLeg);
   ctx.clip('evenodd');
-  drawCell();
+  if (turningKick) {
+    const turn = Math.min(1, attack.elapsed / (attack.startup + attack.active * .25));
+    const yaw = Math.cos(turn * Math.PI * 2);
+    const bodyWidth = Math.sign(yaw) * (.22 + .78 * Math.abs(yaw));
+    const hipY = 72;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, hipY, 128, 128 - hipY);
+    ctx.clip();
+    drawCell();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(53, hipY);
+    ctx.rotate((sweep ? -.32 : -.24) * Math.max(0, extension) + .1 * Math.sin(turn * Math.PI * 2));
+    ctx.scale(bodyWidth, 1);
+    ctx.translate(-53, -hipY);
+    ctx.beginPath();
+    ctx.rect(0, 0, 128, hipY);
+    ctx.clip();
+    drawCell();
+    if (bodyWidth < 0) {
+      // A shaded back-facing beat makes the torso turn read even with a side-view atlas.
+      ctx.fillStyle = '#4e28296b';
+      ctx.beginPath();
+      ctx.ellipse(53, 52, 14, 13, 0, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    ctx.translate(53, 116);
+    ctx.scale(1 / scale, 1 / scale);
+    adorn(null);
+    ctx.restore();
+  } else drawCell();
   ctx.restore();
+  if (!kick || turningKick) {
+    // Rotate the supporting leg around its planted foot as the hips turn.
+    ctx.save();
+    ctx.translate(footX, footY);
+    ctx.rotate((rear ? -1 : 1) * (.18 * windup - .14 * drive));
+    ctx.translate(-footX, -footY);
+    ctx.beginPath();
+    trace(ctx, supportLeg);
+    ctx.clip();
+    drawCell();
+    ctx.restore();
+  }
   ctx.translate(px, py);
   ctx.rotate(rest + angle);
   ctx.scale(stretch, 1);
   ctx.rotate(-rest);
   ctx.translate(-px, -py);
   ctx.beginPath();
-  trace(ctx, hungRearArm);
+  trace(ctx, limb);
   ctx.clip();
   drawCell();
   ctx.restore();
-  drawWeapon([
+  const fist = !kick && [
     (px - 53 + Math.cos(rest + angle) * reach) * scale,
     (py - 116 + Math.sin(rest + angle) * reach) * scale,
-  ]);
+  ];
+  if (fist) drawWeapon(fist);
+  if (!turningKick) adorn(fist);
+  ctx.restore();
 }
 
 export function drawStillAttack(ctx, image, width, height, fighter, drawWeapon, cell = 0) {

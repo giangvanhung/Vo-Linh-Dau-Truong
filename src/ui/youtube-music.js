@@ -18,25 +18,39 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
   const byId = id => document.getElementById('youtube-music-' + id);
   const form = byId('form');
   const field = byId('link');
-  const status = byId('status');
+  const error = byId('error');
   const player = byId('player');
+  const details = byId('details');
+  const toggle = byId('toggle');
   const stopButton = byId('stop');
   const open = byId('open');
-  const dock = document.getElementById('youtube-music-dock');
-  const nowPlaying = document.getElementById('youtube-music-now-playing');
+  const dock = byId('dock');
+  let inMatch = false;
   if (settings.youtubeMusic) field.value = 'https://youtu.be/' + settings.youtubeMusic;
 
-  function stop(clearSavedLink = false) {
+  function setExpanded(expanded) {
+    if (!expanded && details.contains(document.activeElement)) toggle.focus({ preventScroll: true });
+    details.hidden = !expanded;
+    dock.classList.toggle('is-collapsed', !expanded);
+    toggle.setAttribute('aria-expanded', String(expanded));
+    toggle.textContent = expanded ? 'Thu gọn' : 'Hiện';
+    toggle.setAttribute('aria-label', expanded ? 'Thu gọn trình phát YouTube' : 'Hiện trình phát YouTube');
+  }
+
+  function setInMatch(active) {
+    if (active === inMatch) return;
+    inMatch = active;
+    dock.classList.toggle('in-match', inMatch);
+    setExpanded(!inMatch);
+  }
+
+  function stop() {
     player.replaceChildren();
-    player.hidden = stopButton.hidden = open.hidden = true;
     dock.classList.remove('is-playing');
-    status.textContent = '';
     setMusicPreview(false);
-    if (clearSavedLink) {
-      delete settings.youtubeMusic;
-      saveSettings();
-      field.value = '';
-    }
+    delete settings.youtubeMusic;
+    saveSettings();
+    field.value = '';
   }
 
   function play(id) {
@@ -48,12 +62,9 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
     iframe.referrerPolicy = 'strict-origin-when-cross-origin';
     iframe.src = `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&loop=1&playlist=${id}`;
     player.replaceChildren(iframe);
-    player.hidden = false;
-    stopButton.hidden = open.hidden = false;
     dock.classList.add('is-playing');
-    nowPlaying.textContent = 'Đang phát nhạc nền YouTube';
+    setExpanded(!inMatch);
     open.href = 'https://www.youtube.com/watch?v=' + id;
-    status.textContent = 'Nhạc tiếp tục phát khi chuyển màn hình. Nếu video chưa chạy, hãy bấm phát trong trình nghe.';
   }
 
   form.addEventListener('submit', event => {
@@ -61,27 +72,30 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
     const id = youtubeVideoId(field.value);
     if (!id) {
       field.setAttribute('aria-invalid', 'true');
-      status.textContent = 'Dán link của một video YouTube để tiếp tục.';
+      error.textContent = 'Dán link của một video YouTube để tiếp tục.';
+      error.hidden = false;
       field.focus();
       return;
     }
 
     field.removeAttribute('aria-invalid');
+    error.hidden = true;
     setMusicPreview(true);
     play(id);
   });
   field.addEventListener('input', () => {
     if (!field.hasAttribute('aria-invalid')) return;
     field.removeAttribute('aria-invalid');
-    status.textContent = '';
+    error.hidden = true;
   });
+  toggle.addEventListener('click', () => setExpanded(details.hidden));
   stopButton.addEventListener('click', () => {
-    stop(true);
-    field.focus();
+    stop();
+    if (field.closest('dialog')?.open) field.focus();
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) setMusicPreview(false);
   });
   if (settings.youtubeMusic) play(settings.youtubeMusic);
-  return { stop };
+  return { setInMatch };
 }

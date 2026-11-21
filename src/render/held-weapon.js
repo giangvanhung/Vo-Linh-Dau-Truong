@@ -1,6 +1,6 @@
 import { weaponMotion } from './weapon-motion.js';
 import { gear } from '../game/pickups.js';
-import { strikePose } from './fighter-motion.js';
+import { overheadChopPose, strikePose } from './fighter-motion.js';
 
 const pickupProfiles = {
   sword: { width: 78, tilt: -.7, windup: -1.25, follow: .92, tip: 61, gripX: .23, gripY: .78, axis: -.85 },
@@ -17,6 +17,9 @@ const pickupWeapons = {};
 for (const [kind, profile] of Object.entries(pickupProfiles)) {
   pickupWeapons[kind] = { ...gear[kind], ...profile, kind, pickup: true };
 }
+export const hungDaoPath = '/assets/effects/hung-dao.png';
+const overheadBlade = { ...pickupWeapons.sword, image: hungDaoPath, width: 110, tip: 77,
+  gripX: .29, gripY: .465, axis: -.086, tilt: -1.144, color: '#ffc66f' };
 const imageGrips = {
   '/assets/effects/party-sword.png': [.23, .78],
   '/assets/effects/fox-spear.png': [.43, .60],
@@ -24,6 +27,7 @@ const imageGrips = {
 };
 
 export function heldWeapon(fighter) {
+  if (fighter.attack?.visual === 'overheadBlade') return overheadBlade;
   if (fighter.attack?.mainWeapon) return fighter.weapon;
   if (fighter.attack?.thrownItem && fighter.attack.elapsed >= fighter.attack.startup) return null;
   const pickup = fighter.attack?.pickupWeapon ?? (fighter.weaponUses > 0 ? fighter.pickupWeapon : null);
@@ -32,12 +36,20 @@ export function heldWeapon(fighter) {
 
 function pickupAngle(weapon, attack, frame = attack?.elapsed ?? 0) {
   if (!attack) return weapon.tilt;
+  if (weapon === overheadBlade) {
+    const { lift, drive } = overheadChopPose({ ...attack, elapsed: frame });
+    return -1.23 - weapon.axis - lift * 1.34 + drive * 1.93;
+  }
   const extension = strikePose({ ...attack, elapsed: frame });
   const wind = Math.max(0, -extension);
   const reach = Math.max(0, extension);
   if (weapon.kind === 'blaster') {
     const motion = weaponMotion({ ...attack, elapsed: frame });
     return weapon.tilt * (1 - motion.amount) + (motion.angle - weapon.axis) * motion.amount;
+  }
+  if (['dogStaff', 'rattan', 'broom'].includes(weapon.kind)) {
+    const motion = weaponMotion({ ...attack, elapsed: frame });
+    return weapon.tilt * (1 - motion.amount) + motion.angle;
   }
   return weapon.tilt + (weapon.follow - weapon.tilt) * reach + weapon.windup * wind * 4;
 }
@@ -72,7 +84,9 @@ function drawPickupEffect(ctx, weapon, attack, sizeScale) {
   for (let sample = 0; sample <= 8; sample++) {
     const frame = Math.max(0, Math.min(attack.startup + attack.active, attack.elapsed - 8 + sample));
     const angle = pickupAngle(weapon, attack, frame) + (weapon.axis ?? 0);
-    ctx.lineTo(Math.cos(angle) * weapon.tip * sizeScale, Math.sin(angle) * weapon.tip * sizeScale);
+    const bend = weapon.kind === 'rattan' ? (8 - strikePose({ ...attack, elapsed: frame }) * 23) * .34 : 0;
+    ctx.lineTo((Math.cos(angle) * weapon.tip - Math.sin(angle) * bend) * sizeScale,
+      (Math.sin(angle) * weapon.tip + Math.cos(angle) * bend) * sizeScale);
   }
   ctx.strokeStyle = weapon.color;
   ctx.lineWidth = weapon.kind === 'sword' ? 10 : weapon.kind === 'rattan' ? 4 : 7;
@@ -86,10 +100,12 @@ export function drawHeldWeapon(ctx, images, fighter, [x, y], drawHand) {
   if (fighter.hp <= 0 || fighter.dash?.roll || fighter.attack?.unarmed) return;
   const weapon = heldWeapon(fighter);
   if (!weapon) return;
-  const image = weapon.image && images.get(weapon.image);
+  const fallback = weapon === overheadBlade && !images.get(hungDaoPath);
+  const art = fallback ? pickupWeapons.sword : weapon;
+  const image = art.image && images.get(art.image);
   if (!image && !weapon.swing && !weapon.kind) return;
   const attack = fighter.attack;
-  const swinging = attack && (weapon.pickup ? attack.pickupWeapon === weapon.kind
+  const swinging = attack && (weapon.pickup ? attack.pickupWeapon === weapon.kind || weapon === overheadBlade
     : attack.mainWeapon || ['heavy', 'closeSkill', 'ultimate'].includes(attack.id));
   const extension = swinging ? strikePose(attack) : 0;
   const scale = (fighter.sprite?.displaySize ?? 128) / 128;
@@ -100,20 +116,30 @@ export function drawHeldWeapon(ctx, images, fighter, [x, y], drawHand) {
     ctx.save();
     if (!weaponAttack?.projectile || weapon.kind === 'blaster') drawPickupEffect(ctx, weapon, weaponAttack, scale);
     ctx.restore();
-    ctx.rotate(pickupAngle(weapon, weaponAttack));
+    const fallbackAngle = fallback ? weapon.axis - art.axis : 0;
+    ctx.rotate(pickupAngle(weapon, weaponAttack) + fallbackAngle);
   } else {
     const sweep = { slash: 1.05, reverse: -1.4, thrust: .55, lift: -1.15 };
     const motion = swinging && weaponMotion(attack);
     const tilt = motion?.kind === 'thrust' ? -weapon.tilt * motion.amount
       : motion?.kind === 'cast' ? .84 * motion.amount : (motion?.angle ?? extension * (sweep[attack?.swing] ?? weapon.arc ?? .85));
     ctx.rotate((weapon.tilt ?? -.45) + tilt);
+    if (motion?.kind === 'thrust' && fighter.attackActive) {
+      const length = weapon.width * .6 * scale;
+      ctx.strokeStyle = '#edf8fcaa';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(length * .46, -2.5);
+      ctx.lineTo(length + 9, -2.5);
+      ctx.stroke();
+    }
   }
   ctx.scale(scale, scale);
   if (image) {
     const width = weapon.width;
     const height = width * image.height / image.width;
-    const [gripX, gripY] = imageGrips[weapon.image] ?? [.24, .76];
-    ctx.drawImage(image, -width * (weapon.gripX ?? gripX), -height * (weapon.gripY ?? gripY), width, height);
+    const [gripX, gripY] = imageGrips[art.image] ?? [.24, .76];
+    ctx.drawImage(image, -width * (art.gripX ?? gripX), -height * (art.gripY ?? gripY), width, height);
   } else {
     drawShape(ctx, weapon, extension);
   }
@@ -239,11 +265,14 @@ function drawShape(ctx, weapon, extension) {
     for (let x = 9; x < 27; x += 5) ctx.fillRect(x, -4, 2, 7);
     return;
   }
-  const handle = kind === 'pan' ? 29 : kind === 'rattan' ? 74 : kind === 'staff' ? 61 : 52;
+  const handle = kind === 'pan' ? 29 : kind === 'rattan' ? 74 : kind === 'staff' || kind === 'dogStaff' ? 61 : 52;
   ctx.lineWidth = kind === 'rattan' ? 3 : 5;
   ctx.beginPath();
   ctx.moveTo(kind === 'staff' || kind === 'dogStaff' ? -26 : -5, 0);
-  ctx.quadraticCurveTo(handle * .65, kind === 'rattan' ? 16 - extension * 39 : 0, handle, 0);
+  if (kind === 'rattan') {
+    const bend = 8 - extension * 23;
+    ctx.bezierCurveTo(handle * .34, bend * .55, handle * .78, -bend, handle, bend * .34);
+  } else ctx.lineTo(handle, 0);
   ctx.stroke();
   if (kind === 'pan' || kind === 'staff') {
     const pan = kind === 'pan';
@@ -261,6 +290,14 @@ function drawShape(ctx, weapon, extension) {
     ctx.lineTo(handle + 9, 12);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = '#986536';
+    ctx.lineWidth = 1;
+    for (let i = -4; i <= 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(handle - 10, i * .55);
+      ctx.quadraticCurveTo(handle, i * 1.45, handle + 10 + Math.abs(i) * Math.max(0, extension), i * 2.65);
+      ctx.stroke();
+    }
   } else if (kind === 'dogStaff') {
     ctx.strokeStyle = '#355e43';
     ctx.lineWidth = 2;

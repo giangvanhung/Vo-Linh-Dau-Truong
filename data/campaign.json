@@ -1,0 +1,122 @@
+[
+  {
+    "id": "roof",
+    "name": "Thử Thách Mái Nhà",
+    "opponent": "mai",
+    "stage": "rooftop",
+    "difficulty": "easy",
+    "bestOf": 1,
+    "seconds": 45,
+    "hazards": false,
+    "first": {
+      "gold": 65,
+      "material": 4,
+      "item": "dawn-armor-0",
+      "duplicateGold": 25
+    },
+    "replay": {
+      "gold": 15,
+      "material": 1
+    }
+  },
+  {
+    "id": "market",
+    "name": "Trận Đấu Chợ Đêm",
+    "opponent": "lam",
+    "stage": "market",
+    "difficulty": "easy",
+    "bestOf": 1,
+    "seconds": 50,
+    "hazards": false,
+    "first": {
+      "gold": 80,
+      "material": 5,
+      "item": "tide-boots-0",
+      "duplicateGold": 35
+    },
+    "replay": {
+      "gold": 18,
+      "material": 1
+    }
+  },
+  {
+    "id": "ice",
+    "name": "Bước Chân Trên Băng",
+    "opponent": "bang-nghi",
+    "stage": "ice",
+    "difficulty": "normal",
+    "bestOf": 1,
+    "seconds": 55,
+    "hazards": true,
+    "first": {
+      "gold": 105,
+      "material": 6,
+      "item": "tide-ring-1",
+      "duplicateGold": 45
+    },
+    "replay": {
+      "gold": 22,
+      "material": 2
+    }
+  },
+  {
+    "id": "forge",
+    "name": "Lò Rèn Rực Lửa",
+    "opponent": "robot",
+    "stage": "forge",
+    "difficulty": "normal",
+    "bestOf": 3,
+    "seconds": 50,
+    "hazards": false,
+    "first": {
+      "gold": 130,
+      "material": 7,
+      "item": "dawn-helmet-1",
+      "duplicateGold": 55
+    },
+    "replay": {
+      "gold": 26,
+      "material": 2
+    }
+  },
+  {
+    "id": "cloud",
+    "name": "Thủ Lĩnh Tầng Mây",
+    "opponent": "an-tin",
+    "stage": "cloud",
+    "difficulty": "hard",
+    "bestOf": 3,
+    "seconds": 55,
+    "hazards": true,
+    "first": {
+      "gold": 165,
+      "material": 8,
+      "item": "dawn-boots-2",
+      "duplicateGold": 65
+    },
+    "replay": {
+      "gold": 32,
+      "material": 2
+    }
+  },
+  {
+    "id": "dragon",
+    "name": "Trận Chiến Long Môn",
+    "opponent": "dragon",
+    "stage": "lava",
+    "difficulty": "hard",
+    "bestOf": 3,
+    "seconds": 60,
+    "hazards": true,
+    "first": {
+      "gold": 240,
+      "material": 12,
+      "item": "tide-armor-3",
+      "duplicateGold": 75
+    },
+    "replay": {
+      "gold": 45,
+      "material": 3
+    }
+  }
+]

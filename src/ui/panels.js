@@ -1,5 +1,6 @@
 import { enableMenuNavigation } from './menu-navigation.js';
 import { createEquipmentPanel } from './equipment-panel.js';
+import { choiceCard } from './roster-card.js';
 import { createYouTubeMusic } from './youtube-music.js';
 
 import { ambiguousCompositionKey, assignable, bindingLabels, defaultBindings, keyCode, keyLabel } from '../platform/keyboard.js';
@@ -12,38 +13,7 @@ function resolveChoice(id, options) {
   return id === 'random' ? options[Math.floor(Math.random() * options.length)] : id;
 }
 
-function choiceCard(group, id, name, image, checked, onSelect) {
-  const card = document.createElement('label');
-  card.className = 'roster-card';
-  const radio = document.createElement('input');
-  radio.type = 'radio';
-  radio.name = group;
-  radio.value = id;
-  radio.checked = checked;
-  card.classList.toggle('is-selected', checked);
-  radio.addEventListener('change', () => {
-    card.parentElement.querySelector('.is-selected')?.classList.remove('is-selected');
-    card.classList.add('is-selected');
-    onSelect(id);
-  });
-  const preview = document.createElement(image ? 'img' : 'span');
-  preview.className = 'roster-portrait';
-  if (image) {
-    preview.loading = 'lazy';
-    preview.decoding = 'async';
-    preview.src = image;
-    preview.alt = '';
-  } else {
-    preview.textContent = '?';
-    preview.setAttribute('aria-hidden', 'true');
-  }
-  const label = document.createElement('span');
-  label.textContent = name;
-  card.append(radio, preview, label);
-  return card;
-}
-
-export function createPanels({ characters, stages, combat, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile, setMusicPreview }) {
+export function createPanels({ characters, stages, combat, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, preloadFighter, saveSettings, setMusicFile, setMusicPreview }) {
   connectThemeSettings(settings, saveSettings);
   const stageWrap = byId('menu-panel').closest('.stage-wrap');
   const panels = [...stageWrap.querySelectorAll(':scope > .game-panel')];
@@ -82,10 +52,15 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   }
   enableMenuNavigation();
   const refreshEquipment = createEquipmentPanel(characters, equipment, combat);
-  byId('equipment-button').addEventListener('click', () => {
-    refreshEquipment();
+  let equipmentReturn = returnToMenu;
+  function showEquipment(fighterId, onReturn = returnToMenu) {
+    equipmentReturn = onReturn;
+    byId('equipment-back').textContent = onReturn === returnToMenu ? 'Về menu' : 'Về Vượt Ải';
+    refreshEquipment(fighterId);
     show('equipment');
-  });
+  }
+  byId('equipment-button').addEventListener('click', () => showEquipment());
+  byId('equipment-back').addEventListener('click', () => equipmentReturn());
   const banner = byId('fight-banner');
   const format = byId('round-format');
   let formatMode = 'solo';
@@ -103,12 +78,16 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   const setupContent = setupPanel.querySelector('.setup-content');
   const setupSections = [...setupPanel.querySelectorAll('.setup-switcher button')];
   function showSetupSection(id) {
+    const previousFocus = document.activeElement;
     for (const button of setupSections) {
       const section = button.getAttribute('aria-controls');
       button.setAttribute('aria-pressed', String(section === id));
       byId(section).hidden = section !== id;
     }
     setupContent.scrollTop = 0;
+    if (setupContent.contains(previousFocus) && previousFocus.closest('[hidden]')) {
+      setupSections.find(button => button.getAttribute('aria-controls') === id)?.focus({ preventScroll: true });
+    }
   }
   for (const button of setupSections) {
     button.addEventListener('click', () => showSetupSection(button.getAttribute('aria-controls')));
@@ -128,8 +107,11 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
 
   const roster = byId('setup-roster');
   const entries = Object.entries(characters);
-  const fighterIds = Object.keys(characters);
-  const selections = { player: 'hung', opponent: 'random' };
+  const defaultFighter = characters.hung ? 'hung' : entries[0][0];
+  const selections = { player: defaultFighter, opponent: defaultFighter };
+  const resetRosterPages = [];
+  const pageSize = 6;
+  const pageCount = Math.ceil(entries.length / pageSize);
   const sideLabels = {};
   for (const side of Object.keys(selections)) {
     const group = document.createElement('fieldset');
@@ -144,33 +126,66 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     detail.className = 'roster-detail';
     function select(id) {
       selections[side] = id;
+      preloadFighter(id);
       const fighter = characters[id];
-      name.textContent = fighter?.name ?? 'Ngẫu nhiên';
-      detail.textContent = fighter
-        ? [fighter.profile.role, fighter.prototypeStyle && fighter.profile.description, ...Object.values(fighter.skills).map(skill => skill.label)].filter(Boolean).join(' · ')
-        : 'Võ sĩ sẽ được chọn khi vào trận.';
+      name.textContent = fighter.name;
+      detail.textContent = [fighter.profile.role, fighter.prototypeStyle && fighter.profile.description,
+        ...Object.values(fighter.skills).map(skill => skill.label)].filter(Boolean).join(' · ');
       condition.hidden = !fighter?.awakening && !fighter?.heroUpgrades;
       condition.textContent = fighter?.awakening
         ? 'Cấp 1 · ' + fighter.awakening.condition + (fighter.awakening.levelTwo ? ' · Cấp 2: nạp đầy nộ lần nữa' : '')
         : fighter?.heroUpgrades ? 'Biến hình: Giáp Lam → Khiên Triều → Lam Kình. Đầy năng lượng thì lên cấp trước khi dạng hiện tại hết giờ.' : '';
     }
 
-    const options = [...entries, ['random', { name: 'Ngẫu nhiên' }]];
-    for (const [id, fighter] of options) {
-      const image = id === 'random' ? null : `/assets/characters/${id}/avatar.png`;
+    for (const [id, fighter] of entries) {
+      const image = `/assets/characters/${id}/avatar.png`;
       cards.append(choiceCard(side + '-fighter', id, fighter.name, image, selections[side] === id, select));
     }
+    let page = 0;
+    const pager = document.createElement('div');
+    pager.className = 'roster-pagination';
+    pager.hidden = pageCount < 2;
+    const pageLabel = document.createElement('span');
+    pageLabel.setAttribute('aria-live', 'polite');
+    const previous = document.createElement('button');
+    const next = document.createElement('button');
+    for (const [button, label, step] of [[previous, 'Trước', -1], [next, 'Sau', 1]]) {
+      button.type = 'button';
+      button.className = 'panel-button';
+      button.textContent = label;
+      button.addEventListener('click', () => showPage(page + step));
+    }
+    function showPage(index) {
+      page = Math.max(0, Math.min(pageCount - 1, index));
+      [...cards.children].forEach((card, index) => { card.hidden = Math.floor(index / pageSize) !== page; });
+      pageLabel.textContent = `Trang ${page + 1}/${pageCount}`;
+      previous.disabled = page === 0;
+      next.disabled = page === pageCount - 1;
+    }
+    resetRosterPages.push(() => {
+      const index = entries.findIndex(([id]) => id === defaultFighter);
+      const card = cards.children[index];
+      cards.querySelector('.is-selected')?.classList.remove('is-selected');
+      card.classList.add('is-selected');
+      card.querySelector('input').checked = true;
+      select(defaultFighter);
+      showPage(Math.floor(index / pageSize));
+    });
+    pager.append(previous, pageLabel, next);
+    showPage(0);
     select(selections[side]);
-    group.append(legend, name, cards, detail, condition);
+    group.append(legend, name, cards, pager, detail, condition);
     roster.append(group);
   }
 
   function show(name) {
+    youtubeMusic.setInMatch(!name || name === 'pause');
     if (name !== 'bindings') pendingBinding = null;
     for (const panel of panels) panel.hidden = panel.id !== name + '-panel';
     stageWrap.classList.toggle('panel-open', Boolean(name));
     gameCard.classList.toggle('setup-open', name === 'setup');
-    gameCard.classList.toggle('lobby-open', ['menu', 'setup', 'lan', 'equipment'].includes(name));
+    document.body.classList.toggle('setup-expanded', name === 'setup');
+    gameCard.classList.toggle('lobby-open', ['menu', 'setup', 'lan', 'equipment', 'campaign'].includes(name));
     gameCard.classList.toggle('menu-open', name === 'menu');
     if (name) {
       const selector = name === 'setup' ? 'input[name="player-fighter"]:checked' : 'button, select';
@@ -185,6 +200,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   }
 
   function showSetup(practice, lan, localMode) {
+    for (const reset of resetRosterPages) reset();
     formatMode = lan ? 'lan' : localMode || 'solo';
     format.value = settings.roundFormats[formatMode] ?? 3;
     byId('round-format-picker').hidden = practice;
@@ -288,7 +304,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   for (const button of document.querySelectorAll('[data-menu]')) button.addEventListener('click', returnToMenu);
   for (const button of document.querySelectorAll('[data-replay]')) button.addEventListener('click', startMatch);
   byId('start-button').addEventListener('click', () => selectMatch(
-    resolveChoice(selections.player, fighterIds),
+    selections.player,
     selections.opponent,
     difficultySelect.value, resolveChoice(selectedStage, stageIds), hazards.checked, byId('party-items').checked, Number(format.value),
   ));
@@ -342,7 +358,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   });
 
   return {
-    show, showSetup, showBanner,
+    show, showSetup, showBanner, showEquipment,
     bannerMessage: () => banner.textContent,
     hideBanner: () => { banner.hidden = true; },
     restoreBanner: () => { banner.hidden = !banner.textContent; },

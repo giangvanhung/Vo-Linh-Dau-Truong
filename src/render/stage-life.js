@@ -30,7 +30,8 @@ export function drawStageLife(ctx, kind, time, width, ground) {
     for (let i = 0; i < birds; i++) {
       const pale = kind === 'sky' && i < 6;
       const x = ((i * 131 + time * (pale ? .72 : .44)) % (width + 96)) - 48;
-      const y = ground - 153 - i % 5 * 18 + Math.sin(time / 33 + i * .6) * 8;
+      const baseY = kind === 'urban' ? ground * .23 - i % 5 * 12 : ground - 201 - i % 5 * 18;
+      const y = baseY + Math.sin(time / 33 + i * .6) * 8;
       const flap = 4 * Math.sin(time / 6 + i * .8);
       ctx.strokeStyle = pale ? '#fff8e6' : '#181a27';
       ctx.globalAlpha = pale ? .7 : .62;
@@ -42,7 +43,7 @@ export function drawStageLife(ctx, kind, time, width, ground) {
     }
     ctx.strokeStyle = '#dff3ec';
     ctx.globalAlpha = .18;
-    for (let i = 0; i < 13; i++) {
+    for (let i = 0; i < (kind === 'urban' ? 0 : 13); i++) {
       const x = ((i * 151 + time * (1.2 + i % 4 * .22)) % (width + 76)) - 38;
       const y = ground - 40 - i % 7 * 19 + Math.sin(time / 32 + i) * 10;
       ctx.beginPath();
@@ -52,6 +53,55 @@ export function drawStageLife(ctx, kind, time, width, ground) {
     }
     if (kind === 'urban') cat(ctx, width, ground, time);
     plants(ctx, width, ground, time, kind === 'urban' ? '#777e52' : '#8ba85c', '#e2a3a5');
+  }
+  ctx.restore();
+}
+
+export function drawStageRain(ctx, width, ground, time, foreground = false) {
+  const slope = -.22; // The rain painted into the rooftop sky leans down to the left.
+  const count = Math.ceil(width / (foreground ? 29 : 21));
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let i = 0; i < count; i++) {
+    const hitY = ground + (foreground ? 5 + i * 13 % 70 : -10 - i * 11 % 29);
+    const speed = foreground ? .83 + i % 7 * .075 : .47 + i % 5 * .052;
+    const fallTime = (hitY + 24) / speed;
+    const splashTime = foreground && i % 3 !== 0 ? 144 : 0;
+    const cycleTime = fallTime + splashTime + 55 + i * 17 % 150;
+    const clock = time + i * 167.3;
+    const age = clock % cycleTime;
+    const cycle = Math.floor(clock / cycleTime);
+    const seed = Math.sin(i * 127.1 + cycle * 311.7 + (foreground ? 51.3 : 0)) * 43758.54;
+    const hitX = (seed - Math.floor(seed)) * (width + 60) - 30;
+    const y = age * speed - 24;
+    if (age < fallTime && y > 0) {
+      const x = hitX + (y - hitY) * slope;
+      const length = Math.min(y, speed * (12 + i * 7 % 15));
+      const tailX = x - length * slope;
+      const fade = Math.min(1, y / 28, (hitY - y + 3) / 18);
+      ctx.globalAlpha = fade * (foreground ? .27 + i % 4 * .035 : .17 + i % 4 * .025);
+      ctx.strokeStyle = foreground ? '#d6bdcf' : '#aa889d';
+      ctx.lineWidth = foreground ? 1 + i % 3 * .15 : .75;
+      ctx.beginPath();
+      ctx.moveTo(tailX, y - length);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    } else if (splashTime && age >= fallTime && age < fallTime + splashTime) {
+      const spread = (age - fallTime) / splashTime;
+      ctx.globalAlpha = .42 * (1 - spread);
+      ctx.strokeStyle = '#f0cddc';
+      ctx.lineWidth = .8;
+      ctx.beginPath();
+      ctx.ellipse(hitX, hitY, 1 + spread * 5.5, .45 + spread * 1.2, 0, 0, 2 * Math.PI);
+      if (spread < .46) {
+        const lift = Math.sin(spread / .46 * Math.PI) * 3;
+        ctx.moveTo(hitX - 2.5, hitY - lift);
+        ctx.lineTo(hitX - 3.5, hitY - lift - 1.5);
+        ctx.moveTo(hitX + 1.5, hitY - lift);
+        ctx.lineTo(hitX + 2.5, hitY - lift - 1);
+      }
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }

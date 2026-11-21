@@ -23,7 +23,6 @@
     "levelTwo": {
       "skill": "rangedSkill",
       "label": "Băng Tỏa · Cực Quang",
-      "durationFrames": 540,
       "changes": {
         "projectile": {
           "returnAfter": 32,

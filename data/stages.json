@@ -6,7 +6,7 @@
       "/assets/backgrounds/rooftop/midground.png",
       "/assets/backgrounds/rooftop/foreground.png"
     ],
-    "groundRatio": 0.79,
+    "groundRatio": 0.825,
     "playerStartRatio": 0.31,
     "cpuStartRatio": 0.69,
     "jumpVelocity": 590,
@@ -18,6 +18,12 @@
     "rooftop": {
       "name": "Sân thượng mưa",
       "wildlife": "urban",
+      "lanterns": [[0.102,0.55], [0.972,0.272]],
+      "weather": "rain",
+      "artGroundRatio": 0.849,
+      "signs": [[0.111,0.401,"#ff78ad"], [0.888,0.469,"#bcff82"]],
+      "railingScenery": "/assets/backgrounds/rooftop/railing-scenery.png",
+      "spectators": "/assets/backgrounds/rooftop/spectators-night-market.png",
       "description": "Vũng nước làm bước chạy trượt thêm.",
       "background": "/assets/backgrounds/rooftop/preview.jpg",
       "parallax": [
@@ -33,31 +39,17 @@
         ],
         "inertia": 0.77,
         "color": "#7cbbf5"
-      }
+      },
+      "prop": "rooftop",
+      "props": [[0.2,0.792,0.08], [0.8,0.795,0.076]]
     },
     "ice": {
       "seasonClimate": "frozen",
       "name": "Hang băng",
-      "description": "Hai gờ băng để nhảy lên. Mặt băng giữa sân kéo dài đà trượt.",
+      "description": "Lối băng giữa hang. Mặt băng giữa sân kéo dài đà trượt.",
       "background": "/assets/backgrounds/ice.webp",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "platforms": [
-        {
-          "range": [
-            0.09,
-            0.34
-          ],
-          "y": -57
-        },
-        {
-          "range": [
-            0.66,
-            0.91
-          ],
-          "y": -57
-        }
-      ],
+      "artGroundRatio": 0.909,
       "zone": {
         "kind": "slip",
         "range": [
@@ -66,31 +58,17 @@
         ],
         "inertia": 0.91,
         "color": "#7ff9ff"
-      }
+      },
+      "prop": "ice",
+      "props": [[0.14,0.882,0.105], [0.86,0.887,0.086]]
     },
     "cloud": {
       "seasonClimate": "windy",
       "name": "Đền trên mây",
-      "description": "Hai bệ cao. Gió báo trước rồi đẩy võ sĩ đang ở trên không sang phải.",
+      "description": "Sân đá giữa tầng mây. Gió báo trước rồi đẩy võ sĩ đang ở trên không sang phải.",
       "background": "/assets/backgrounds/cloud.webp",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "platforms": [
-        {
-          "range": [
-            0.15,
-            0.39
-          ],
-          "y": -73
-        },
-        {
-          "range": [
-            0.6,
-            0.85
-          ],
-          "y": -104
-        }
-      ],
+      "artGroundRatio": 0.91,
       "zone": {
         "kind": "wind",
         "range": [
@@ -100,24 +78,17 @@
         "cycle": 288,
         "active": 102,
         "color": "#b4e3ff"
-      }
+      },
+      "prop": "cloud",
+      "props": [[0.16,0.864,0.11], [0.85,0.852,0.102]]
     },
     "forge": {
       "seasonClimate": "hot",
       "name": "Lò rèn dưới núi",
-      "description": "Cầu cao giữa sân. Khe hơi hai bên nhấc võ sĩ lên khi sáng.",
+      "description": "Sân đá giữa hai lò. Khe hơi hai bên nhấc võ sĩ lên khi sáng.",
       "background": "/assets/backgrounds/forge.webp",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "platforms": [
-        {
-          "range": [
-            0.34,
-            0.66
-          ],
-          "y": -69
-        }
-      ],
+      "artGroundRatio": 0.887,
       "zone": {
         "kind": "vent",
         "range": [
@@ -127,7 +98,9 @@
         "cycle": 240,
         "active": 46,
         "color": "#ffae65"
-      }
+      },
+      "prop": "forge",
+      "props": [[0.19,0.826,0.09], [0.86,0.835,0.074]]
     },
     "lava": {
       "seasonClimate": "hot",
@@ -135,7 +108,7 @@
       "description": "Vệt dung nham sáng lên trước khi phun. Đứng trong vùng nóng mất 6 HP mỗi nửa giây. Nhảy qua để tránh.",
       "background": "/assets/backgrounds/lava-arena.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
+      "artGroundRatio": 0.829,
       "zone": {
         "kind": "lava",
         "range": [
@@ -146,7 +119,9 @@
         "active": 112,
         "damage": 6,
         "color": "#ff9b4c"
-      }
+      },
+      "prop": "lava",
+      "props": [[0.12,0.803,0.09], [0.88,0.811,0.076]]
     },
     "observatory": {
       "seasonClimate": "night",
@@ -154,7 +129,7 @@
       "description": "Vùng lam dưới kính thiên văn hồi nộ cho đấu sĩ đứng trên mặt đất khi phát sáng.",
       "background": "/assets/backgrounds/moon-observatory.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
+      "artGroundRatio": 0.854,
       "zone": {
         "kind": "mana",
         "range": [
@@ -164,39 +139,37 @@
         "cycle": 300,
         "active": 150,
         "color": "#83cdc0"
-      }
+      },
+      "prop": "observatory",
+      "props": [[0.17,0.807,0.106], [0.87,0.812,0.078]]
     },
     "market": {
       "name": "Chợ Sáng",
-      "description": "Leo lên bục gỗ và thùng hàng, hoặc men theo lối lát đá bên dưới.",
+      "description": "Lối lát đá rộng giữa các sạp rau và giỏ hàng.",
       "background": "/assets/backgrounds/vietnam-market.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "terrainColor": "#b5906b",
-      "rises": [{ "range": [0.06, 0.25], "rise": 19 }, { "range": [0.73, 0.95], "rise": 24 }],
-      "platforms": [
-        { "range": [0.17, 0.31], "y": -55, "art": "crate" },
-        { "range": [0.48, 0.67], "y": -78, "art": "timber" }
-      ]
+      "artGroundRatio": 0.856,
+      "prop": "market",
+      "props": [[0.14,0.744,0.085], [0.86,0.735,0.075]]
     },
     "crossroads": {
       "name": "Ngã Tư Đèn Đỏ",
       "description": "Đường phố nắng ấm bên vạch qua đường, xe máy và xe cà phê.",
       "background": "/assets/backgrounds/vietnam-crossroads.jpg",
       "parallax": [],
-      "artGroundRatio": 0.745,
-      "platforms": []
+      "artGroundRatio": 0.836,
+      "prop": "crossroads",
+      "props": [[0.085,0.716,0.11], [0.91,0.726,0.096]]
     },
     "meadow": {
       "name": "Đồng Cỏ Cao Nguyên",
-      "description": "Lối cỏ gồ ghề với hai bờ đất thoải và một gờ đá để đổi độ cao.",
+      "description": "Bãi cỏ thoáng giữa cao nguyên, có cụm đá và cỏ dại ven lối.",
       "background": "/assets/backgrounds/highland-meadow.jpg",
       "parallax": [],
-      "artGroundRatio": 0.72,
+      "artGroundRatio": 0.827,
       "wildlife": "garden",
-      "terrainColor": "#8da978",
-      "rises": [{ "range": [0.09, 0.38], "rise": 20 }, { "range": [0.57, 0.92], "rise": 26 }],
-      "platforms": [{ "range": [0.40, 0.57], "y": -66, "art": "stone" }]
+      "prop": "meadow",
+      "props": [[0.16,0.734,0.1], [0.8,0.744,0.077]]
     },
     "hoian": {
       "seasonClimate": "night",
@@ -204,120 +177,134 @@
       "description": "Sân lát đá bên sông, đèn lồng, thuyền nhỏ và xe đạp trước dãy nhà vàng.",
       "background": "/assets/backgrounds/hoian-lanterns.jpg",
       "parallax": [],
-      "artGroundRatio": 0.83,
-      "platforms": []
+      "artGroundRatio": 0.868,
+      "prop": "hoian",
+      "props": [[0.13,0.791,0.105], [0.88,0.805,0.086]]
     },
     "paris": {
       "name": "Quảng Trường Bờ Seine",
       "description": "Quán cà phê, sạp sách và hàng hoa nhìn ra tháp Eiffel.",
       "background": "/assets/backgrounds/paris-seine.jpg",
       "parallax": [],
-      "artGroundRatio": 0.81,
-      "platforms": []
+      "artGroundRatio": 0.857,
+      "prop": "paris",
+      "props": [[0.12,0.753,0.103], [0.88,0.758,0.09]]
     },
     "route66": {
       "name": "Trạm Dừng Route 66",
       "description": "Quán ăn ven đường, xe cổ và trạm xăng giữa hoàng hôn sa mạc.",
       "background": "/assets/backgrounds/route66-diner.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "platforms": []
+      "artGroundRatio": 0.829,
+      "prop": "route66",
+      "props": [[0.15,0.735,0.11], [0.865,0.735,0.122]]
     },
     "football": {
       "name": "Sân Bóng Khu Phố",
       "description": "Sân đất dưới đèn pha, có khung thành và một quả bóng có thể đá nảy.",
       "background": "/assets/backgrounds/neighborhood-football.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "platforms": [],
-      "football": true
+      "artGroundRatio": 0.813,
+      "football": true,
+      "prop": "football",
+      "props": [[0.15,0.671,0.084], [0.86,0.684,0.064]]
     },
     "harbor": {
       "name": "Bến Hàng Sương Lam",
-      "description": "Lối sát bờ sông chạy xuyên sân. Nhảy qua thùng gỗ lên kiện thép và cầu hàng để đổi tầng.",
+      "description": "Lối lát đá chạy dọc bến sông, cạnh cọc neo và dây thừng.",
       "background": "/assets/backgrounds/blue-harbor.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "terrainColor": "#70a7b6",
+      "artGroundRatio": 0.862,
       "ambient": "#f8c488",
       "wildlife": "sky",
-      "rises": [{ "range": [0.055, 0.29], "rise": 23 }, { "range": [0.72, 0.96], "rise": 23 }],
-      "platforms": [
-        { "range": [0.11, 0.24], "y": -62, "art": "crate" },
-        { "range": [0.33, 0.54], "y": -99, "art": "steel" },
-        { "range": [0.60, 0.79], "y": -70, "art": "timber" },
-        { "range": [0.81, 0.91], "y": -54, "art": "crate" }
-      ]
+      "prop": "harbor",
+      "props": [[0.16,0.781,0.085], [0.86,0.773,0.083]]
     },
     "terrace": {
       "name": "Làng Bậc Thềm",
-      "description": "Ba bờ dốc dẫn lên các gờ đá và cầu gỗ. Nhảy sang tầng trên để ép đối thủ đổi vị trí.",
+      "description": "Lối lát đá trước thềm làng, dọc theo lan can và những giỏ đồ đan.",
       "background": "/assets/backgrounds/lantern-terraces.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "terrainColor": "#b19b8e",
+      "artGroundRatio": 0.789,
       "ambient": "#ffe2a8",
       "wildlife": "garden",
-      "rises": [
-        { "range": [0.045, 0.30], "rise": 25 },
-        { "range": [0.38, 0.62], "rise": 19 },
-        { "range": [0.69, 0.955], "rise": 30 }
-      ],
-      "platforms": [
-        { "range": [0.16, 0.31], "y": -70, "art": "stone" },
-        { "range": [0.41, 0.58], "y": -103, "art": "timber" },
-        { "range": [0.69, 0.84], "y": -80, "art": "stone" }
-      ]
+      "prop": "terrace",
+      "props": [[0.12,0.754,0.084], [0.84,0.749,0.068]]
     },
     "skybridge": {
       "seasonClimate": "windy",
       "name": "Cầu Đá Trên Mây",
-      "description": "Chim bay qua đảo nổi và cầu đá. Ấn tím hóa thỏ, ấn vàng gây choáng ngắn. Nhảy lên bệ để tránh.",
+      "description": "Chim bay qua đảo nổi và cầu đá. Ấn tím hóa thỏ, ấn vàng gây choáng ngắn. Nhảy qua ấn để tránh.",
       "background": "/assets/backgrounds/skybridge.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "terrainColor": "#9ccac6",
+      "artGroundRatio": 0.851,
       "wildlife": "sky",
-      "rises": [{ "range": [0.07, 0.24], "rise": 18 }, { "range": [0.76, 0.93], "rise": 18 }],
-      "platforms": [
-        { "range": [0.18, 0.34], "y": -65, "art": "stone" },
-        { "range": [0.43, 0.57], "y": -98, "art": "timber" },
-        { "range": [0.66, 0.82], "y": -65, "art": "stone" }
-      ],
-      "zone": { "kind": "condition", "range": [0.40, 0.60], "cycle": 420, "active": 48, "conditions": ["morph", "stun"], "color": "#f5adff" }
+      "zone": {
+        "kind": "condition",
+        "range": [
+          0.4,
+          0.6
+        ],
+        "cycle": 420,
+        "active": 48,
+        "conditions": [
+          "morph",
+          "stun"
+        ],
+        "color": "#f5adff"
+      },
+      "prop": "skybridge",
+      "props": [[0.13,0.814,0.106], [0.88,0.823,0.086]]
     },
     "sunken": {
       "seasonClimate": "underwater",
       "name": "Đền Chìm San Hô",
-      "description": "Cá bơi qua rạn san hô. Luồng xanh lục gây độc nhẹ, luồng lam làm chậm. Các gờ đá giữ chân bạn trên dòng nước.",
+      "description": "Cá bơi qua rạn san hô ven nền đền. Luồng xanh lục gây độc nhẹ, luồng lam làm chậm.",
       "background": "/assets/backgrounds/sunken-temple.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "terrainColor": "#78cdd6",
+      "artGroundRatio": 0.865,
       "wildlife": "sea",
-      "rises": [{ "range": [0.10, 0.33], "rise": 25 }, { "range": [0.67, 0.90], "rise": 25 }],
-      "platforms": [
-        { "range": [0.15, 0.29], "y": -60, "art": "stone" },
-        { "range": [0.37, 0.63], "y": -91, "art": "stone" },
-        { "range": [0.71, 0.85], "y": -60, "art": "stone" }
-      ],
-      "zone": { "kind": "condition", "range": [0.38, 0.62], "cycle": 390, "active": 58, "conditions": ["poison", "slow"], "color": "#b3ec82" }
+      "zone": {
+        "kind": "condition",
+        "range": [
+          0.38,
+          0.62
+        ],
+        "cycle": 390,
+        "active": 58,
+        "conditions": [
+          "poison",
+          "slow"
+        ],
+        "color": "#b3ec82"
+      },
+      "prop": "sunken",
+      "props": [[0.11,0.803,0.1], [0.89,0.822,0.102]]
     },
     "parking": {
       "seasonClimate": "rainy",
       "name": "Bãi Xe Sau Mưa",
-      "description": "Bậc bê tông và thùng thép chia sân. Ô cam phản một đòn cận chiến, ô tím giảm sức đánh.",
+      "description": "Lối xe ướt giữa hai hàng cột. Vùng cam phản một đòn cận chiến, vùng tím giảm sức đánh.",
       "background": "/assets/backgrounds/rain-parking.jpg",
       "parallax": [],
-      "artGroundRatio": 0.79,
-      "terrainColor": "#bdb4a6",
+      "artGroundRatio": 0.875,
       "wildlife": "urban",
-      "rises": [{ "range": [0.10, 0.28], "rise": 16 }, { "range": [0.72, 0.90], "rise": 16 }],
-      "platforms": [
-        { "range": [0.20, 0.36], "y": -72, "art": "steel" },
-        { "range": [0.64, 0.80], "y": -72, "art": "steel" }
-      ],
-      "zone": { "kind": "condition", "range": [0.41, 0.59], "cycle": 450, "active": 56, "conditions": ["reflect", "weaken"], "color": "#ffbb78" }
+      "zone": {
+        "kind": "condition",
+        "range": [
+          0.41,
+          0.59
+        ],
+        "cycle": 450,
+        "active": 56,
+        "conditions": [
+          "reflect",
+          "weaken"
+        ],
+        "color": "#ffbb78"
+      },
+      "prop": "parking",
+      "props": [[0.18,0.771,0.079], [0.81,0.779,0.067]]
     }
   }
 }

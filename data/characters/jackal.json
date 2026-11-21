@@ -18,7 +18,6 @@
     },
     "levelTwo": {
       "skill": "rangedSkill",
-      "durationFrames": 540,
       "label": "Nguyệt Cầu · Toàn Thực",
       "changes": {
         "damage": 21,

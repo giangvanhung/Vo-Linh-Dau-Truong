@@ -217,6 +217,7 @@
   },
   "weaponType": "blade",
   "starterWeapon": "dawn-weapon-0",
+  "supportPoses": "/assets/characters/rin/support-poses.png",
   "prototypeStyle": {
     "index": 1
   },
@@ -228,7 +229,6 @@
     "unlockAttack": "closeSkill",
     "skill": "rangedSkill",
     "label": "Ám Khí Ánh Tím · Bộc Phát",
-    "durationFrames": 480,
     "changes": {
       "damage": 11
     },

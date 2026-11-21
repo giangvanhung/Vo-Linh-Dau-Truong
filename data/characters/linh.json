@@ -26,7 +26,6 @@
     "levelTwo": {
       "skill": "closeSkill",
       "label": "Phản Lôi · Chớp Kép",
-      "durationFrames": 540,
       "changes": {
         "startup": 9,
         "active": 15,

@@ -24,7 +24,6 @@
     "levelTwo": {
       "skill": "rangedSkill",
       "label": "Sen Nở · Huyết Nguyệt",
-      "durationFrames": 540,
       "changes": {
         "projectile": {
           "delayFrames": 14,

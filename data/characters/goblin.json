@@ -22,7 +22,6 @@
     },
     "levelTwo": {
       "skill": "closeSkill",
-      "durationFrames": 540,
       "label": "Ảnh Đao · Liên Trảm Ba Nhịp",
       "changes": {
         "active": 22,

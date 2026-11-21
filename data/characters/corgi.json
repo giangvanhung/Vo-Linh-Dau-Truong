@@ -3,7 +3,6 @@
     "unlockAttack": "closeSkill",
     "condition": "Đánh trúng bằng Chảo Xoay khi đối thủ hở thủ",
     "skill": "closeSkill",
-    "durationFrames": 480,
     "label": "Chảo Lửa Hồng",
     "changes": {
       "range": 88,
@@ -24,7 +23,6 @@
     },
     "levelTwo": {
       "skill": "closeSkill",
-      "durationFrames": 540,
       "label": "Bếp Trưởng Tốc Hành",
       "changes": {
         "range": 102,

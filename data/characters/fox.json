@@ -19,7 +19,6 @@
     "levelTwo": {
       "skill": "rangedSkill",
       "label": "Hồi Linh · Thiên Hồ",
-      "durationFrames": 540,
       "changes": {
         "projectile": {
           "returnAfter": 39,

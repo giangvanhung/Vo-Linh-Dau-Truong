@@ -217,6 +217,7 @@
   },
   "weaponType": "gauntlet",
   "starterWeapon": "dawn-gauntlet-0",
+  "supportPoses": "/assets/characters/nami/support-poses.png",
   "prototypeStyle": {
     "index": 2
   },
@@ -228,7 +229,6 @@
     "unlockAttack": "closeSkill",
     "skill": "rangedSkill",
     "label": "Tia Tụ Điện · Bộc Phát",
-    "durationFrames": 480,
     "changes": {
       "damage": 16
     },

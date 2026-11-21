@@ -7,7 +7,12 @@ const strokes = {
   thrust: [.27, -.08, 1.85],
   lift: [1.12, -1.18, 1.32],
   cast: [-1, -.18, 1.5],
+  staffSweep: [-1.55, 1.04, 1.26],
+  staffReturn: [1.28, -1.2, 1.3],
+  rattanSnap: [-2.05, .6, 1.42],
+  broomSweep: [1.36, .48, 1.16],
 };
+const pickupStrokes = { dogStaff: 'staffSweep', rattan: 'rattanSnap', broom: 'broomSweep' };
 
 const ease = x => x * x * (3 - 2 * x);
 
@@ -23,8 +28,10 @@ export function weaponMotion(attack) {
     return { amount: aim, angle: -.10 - .26 * recoil, reach: 1 + .58 * aim - .32 * recoil, kind: 'aim' };
   }
   const style = type === 'staff' && attack.projectile ? 'cast'
+    : type === 'staff' && attack.swing === 'slash' ? 'staffSweep'
+    : type === 'staff' && attack.swing === 'reverse' ? 'staffReturn'
     : attack.swing === 'slash' ? (attack.id === 'heavy' && ['blade', 'hammer', 'pan'].includes(type) ? 'chop' : 'sweep')
-    : attack.swing ?? (pickup === 'broom' ? 'reverse' : ['sword', 'rattan', 'dogStaff', 'slipper'].includes(pickup) && !attack.projectile ? 'sweep' : null);
+    : attack.swing ?? pickupStrokes[pickup] ?? (['sword', 'slipper'].includes(pickup) && !attack.projectile ? 'sweep' : null);
   if (!strokes[style] || type === 'gauntlet') return null;
   const [wind, follow, reach] = strokes[style];
   if (age < 0) {

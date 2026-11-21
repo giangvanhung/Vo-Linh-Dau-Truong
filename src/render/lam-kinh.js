@@ -7,7 +7,7 @@ export function drawLamKinh(ctx, fighter, pose, ground, time, drawWeapon) {
   const kicking = attack?.id === 'kick';
   const stride = fighter.moving ? Math.sin(fighter.walkDistance / 12) : 0;
   const preparing = stomping && attack.elapsed < attack.startup;
-  const crouch = pose === 'crouch' || pose === 'crouchWalk';
+  const crouch = pose === 'crouch' || pose === 'crouchWalk' || (pose === 'block' && fighter.crouching);
   const lift = preparing ? Math.min(17, attack.elapsed) : 20 * motion * Number(kicking);
   const steel = '#305676';
   const shade = '#11283e';
@@ -69,7 +69,7 @@ export function drawLamKinh(ctx, fighter, pose, ground, time, drawWeapon) {
   box(hand[0] - 9, hand[1] - 7, 17, 13, shade);
   box(hand[0] - 4, hand[1] - 8, 11, 3, light);
   if (fighter.weapon || fighter.weaponUses) drawWeapon(hand);
-  const deployment = (fighter.heroDuration - fighter.heroFrames) / 14;
+  const deployment = fighter.formAge / 14;
   if (deployment < 1) {
     ctx.globalAlpha = (1 - deployment) * .56;
     box(-40, -132 + deployment * 128, 82, 3, light);

@@ -1,6 +1,76 @@
 const tau = Math.PI * 2;
 const spiritFighters = new Set(['linh', 'vy', 'lam', 'diep', 'fox', 'dragon', 'shadow']);
-const blessingFighters = new Set(['mai', 'elf', 'jackal']);
+const blessingFighters = new Set(['elf', 'jackal']);
+
+function drawMaiWind(ctx, time, strength, color, height) {
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    const progress = (time / 700 + i / 6) % 1;
+    const radius = 18 + progress * 43;
+    const y = -progress * height * .9;
+    const angle = (i % 2 ? Math.PI : 0) + progress * 2.8;
+    ctx.globalAlpha = Math.sin(progress * Math.PI) * strength * .72;
+    ctx.strokeStyle = i % 3 === 0 ? '#ebfcff' : color;
+    ctx.lineWidth = 2.4 - progress;
+    ctx.beginPath();
+    ctx.ellipse(0, y, radius, 7 + progress * 7, -.23, angle, angle + 1.55);
+    ctx.stroke();
+  }
+}
+
+function drawHungCharge(ctx, fighter, time, strength, color) {
+  const height = fighter.height * (1.03 + strength * .12);
+  const width = fighter.width * (1.05 + strength * .35);
+  const flicker = Math.sin(Math.floor(time / 35) * 2.4);
+  const facing = fighter.attack?.facing ?? fighter.dash?.facing ?? fighter.facing;
+  ctx.scale(facing, 1);
+  const glow = ctx.createLinearGradient(0, 0, 0, -height);
+  glow.addColorStop(0, '#fff2a6');
+  glow.addColorStop(.48, color);
+  glow.addColorStop(1, '#ff7a2425');
+  ctx.globalAlpha = strength * .47;
+  ctx.fillStyle = glow;
+  ctx.strokeStyle = '#ffd784';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-width * .75, -2);
+  ctx.lineTo(-width * 1.13, -height * .47);
+  ctx.lineTo(-width * .76, -height * .37);
+  ctx.lineTo(-width * (.83 + flicker * .09), -height * .88);
+  ctx.lineTo(-width * .44, -height * .69);
+  ctx.lineTo(-width * .19, -height * 1.07);
+  ctx.lineTo(width * .12, -height * .82);
+  ctx.lineTo(width * .52, -height * (.98 - flicker * .05));
+  ctx.lineTo(width * .58, -height * .56);
+  ctx.lineTo(width * 1.16, -height * .76);
+  ctx.lineTo(width * .94, -height * .33);
+  ctx.lineTo(width * 1.18, -height * .38);
+  ctx.lineTo(width * .68, -2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 10; i++) {
+    const age = (time / 310 + i * .27) % 1;
+    const side = i % 2 ? 1 : -1;
+    const x = side * width * (.55 + (i % 4) * .13 + age * .28);
+    const y = -age * height * .85;
+    ctx.globalAlpha = (1 - age) * strength;
+    ctx.strokeStyle = i % 3 ? '#ff9b48' : '#fff4b9';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + side * (7 + age * 8), y - 10 - age * 15);
+    ctx.stroke();
+  }
+  const wave = (time / 430) % 1;
+  ctx.globalAlpha = (1 - wave) * strength * .8;
+  ctx.strokeStyle = '#ffe2a4';
+  ctx.beginPath();
+  ctx.ellipse(0, -2, width * (.6 + wave * .85), 4 + wave * 7, 0, 0, tau);
+  ctx.stroke();
+}
 
 function drawSpirit(ctx, time, strength, color, height) {
   ctx.strokeStyle = color;
@@ -66,7 +136,9 @@ function drawBlessing(ctx, time, strength, color, height) {
 export function drawChargeVariant(ctx, fighter, time, build, color) {
   const id = fighter.characterId;
   const strength = Math.min(1, .2 + build * .8);
-  if (fighter.chargeStyle === 'pressure' && fighter.charging) {
+  if (id === 'hung') drawHungCharge(ctx, fighter, time, strength, color);
+  else if (id === 'mai') drawMaiWind(ctx, time, strength, color, fighter.height);
+  else if (fighter.chargeStyle === 'pressure' && fighter.charging) {
     ctx.lineWidth = 2;
     for (let i = 0; i < 3; i++) {
       const phase = (time / 630 + i / 3) % 1;

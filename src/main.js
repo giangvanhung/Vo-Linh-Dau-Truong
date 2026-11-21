@@ -9,7 +9,9 @@ if (isTV) setGameExpanded(true);
 function setGameExpanded(expanded) {
   document.body.classList.toggle('game-expanded', expanded);
   fullscreenButton.setAttribute('aria-pressed', String(expanded));
-  fullscreenButton.textContent = expanded ? 'Thu nhỏ' : 'Toàn màn hình';
+  const label = expanded ? 'Thoát toàn màn hình' : 'Toàn màn hình';
+  fullscreenButton.setAttribute('aria-label', label);
+  fullscreenButton.title = label + ' · F12';
 }
 
 function fullscreenElement() {

@@ -1,4 +1,3 @@
-export const evolutionFist = '/assets/effects/hung-evolution-fist.png';
 export const advancedAura = '/assets/effects/evolution-level-two.png';
 
 export function createEvolutionEffects(ctx, images, drawFighter) {
@@ -6,7 +5,7 @@ export function createEvolutionEffects(ctx, images, drawFighter) {
     const image = images.get(fighter.evolution.wings);
     if (!image) return;
     const pulse = Math.sin(time / 105);
-    const progress = Math.min(1, (fighter.awakeningDuration - fighter.awakeningFrames + 1) / 12, fighter.awakeningFrames / 20);
+    const progress = Math.min(1, (fighter.formAge + 1) / 12);
     const width = fighter.height * (1.42 + pulse * .09) * (.62 + .38 * progress);
     const height = width * image.height / image.width;
     ctx.save();
@@ -18,18 +17,18 @@ export function createEvolutionEffects(ctx, images, drawFighter) {
     ctx.restore();
   }
 
-  function drawEvolutionBody(fighter, ground, time) {
+  function drawEvolutionBody(fighter, ground, time, movementPose) {
     if (!fighter.evolving || fighter.hp <= 0) {
-      drawFighter(fighter, ground, time);
+      drawFighter(fighter, ground, time, movementPose);
       return;
     }
 
-    const age = fighter.awakeningDuration - fighter.awakeningFrames;
-    const blend = Math.min(1, age / 14, fighter.awakeningFrames / 18);
+    const age = fighter.formAge;
+    const blend = Math.min(1, age / 14);
     const { body, color = '#ffcc53', scale = 1, overlay, halo } = fighter.evolution;
     const size = 1 + blend * (scale - 1);
     const feet = ground + fighter.y;
-    const aura = fighter.awakeningLevel === 2 && images.get(advancedAura);
+    const aura = fighter.characterId !== 'hung' && fighter.awakeningLevel === 2 && images.get(advancedAura);
     if (aura && blend > 0) {
       const width = fighter.height * (1.65 + .1 * Math.sin(time / 160));
       const height = width * aura.height / aura.width;
@@ -44,7 +43,7 @@ export function createEvolutionEffects(ctx, images, drawFighter) {
     ctx.translate(fighter.x, feet);
     ctx.scale(size, size);
     ctx.translate(-fighter.x, -feet);
-    drawFighter(fighter, ground, time);
+    drawFighter(fighter, ground, time, movementPose);
     ctx.restore();
 
     if (body) drawEvolutionEquipment(fighter, ground, time, blend, body, color);
@@ -86,33 +85,7 @@ export function createEvolutionEffects(ctx, images, drawFighter) {
     ctx.shadowColor = color;
     ctx.shadowBlur = 9;
     ctx.lineWidth = 1.5;
-    if (body === 'armor') {
-      if (!fighter.dash?.roll) {
-        ctx.fillStyle = '#5b301e';
-        ctx.beginPath();
-        ctx.moveTo(-18, -9);
-        ctx.lineTo(-9, -13);
-        ctx.lineTo(0, -6);
-        ctx.lineTo(10, -13);
-        ctx.lineTo(19, -8);
-        ctx.lineTo(11, 8);
-        ctx.lineTo(0, 14);
-        ctx.lineTo(-11, 8);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      }
-      if (fighter.attack?.evolvedPunch) {
-        const box = fighter.attackBoxFor(fighter.attack, fighter.attack.facing);
-        const reach = Math.min(1, fighter.attack.elapsed / Math.max(1, fighter.attack.startup));
-        const tip = (fighter.attack.facing > 0 ? box.x + box.width - fighter.x : fighter.x - box.x) * reach;
-        ctx.beginPath();
-        ctx.moveTo(9, 4);
-        ctx.lineTo(tip * .55, Math.sin(time / 19) * 7);
-        ctx.lineTo(tip, ground + box.y + box.height / 2 - torso);
-        ctx.stroke();
-      }
-    } else if (body === 'viking' && !fighter.dash?.roll) {
+    if (body === 'viking' && !fighter.dash?.roll) {
       const head = -fighter.hurtbox.height * .37;
       const shieldX = -fighter.width * .53;
       ctx.shadowBlur = 4;
@@ -173,21 +146,5 @@ export function createEvolutionEffects(ctx, images, drawFighter) {
     ctx.restore();
   }
 
-  function drawEvolutionFist(fighter, ground, time) {
-    const image = images.get(evolutionFist);
-    if (!image) return;
-    const { attack } = fighter;
-    const box = fighter.attackBoxFor(attack, attack.facing);
-    const reach = Math.min(1, attack.elapsed / Math.max(1, attack.startup));
-    const handX = attack.facing > 0 ? box.x + box.width : box.x;
-    const size = (attack.id === 'heavy' ? 62 : 48) + Math.sin(time / 34) * 4;
-    ctx.save();
-    ctx.translate(fighter.x + (handX - fighter.x) * reach, ground + box.y + box.height / 2);
-    ctx.rotate(time / 115 * attack.facing);
-    ctx.globalAlpha = fighter.attackActive ? 1 : .7;
-    ctx.drawImage(image, -size / 2, -size / 2, size, size);
-    ctx.restore();
-  }
-
-  return { drawEvolutionBody, drawEvolutionFist, drawEvolutionWings };
+  return { drawEvolutionBody, drawEvolutionWings };
 }

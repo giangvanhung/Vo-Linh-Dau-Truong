@@ -77,14 +77,16 @@ export class CpuController {
         && Math.abs(candidate.y - (cpu.y - cpu.height / 2)) < (candidate.attack.projectile.height + cpu.height) / 2;
     });
     const shotReady = this.ready(shot, 'evade');
-    const comboReady = this.ready(cpu.hitstun > 0 && player.combo >= this.config.combat.escape.minCombo ? attack : null, 'escape');
+    const canEscape = cpu.wallEscapeDirection(player, world.width) || (cpu.hitstun > 0
+      && player.combo >= this.config.combat.escape.minCombo && cpu.meter >= this.config.combat.escape.cost);
+    const comboReady = this.ready(canEscape ? attack : null, 'escape');
 
     if (cpu.disabled || cpu.dash || cpu.attacking || !cpu.onGround) {
       cpu.setGuard(false);
       if (this.state === 'JumpApproach' && !cpu.onGround && !cpu.disabled && !cpu.attacking) {
         cpu.x += towards * Math.min(Math.max(0, distance - 34), cpu.walkingSpeed * .82 * dt);
       }
-      if (comboReady && cpu.meter >= this.config.combat.escape.cost) {
+      if (comboReady) {
         this.consume(attack, 'escape');
         if (this.random() < this.profile.escape && escape()) this.setState('Retreat', .35);
       }
@@ -137,7 +139,7 @@ export class CpuController {
     const move = id => cpu.skills[id] ?? cpu.attacks[id];
     const inRange = id => {
       const hurt = player.hurtbox;
-      return cpu.attackBoxesFor(move(id), towards).some(hit =>
+      return cpu.attackBoxesFor({ ...move(id), id }, towards, player).some(hit =>
         hit.x < hurt.x + hurt.width && hit.x + hit.width > hurt.x
         && hit.y < hurt.y + hurt.height && hit.y + hit.height > hurt.y);
     };

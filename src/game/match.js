@@ -15,13 +15,15 @@ import { createTrainingPanel } from '../ui/training-panel.js';
 import { applyStageEffects, groundHeightAt, stageForMatch } from './stages.js';
 import { createTrainingActions, TrainingSession } from './training.js';
 import { TeamRoster } from './team-roster.js';
-import { superAttack } from './super-motion.js';
+import { superAttackFor } from './super-motion.js';
 import { applyControls } from './fighter-controls.js';
 import { createPickups, equippedAttack } from './pickups.js';
 import { mainWeaponAttack } from './weapon-attacks.js';
 import { heroEnergyMax, nextHeroForm, startHeroForm } from './hero-form.js';
 import { createStageBall, updateStageBall } from './stage-ball.js';
-import { awardEquipment, equipFighter, loadEquipment, rarities, reviveFighter, saveEquipment, setMainWeapon } from './equipment.js';
+import { awardEquipment, catalog, equipFighter, loadEquipment, rarities, reviveFighter, saveEquipment, setMainWeapon } from './equipment.js';
+import { availableStage, campaignProgress, settleStage } from './campaign.js';
+import { createCampaignPanel } from '../ui/campaign-panel.js';
 
 export function startGame(config) {
   const canvas = document.querySelector('#arena');
@@ -31,12 +33,11 @@ export function startGame(config) {
   const keyboardHint = byId('keyboard-hint');
   const windowsKeyboard = /Windows/i.test(navigator.userAgent);
   byId('pause-keyboard-hint').hidden = !windowsKeyboard;
-  const hud = createHud(config);
+  const hud = createHud();
   const settings = loadSettings();
   const equipment = loadEquipment();
   const training = new TrainingSession();
   const canTrain = () => practice && phase === 'fight';
-  const controlRules = { jumpVelocity: config.stage.jumpVelocity, useAttack, activateAwakening: requestAwakening, dropWeapon, toast };
   const dropWeaponButton = byId('drop-weapon');
   const transformButton = byId('hero-transform');
   const audio = new GameAudio();
@@ -44,7 +45,8 @@ export function startGame(config) {
   for (const event of ['click', 'keydown']) {
     window.addEventListener(event, () => audio.unlock(), { capture: true });
   }
-  const world = { width: canvas.width, height: canvas.height, gravity: config.stage.gravity };
+  const world = { width: canvas.width, height: canvas.height, groundRatio: config.stage.groundRatio, gravity: config.stage.gravity };
+  const controlRules = { jumpVelocity: config.stage.jumpVelocity, world, useAttack, activateAwakening: requestAwakening, dropWeapon, toast };
   const minimumArenaWidth = world.width;
   let stage = stageForMatch(config.stage, config.stages.rooftop, true);
   let stageFrame = 0;
@@ -67,6 +69,7 @@ export function startGame(config) {
   let phaseTime = 0, nextRound = false;
   let lastTime, accumulator = 0, toastClock = 0, keyboardHintUntil = 0;
   let difficulty = 'normal', cpu;
+  let campaignRun = null, pendingCampaign = null;
   let bestOf = 3, damageHung = 0, damageMai = 0;
   let localMode = '';
   const team = new TeamRoster();
@@ -83,6 +86,7 @@ export function startGame(config) {
   }
 
   function makeFighter(id, side) {
+    render.preloadFighter(id);
     const fighter = new Fighter(config.characters[id], fighterX(side), side === 'hung' ? 1 : -1, config.combat);
     fighter.y = groundHeightAt(world, fighter.x);
     fighter.characterId = id;
@@ -120,7 +124,7 @@ export function startGame(config) {
     if (carried[0]) setMainWeapon(hung, carried[0], true);
     if (carried[1]) setMainWeapon(mai, carried[1], true);
     if (practice) hung.awakeningUnlocked = true;
-    seconds = roundLength;
+    seconds = campaignRun?.stage.seconds ?? roundLength;
     stageFrame = 0;
     world.stageFrame = 0;
     ball = createStageBall(stage, world.width);
@@ -155,6 +159,7 @@ export function startGame(config) {
 
   function startMatch() {
     keyboardHintUntil = 0;
+    if (campaignRun) campaignRun.serial = campaignProgress(equipment, config.campaign).serial + 1;
     if (practice) training.resetActivity();
     audio.unlock();
     winsHung = winsMai = damageHung = damageMai = 0;
@@ -163,6 +168,7 @@ export function startGame(config) {
   }
 
   function openSetup(isPractice, mode = '') {
+    campaignRun = null;
     practice = isPractice;
     localMode = mode;
     phase = 'setup';
@@ -173,6 +179,7 @@ export function startGame(config) {
   function returnToMenu() {
     training.resetActivity();
     phase = 'menu';
+    campaignRun = null;
     practice = lan = false;
     localMode = '';
     partyItems = false;
@@ -216,18 +223,86 @@ export function startGame(config) {
     partyItems = items;
     bestOf = roundFormats.includes(rounds) ? rounds : 3;
     playerId = player;
-    const roster = Object.keys(config.characters);
-    if (localMode === 'team') team.selectCpu(roster);
-    opponentId = opponent === 'random' ? roster[Math.floor(Math.random() * roster.length)] : opponent;
+    if (localMode === 'team') team.selectCpu(config.characters.hung ? 'hung' : player);
+    opponentId = opponent;
     difficulty = level;
     if (pairing.solo) pairing.moveToDetails();
     startMatch();
   }
 
   const panels = createPanels({ characters: config.characters, stages: config.stages, combat: config.combat,
+    preloadFighter: render.preloadFighter,
     settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings,
     setMusicFile: (id, file) => audio.setMusicFile(id, file),
     setMusicPreview: active => audio.setMusicPreview(active) });
+
+  const showCampaign = createCampaignPanel(config, equipment, {
+    show: panels.show,
+    openEquipment: fighter => panels.showEquipment(fighter, () => openCampaign()),
+    start: startCampaign,
+  });
+
+  function openCampaign(index) {
+    const saved = !pendingCampaign || saveCampaignResult();
+    phase = 'campaign';
+    campaignRun = null;
+    lan = practice = false;
+    localMode = '';
+    pairing.close();
+    panels.showBanner('');
+    panels.setPauseAvailable(false);
+    showCampaign(index, saved ? '' : 'Kết quả đang chờ lưu. Bấm Vào ải để thử lưu lại trước khi chơi.');
+  }
+
+  function startCampaign(index, fighter) {
+    if (pendingCampaign && !saveCampaignResult()) return;
+    const progress = campaignProgress(equipment, config.campaign);
+    if (phase !== 'campaign' || !availableStage(config.campaign, progress, index) || !config.characters[fighter]) return;
+    const stage = config.campaign[index];
+    campaignRun = { index, stage };
+    setStage(stage.stage, stage.hazards);
+    playerId = fighter;
+    opponentId = stage.opponent;
+    difficulty = stage.difficulty;
+    bestOf = stage.bestOf;
+    partyItems = false;
+    startMatch();
+  }
+
+  function saveCampaignResult() {
+    if (!pendingCampaign) return true;
+    const { index, serial, won, score } = pendingCampaign;
+    const reward = settleStage(equipment, config.campaign, { index, serial, won });
+    const saved = Boolean(reward?.saved);
+    const next = won && index + 1 < config.campaign.length;
+    const complete = won && !next;
+    byId('campaign-save').hidden = saved;
+    byId('campaign-next').hidden = !saved || !next;
+    byId('campaign-replay').disabled = !saved;
+    byId('campaign-replay').textContent = won ? 'Chơi lại' : 'Thử lại';
+    const message = [];
+    if (saved) {
+      if (won) message.push('+' + reward.gold + ' vàng · +' + reward.material + ' nguyên liệu');
+      if (reward.item) message.push('Nhận ' + catalog[reward.item].name);
+      if (reward.reserved) message.push('Kho đầy. Vật phẩm đang chờ ở danh sách ải.');
+      if (next && reward.first) message.push('Đã mở ' + config.campaign[index + 1].name);
+      if (complete) message.push('Có thể chơi lại mọi ải đã mở.');
+      pendingCampaign = null;
+    } else message.push('Chưa lưu kết quả hoặc cộng thưởng. Bạn có thể thử lưu lại.');
+    panels.setResult(complete && saved ? 'Hoàn thành tuyến Vượt Ải' : won ? 'Vượt ải thành công' : 'Chưa vượt ải', score, message.join(' · '));
+    return saved;
+  }
+
+  byId('campaign-button').addEventListener('click', () => openCampaign());
+  byId('campaign-list').addEventListener('click', () => { if (campaignRun) openCampaign(campaignRun.index); });
+  byId('campaign-next').addEventListener('click', () => { if (campaignRun) openCampaign(campaignRun.index + 1); });
+  byId('campaign-replay').addEventListener('click', () => { if (phase === 'over' && !pendingCampaign) startMatch(); });
+  byId('campaign-result-equipment').addEventListener('click', () => {
+    if (!campaignRun) return;
+    const { index } = campaignRun;
+    panels.showEquipment(playerId, () => openCampaign(index));
+  });
+  byId('campaign-save').addEventListener('click', saveCampaignResult);
 
   const pairing = createControllerPairing({
     byId,
@@ -237,6 +312,7 @@ export function startGame(config) {
   });
 
   function openLan() {
+    campaignRun = null;
     lan = true;
     practice = false;
     phase = 'lan';
@@ -296,11 +372,12 @@ export function startGame(config) {
     pairing.clear();
   }
 
-  function useAttack(fighter, target, id) {
-    const skill = id === 'motionSuper' ? superAttack : fighter.skillFor(id);
-    const equipment = equippedAttack(fighter, id);
-    const main = mainWeaponAttack(fighter, id);
-    const started = fighter.startAttack(id, equipment ?? main ?? skill ?? fighter.attacks[id], target);
+  function useAttack(fighter, target, id, crouch = false) {
+    const skill = id === 'motionSuper' ? superAttackFor(fighter) : fighter.skillFor(id);
+    const crouchAttack = crouch && fighter.onGround ? fighter.crouchAttacks?.[id] : undefined;
+    const equipment = crouchAttack ? undefined : equippedAttack(fighter, id);
+    const main = crouchAttack ? undefined : mainWeaponAttack(fighter, id);
+    const started = fighter.startAttack(id, crouchAttack ?? equipment ?? main ?? skill ?? fighter.attacks[id], target);
     if (started && equipment) {
       fighter.weaponUses = equipment.projectile?.shape === 'slipper' ? 0 : fighter.weaponUses - 1;
       toast(equipment.label.toUpperCase());
@@ -322,7 +399,7 @@ export function startGame(config) {
 
   function activateAwakening(fighter) {
     if (fighter.heroForm) {
-      if (!startHeroForm(fighter, lan || localMode === 'versus')) return false;
+      if (!startHeroForm(fighter)) return false;
       const form = fighter.activeHeroForm;
       if (form.mech) mechSlots.add(fighter.matchSlot);
       audio.cue('awaken');
@@ -352,13 +429,13 @@ export function startGame(config) {
     }
     if (!fighter.nextAwakening) toast('Đã đạt cấp tiến hóa tối đa', 2);
     else if (!fighter.awakeningUnlocked) toast(fighter.awakening.condition, 2.5);
-    else if (fighter.meter < fighter.rules.meterMax) toast('Cần đầy nộ để tiến hóa', 2);
+    else if (fighter.meter < fighter.meterMax) toast('Cần đầy nộ để tiến hóa', 2);
     else toast('Đứng vững và kết thúc đòn đang dùng để tiến hóa', 2);
     return false;
   }
 
   transformButton.addEventListener('click', () => {
-    if (phase === 'fight') requestAwakening(hung);
+    if (phase === 'fight' && requestAwakening(hung)) updateScore();
     canvas.focus({ preventScroll: true });
   });
 
@@ -434,7 +511,7 @@ export function startGame(config) {
       applyControls(mai, hung, second, controlRules);
     } else if (replay) {
       mai.lowGuardOnly = false;
-      applyControls(mai, hung, { ...replay, direction: -replay.direction }, controlRules);
+      applyControls(mai, hung, { ...replay, direction: -replay.direction, dashDirection: -replay.dashDirection }, controlRules);
     } else if (practice && training.mode !== 'cpu') {
       training.controlDummy(mai, dt, config.stage.jumpVelocity);
     } else if (practice) {
@@ -444,8 +521,9 @@ export function startGame(config) {
     if (!lan && localMode !== 'versus' && !replay && (!practice || training.mode === 'cpu')) {
       const usedAwakening = Math.abs(mai.x - hung.x) > 165 && activateAwakening(mai);
       if (!usedAwakening) cpu.update(dt, mai, hung, projectiles, world, id => useAttack(mai, hung, id), () => {
-        if (!mai.escapeFrom(hung)) return false;
-        toast(mai.name.toUpperCase() + ' THOÁT COMBO!');
+        const escaped = mai.escapeFrom(hung, world.width);
+        if (!escaped) return false;
+        toast(escaped === 'wall' ? 'BẬT TƯỜNG THOÁT GÓC!' : mai.name.toUpperCase() + ' THOÁT COMBO!');
         return true;
       });
     }
@@ -456,10 +534,14 @@ export function startGame(config) {
     applyStageEffects(world, mai, movementStart[1], stageFrame, dt);
     const previousX = [hung.x, mai.x];
     const wasAirborne = [!hung.onGround, !mai.onGround];
-    hung.update(dt, world, mai);
-    mai.update(dt, world, hung);
+    const wallRebounds = [hung.update(dt, world, mai), mai.update(dt, world, hung)];
     updateStageBall(ball, [hung, mai], world.width, dt);
     for (const [index, fighter] of [hung, mai].entries()) {
+      if (wallRebounds[index]) {
+        const edge = fighter.x < world.width / 2 ? 0 : world.width;
+        burst(edge, fighter.y - fighter.height * .56, 14, '#ffd6a3');
+        shake = Math.max(shake, .16);
+      }
       if (wasAirborne[index] && fighter.onGround) burst(fighter.x, fighter.y - 2, 4, '#d2ba97');
       if (fighter.dash?.elapsed === 1) audio.cue('dash');
       const attack = fighter.attack;
@@ -469,9 +551,11 @@ export function startGame(config) {
       }
       const effect = attack?.effect;
       if (!effect || !fighter.attackActive) continue;
-      if (attack.elapsed === attack.startup) {
+      const finishingRush = attack.visual === 'fireRush' && attack.elapsed === attack.startup + attack.pulses.at(-1).from;
+      if (finishingRush || (attack.elapsed === attack.startup && attack.visual !== 'fireRush')) {
         screenEffect = { ...effect, elapsed: 0 };
-        burst(fighter.x, fighter.y - fighter.height / 2, effect.particles, effect.color);
+        const impactX = fighter.x + (finishingRush || attack.visual === 'fireGuardian' ? attack.facing * 42 : 0);
+        burst(impactX, fighter.y - fighter.height / 2, effect.particles, effect.color);
       }
       if (effect.trailSeconds && previousX[index] !== fighter.x) {
         trails.push({
@@ -574,16 +658,18 @@ export function startGame(config) {
       text: !damage && hit.absorbed ? 'GIÁP' : '−' + damageFormat.format(damage), blocked, sparkType, facing: hit.attack.facing });
     const evolvedPunch = hit.attack.evolvedPunch && !blocked;
     burst(x, y, evolvedPunch ? 22 : blocked ? 5 : 11,
-      evolvedPunch ? '#ffcc53' : blocked ? '#a9d9ff' : hit.attack.effect?.color);
+      evolvedPunch ? '#ffcc53' : blocked ? '#a9d9ff' : hit.attack.effect?.color,
+      evolvedPunch ? hit.direction : 0);
   }
 
-  function burst(x, y, count, color) {
+  function burst(x, y, count, color, punchDirection = 0) {
     const ground = world.height * config.stage.groundRatio;
     for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
+      const angle = punchDirection ? -.2 - Math.random() * .85 : Math.random() * Math.PI * 2;
       const speed = 55 + Math.random() * 170;
       particles.push({
-        x, y: ground + y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        x, y: ground + y, vx: Math.cos(angle) * speed * (punchDirection || 1),
+        vy: Math.sin(angle) * speed - (punchDirection ? 48 : 0),
         life: .18 + Math.random() * .17, size: 2 + Math.random() * 3,
         color: color ?? (i % 2 ? '#ffcb7c' : '#fff1cf'),
       });
@@ -610,8 +696,21 @@ export function startGame(config) {
     updateScore();
     nextRound = Math.max(winsHung, winsMai) < Math.ceil(bestOf / 2);
     const winner = localMode === 'team' ? (lead > 0 ? 'ĐỘI NGƯỜI CHƠI' : 'ĐỘI CPU') : (lead > 0 ? hung : mai).name.toUpperCase();
-    ui['status-text'].textContent = lead === 0 ? 'HIỆP HÒA · ĐẤU LẠI' : winner + ' THẮNG HIỆP';
     const headToHead = lan || localMode === 'versus';
+    const sideLabel = lead > 0 ? 'P1' : headToHead ? 'P2' : 'CPU';
+    ui['status-text'].textContent = lead === 0 ? 'Hiệp hòa · Đấu lại'
+      : (localMode === 'team' ? winner : sideLabel + ' · ' + (lead > 0 ? hung.name : mai.name)) + ' thắng hiệp';
+    if (!nextRound && campaignRun) {
+      const won = winsHung > winsMai;
+      pendingCampaign = { index: campaignRun.index, serial: campaignRun.serial, won,
+        score: 'P1 · ' + hung.name + ' ' + winsHung + ' – ' + winsMai + ' CPU · ' + mai.name };
+      byId('quick-result-actions').hidden = true;
+      byId('campaign-result-actions').hidden = false;
+      saveCampaignResult();
+      return;
+    }
+    byId('quick-result-actions').hidden = false;
+    byId('campaign-result-actions').hidden = true;
     let rewardText = '';
     if (!nextRound && isPve()) {
       const reward = awardEquipment(equipment, winsHung > winsMai, difficulty);
@@ -622,7 +721,8 @@ export function startGame(config) {
     }
     panels.setResult(
       localMode === 'team' ? (winsHung > winsMai ? 'Đội người chơi thắng' : 'Đội CPU thắng') : headToHead ? 'P' + (winsHung > winsMai ? '1' : '2') + ' thắng trận' : winsHung > winsMai ? 'Chiến thắng' : 'Thất bại',
-      `${hung.name} (${headToHead ? 'P1' : 'bạn'}) ${winsHung} – ${winsMai} ${mai.name} (${headToHead ? 'P2' : 'CPU'})`,
+      (localMode === 'team' ? 'Đội người chơi' : 'P1 · ' + hung.name) + ' ' + winsHung + ' – ' + winsMai
+        + (localMode === 'team' ? ' Đội CPU' : (headToHead ? ' P2 · ' : ' CPU · ') + mai.name),
       rewardText,
     );
     if (nextRound && lead !== 0) round++;
@@ -632,18 +732,25 @@ export function startGame(config) {
     if (lastTime !== undefined) accumulator += Math.min((now - lastTime) / 1000, .1);
     lastTime = now;
     const previousHP = [hung.hp, mai.hp];
+    const previousBarriers = [hung.awakeningBarrier, mai.awakeningBarrier];
     const previousDamage = damageHung + damageMai;
     const previousSecond = Math.ceil(seconds);
     while (accumulator >= FRAME_SECONDS) {
-      previousPositions = [hung, mai].map(fighter => ({ fighter, x: fighter.x, y: fighter.y }));
+      previousPositions = [hung, mai].map(fighter => ({
+        fighter, x: fighter.x, y: fighter.y, stride: fighter.walkDistance, moving: fighter.moving,
+      }));
       update(FRAME_SECONDS);
       accumulator -= FRAME_SECONDS;
     }
-    if (previousHP[0] !== hung.hp || previousHP[1] !== mai.hp || previousSecond !== Math.ceil(seconds) || previousDamage !== damageHung + damageMai) updateScore();
+    if (previousHP[0] !== hung.hp || previousHP[1] !== mai.hp
+      || previousBarriers[0] !== hung.awakeningBarrier || previousBarriers[1] !== mai.awakeningBarrier
+      || previousSecond !== Math.ceil(seconds) || previousDamage !== damageHung + damageMai) updateScore();
     dropWeaponButton.hidden = phase !== 'fight' || !(hung.weapon || hung.weaponUses);
     dropWeaponButton.disabled = Boolean(hung.disabled || hung.attacking || hung.dash);
-    transformButton.hidden = phase !== 'fight' || !nextHeroForm(hung) || hung.heroEnergy < heroEnergyMax;
-    const transformLabel = hung.heroUpgrades ? 'BIẾN HÌNH CẤP ' + (hung.heroStage + 1) : 'BIẾN HÌNH';
+    const formReady = hung.heroForm ? nextHeroForm(hung) && hung.heroEnergy >= heroEnergyMax : hung.awakeningReady;
+    transformButton.hidden = phase !== 'fight' || !formReady;
+    const transformLabel = hung.heroUpgrades ? 'BIẾN HÌNH CẤP ' + (hung.heroStage + 1)
+      : hung.heroForm ? 'BIẾN HÌNH' : 'TIẾN HÓA CẤP ' + hung.nextAwakening;
     if (transformButton.firstElementChild.textContent !== transformLabel) transformButton.firstElementChild.textContent = transformLabel;
     transformButton.disabled = !hung.canFocus;
     if (phase === 'fight') {
@@ -665,7 +772,14 @@ export function startGame(config) {
       if (Math.hypot(dx, dy) > 24) return [0, 0]; // Snap across teleports.
       return [dx * remaining, dy * remaining];
     });
-    if (!['menu', 'setup', 'lan'].includes(phase)) render({ stage, stageFrame, width: world.width, fighters, offsets, projectiles, particles, floaters, trails,
+    const movementPoses = fighters.map((fighter, index) => {
+      const previous = previousPositions[index];
+      if (!['hung', 'mai'].includes(fighter.characterId) || phase !== 'fight' || hitstop || debug || previous?.fighter !== fighter) return null;
+      const stride = previous.moving && fighter.moving
+        ? fighter.walkDistance + (previous.stride - fighter.walkDistance) * remaining : fighter.walkDistance;
+      return { stride, jumpFrames: Math.max(0, (fighter.runJump?.frames ?? 0) - remaining) };
+    });
+    if (!['menu', 'setup', 'lan', 'campaign'].includes(phase)) render({ stage, stageFrame, width: world.width, fighters, offsets, movementPoses, projectiles, particles, floaters, trails,
       shake, screenEffect, animationTime, debug, ball, drop: pickups.drop, looseWeapons: pickups.loose,
       seasonActive: phase === 'fight' || phase === 'countdown' || phase === 'paused' });
     if (toastClock <= 0) ui.toast.classList.remove('show');

@@ -22,7 +22,12 @@
           <span class="round-label" id="round-label">HIỆP 01</span>
           <div class="arena-display-controls">
             <span class="best-of" id="match-format">BO3 · THẮNG 2</span>
-            <button type="button" class="panel-button" id="game-fullscreen" aria-pressed="false" aria-keyshortcuts="F12" title="Toàn màn hình · F12">Toàn màn hình</button>
+            <button type="button" class="panel-button" id="game-fullscreen" aria-label="Toàn màn hình" aria-pressed="false" aria-keyshortcuts="F12" title="Toàn màn hình · F12">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path class="fullscreen-enter" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/>
+                <path class="fullscreen-exit" d="M4 9h5V4m11 5h-5V4M9 20v-5H4m11 5v-5h5"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -32,17 +37,19 @@
         <div class="hud">
           <div class="player-hud player-hung">
             <div class="player-meta"><div><span class="player-side">NGƯỜI CHƠI 1</span><strong>HÙNG</strong></div><span class="wins" id="hung-wins" aria-label="Số hiệp thắng"></span></div>
-            <div class="health-track"><div class="health-fill" id="hung-health"></div><span class="health-number" id="hung-hp">100</span></div>
+            <div class="health-track"><div class="health-fill" id="hung-health"></div><div class="awakening-barrier" aria-hidden="true"></div><span class="health-number" id="hung-hp">100</span></div>
             <div class="damage-score">Điểm sát thương <b id="hung-damage-score">0</b></div>
             <div class="energy-row"><span>NỘ</span><div class="energy-track"><div id="hung-meter-fill" class="energy-fill"></div></div><span id="hung-meter-value">0/100</span></div><div class="focus-status" id="hung-focus"></div>
+            <label class="flight-stamina" id="hung-flight-stamina" hidden><span>THỂ LỰC BAY</span><progress max="100" value="100"></progress></label>
             <div id="hung-hero-energy" class="hero-energy" hidden><span></span><progress max="100" value="0" aria-label="Năng lượng biến hình"></progress></div><div class="skill-status" id="hung-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
           <div class="timer-wrap"><div class="timer" id="timer">60</div><div class="timer-caption">THỜI GIAN</div></div>
           <div class="player-hud player-mai">
             <div class="player-meta"><span class="wins" id="mai-wins" aria-label="Số hiệp thắng"></span><div class="align-right"><span class="player-side">CPU · CẤP ĐỘ THƯỜNG</span><strong>MAI</strong></div></div>
-            <div class="health-track"><div class="health-fill" id="mai-health"></div><span class="health-number" id="mai-hp">100</span></div>
+            <div class="health-track"><div class="health-fill" id="mai-health"></div><div class="awakening-barrier" aria-hidden="true"></div><span class="health-number" id="mai-hp">100</span></div>
             <div class="damage-score">Điểm sát thương <b id="mai-damage-score">0</b></div>
             <div class="energy-row"><span>NỘ</span><div class="energy-track"><div id="mai-meter-fill" class="energy-fill"></div></div><span id="mai-meter-value">0/100</span></div><div class="focus-status" id="mai-focus"></div>
+            <label class="flight-stamina" id="mai-flight-stamina" hidden><span>THỂ LỰC BAY</span><progress max="100" value="100"></progress></label>
             <div id="mai-hero-energy" class="hero-energy" hidden><span></span><progress max="100" value="0" aria-label="Năng lượng biến hình"></progress></div><div class="skill-status" id="mai-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
         </div>
@@ -98,7 +105,8 @@
               </header>
               <nav class="menu-actions" aria-label="Menu chính">
                 <div class="menu-modes">
-                  <button type="button" class="menu-mode menu-mode-featured" id="versus-button"><span>Đấu CPU</span><small>Một người · PvE</small></button>
+                  <button type="button" class="menu-mode menu-mode-featured" id="campaign-button"><span>Vượt Ải</span><small>Đấu tuyến PvE · Kiếm trang bị</small></button>
+                  <button type="button" class="menu-mode" id="versus-button"><span>Đấu CPU</span><small>Đấu nhanh · Một người</small></button>
                   <button type="button" class="menu-mode" id="local-button"><span>Đấu 2 người</span><small>Chung bàn phím</small></button>
                   <button type="button" class="menu-mode" id="team-button"><span>Đấu đội</span><small>2 người gặp 2 CPU</small></button>
                   <button type="button" class="menu-mode" id="lan-button"><span>Tay cầm điện thoại</span><small>Đấu 2 người · Kết nối bằng QR</small></button>
@@ -112,6 +120,29 @@
               </nav>
             </div>
           </div>
+          <section class="game-panel campaign-panel" id="campaign-panel" aria-labelledby="campaign-title" hidden>
+            <header><h2 id="campaign-title">Vượt Ải</h2><p id="campaign-progress" role="status"></p></header>
+            <div class="campaign-body">
+              <div id="campaign-stages" role="group" aria-label="Danh sách ải"></div>
+              <section class="campaign-setup" aria-labelledby="campaign-stage-name">
+                <h3 id="campaign-stage-name"></h3>
+                <p id="campaign-rules"></p>
+                <fieldset class="campaign-roster">
+                  <legend>Chọn võ sĩ · <span id="campaign-fighter-name"></span></legend>
+                  <div class="roster-cards" id="campaign-fighters"></div>
+                  <nav class="roster-pagination" id="campaign-fighter-pages" aria-label="Trang võ sĩ"></nav>
+                </fieldset>
+                <p id="campaign-loadout"></p>
+                <p id="campaign-stats"></p>
+              </section>
+            </div>
+            <footer class="panel-actions">
+              <button type="button" class="panel-button" data-menu>Về menu</button>
+              <button type="button" class="panel-button" id="campaign-claim" hidden>Nhận đồ chờ</button>
+              <button type="button" class="panel-button" id="campaign-equipment">Trang bị PvE</button>
+              <button type="button" class="primary-button" id="campaign-start">Vào ải</button>
+            </footer>
+          </section>
           <div class="center-callout game-panel" id="lan-panel" aria-labelledby="lan-title" hidden>
             <h2 id="lan-title">Kết nối tay cầm</h2>
             <div id="lan-lobby">
@@ -175,7 +206,7 @@
           <div class="center-callout game-panel setup-panel equipment-panel" id="equipment-panel" hidden>
             <header class="equipment-header">
               <div><h2>Trang bị PvE</h2><p id="equipment-wallet" aria-live="polite"></p></div>
-              <button class="panel-button" data-menu>Về menu</button>
+              <button class="panel-button" id="equipment-back">Về menu</button>
             </header>
             <div class="equipment-tabs" role="group" aria-label="Kho đồ và cửa hàng">
               <button type="button" class="panel-button" id="equipment-inventory-tab" aria-pressed="true">Kho đồ</button>
@@ -283,9 +314,10 @@
               <form id="youtube-music-form">
                 <label for="youtube-music-link">Dán link video bạn muốn nghe</label>
                 <div class="youtube-music-actions">
-                  <input id="youtube-music-link" type="text" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://youtu.be/…" aria-describedby="youtube-music-status">
+                  <input id="youtube-music-link" type="text" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://youtu.be/…" aria-describedby="youtube-music-error">
                   <button class="panel-button" type="submit">Phát nhạc nền</button>
                 </div>
+                <p id="youtube-music-error" role="status" hidden></p>
               </form>
             </section>
           </div>
@@ -302,15 +334,21 @@
             <div class="guide-instructions">
             <p>Dùng phím hướng và OK hoặc Enter để chọn trong menu.</p>
             <p>Bấm Nhảy cùng Trái hoặc Phải để nhảy chéo. Bấm hướng còn lại để đổi hướng trên không.</p>
+            <p>Bấm Trái hoặc Phải hai lần nhanh để lướt theo hướng đó.</p>
             <p>Đấm nhẹ và đấm nặng dùng luân phiên tay trái/phải. Nút Đá luân phiên chân trái/phải theo nhịp riêng.</p>
             <p>Giữ <kbd data-binding="f">F</kbd> để nạp đầy nộ, rồi đứng vững và bấm <kbd data-binding="g">G</kbd> để tiến hóa. Trong trận thường, mỗi nhân vật có điều kiện riêng. Bấm phím tiến hóa để xem gợi ý. Trong Luyện tập, dùng nút Nạp cấp tiến hóa kế tiếp để nạp nhanh.</p>
             <p>Bấm Trái hoặc Phải để quay mặt và di chuyển. Khi thả nút, nhân vật giữ hướng vừa chọn. Đỡ đòn về phía đang nhìn.</p>
             <p>Giữ hướng hoặc bấm Nhảy trong lúc đấm, đá hay dùng vũ khí để vừa di chuyển vừa đánh. Mỗi đòn giữ hướng đã chọn lúc bắt đầu.</p>
-            <p><strong>Long Quyền Khí Pháo · Cần ít nhất 50 nộ</strong> — Khi đứng đất, bấm Xuống rồi bấm hướng muốn bắn cùng Đấm nhẹ. Chưởng rút nộ liên tục, bắn lâu hơn khi có nhiều nộ và tắt nếu hết nộ hoặc bị ngắt đòn. P1 mặc định dùng <kbd data-binding="s">S</kbd> rồi <kbd data-binding="a">A</kbd> hoặc <kbd data-binding="d">D</kbd> + <kbd data-binding="j">J</kbd>. P2 dùng ↓ rồi ← hoặc → + Num 1. Tay cầm dùng nút hướng hoặc joystick và Đấm nhẹ.</p>
+            <p><strong>Bay khi Mai mọc cánh</strong> — Giữ <kbd data-binding="w">W</kbd> để lên, <kbd data-binding="s">S</kbd> để xuống, <kbd data-binding="a">A</kbd>/<kbd data-binding="d">D</kbd> để bay ngang. Thả phím hướng để lơ lửng. Thể lực hồi khi chạm đất. P2 dùng các phím mũi tên.</p>
+            <p><strong>Tuyệt kỹ theo hướng · 50 nộ</strong> — Khi đứng đất, bấm Xuống rồi bấm Tiến cùng Đấm nhẹ. P1 mặc định dùng <kbd data-binding="s">S</kbd> rồi <kbd data-binding="a">A</kbd> hoặc <kbd data-binding="d">D</kbd> + <kbd data-binding="j">J</kbd> theo hướng đang nhìn. P2 dùng ↓ rồi ← hoặc → + Num 1. Hùng gọi Hỏa Pháp Tướng, Mai lướt tới tung Phong Ảnh Trảm. Các võ sĩ còn lại tung Long Quyền Khí Pháo.</p>
             <p><strong>Vũ khí</strong> · Đi lại gần để tự nhặt. Bấm <kbd data-binding="b">B</kbd> hoặc nút Thả vũ khí để đặt xuống. Khi cầm dép, Đòn nhẹ để vụt và Đòn nặng để ném. Với thương, nối hai đòn nhẹ, đòn nặng rồi chiêu gần để hất đối thủ. Với trượng, nối hai đòn nhẹ rồi chiêu xa để bắn phép.</p>
             <p><strong>Hùng</strong> · Bấm <kbd data-binding="j">J</kbd> ba lần để nối đấm trái, phải, trái khi đòn trước trúng.</p>
             <p><strong>Uy Áp Tử Ảnh</strong> — Giữ nút Tụ khí khi chơi Tử Ảnh Lam Chi. Mất thêm một nhịp để lấy đà, sau đó nộ tăng nhanh hơn.</p>
             <p><strong>Mai · Bay khi có cánh</strong> — Bấm Nhảy để cất cánh, dùng phím trái/phải và các đòn đánh trên không. Bấm Xuống để hạ cánh. Mai sẽ rơi khi trúng đòn hoặc hết tiến hóa.</p>
+            <p><strong>Đá kết liễu và đỡ đòn</strong> — Cú đá trúng ở đòn thứ ba của combo trở đi sẽ kết thúc chuỗi. L khi đứng hất văng, S + L quét ngã. Giữ <kbd data-binding="p">P</kbd> để đỡ hoặc <kbd data-binding="s">S</kbd> + <kbd data-binding="p">P</kbd> để đỡ thấp. Cú đá vẫn làm hao thanh đỡ và có thể phá đỡ.</p>
+            <p><strong>Thoát góc</strong> — Khi bị choáng đòn, vỡ đỡ hoặc đang bị hất sát tường, bấm <kbd data-binding="t">T</kbd> để bật về giữa sân. Bật tường không tốn nộ và hồi sau 6 giây. Kiểm tra phím tương ứng của P2 trong cài đặt.</p>
+            <p><strong>Tiến hóa và biến hình</strong> — Dạng mới giữ đến khi giáp phụ trên thanh máu vỡ hoặc bị đánh ngã. Mỗi cấp có thêm 25 nộ tối đa, bắt đầu với 8 nộ và dùng nhiều nộ hơn cho các kỹ năng đặc biệt.</p>
+            <p><strong>Hùng · Khinh công khi tiến hóa</strong> — Bấm Nhảy hai lần nhanh để bật cao thêm hoặc thoát khống chế. Khinh công chỉ dùng một lần mỗi lượt trên không và hồi sau 2 giây.</p>
             </div>
             <section class="lower-grid">
               <div class="controls-card"><div class="section-heading"><span class="tiny-icon">⌘</span><h2>ĐIỀU KHIỂN</h2><span class="heading-note">HÙNG · NGƯỜI CHƠI</span></div><div class="controls-list">
@@ -344,7 +382,14 @@
           <div id="fight-banner" class="fight-banner" role="status" hidden></div>
           <div class="center-callout game-panel" id="result-panel" hidden>
             <h2 id="result-title"></h2><p id="result-score"></p><p id="result-reward" hidden></p>
-            <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" data-replay>Chơi lại</button></div>
+            <div class="panel-actions" id="quick-result-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" data-replay>Chơi lại</button></div>
+            <div class="panel-actions" id="campaign-result-actions" hidden>
+              <button type="button" class="panel-button" id="campaign-list">Về danh sách ải</button>
+              <button type="button" class="panel-button" id="campaign-result-equipment">Trang bị</button>
+              <button type="button" class="panel-button" id="campaign-save" hidden>Thử lưu lại</button>
+              <button type="button" class="panel-button" id="campaign-replay">Chơi lại</button>
+              <button type="button" class="primary-button" id="campaign-next" hidden>Ải tiếp theo</button>
+            </div>
           </div>
           <div class="toast" id="toast" aria-live="polite"></div>
           <div class="keyboard-hint" id="keyboard-hint" role="status" hidden>Nếu dùng UniKey, hãy chuyển từ V sang E để tránh lỗi phím di chuyển.</div>
@@ -353,16 +398,20 @@
         </div>
 
         <div class="arena-footer"><span><i class="status-dot"></i> SẴN SÀNG KHI BẠN</span><span id="status-text">CHỌN THỜI ĐIỂM RA ĐÒN</span><span class="latency"><span id="network-mode">OFFLINE</span> <b>●</b></span></div>
+        <aside id="youtube-music-dock" aria-label="Nhạc nền YouTube">
+          <div class="youtube-music-dock-bar">
+            <span>Nhạc nền YouTube</span>
+            <button class="panel-button" type="button" id="youtube-music-toggle" aria-controls="youtube-music-details" aria-expanded="false">Hiện</button>
+          </div>
+          <div id="youtube-music-details" hidden>
+            <div id="youtube-music-player"></div>
+            <div class="youtube-music-dock-actions">
+              <button class="panel-button" type="button" id="youtube-music-stop">Dừng nhạc</button>
+              <a id="youtube-music-open" target="_blank" rel="noopener noreferrer">Mở video</a>
+            </div>
+          </div>
+        </aside>
       </section>
-      <aside id="youtube-music-dock" aria-label="Nhạc nền YouTube">
-        <div class="youtube-music-dock-bar">
-          <span id="youtube-music-now-playing">Nhạc nền YouTube</span>
-          <button class="panel-button" type="button" id="youtube-music-stop" hidden>Dừng nhạc</button>
-          <a id="youtube-music-open" target="_blank" rel="noopener noreferrer" hidden>Mở video</a>
-        </div>
-        <p id="youtube-music-status" role="status"></p>
-        <div id="youtube-music-player" hidden></div>
-      </aside>
 
     </main>
     <script defer src="/src/game.bundle.js"></script>

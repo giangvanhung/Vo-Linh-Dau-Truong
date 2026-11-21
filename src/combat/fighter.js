@@ -1,8 +1,9 @@
 import { groundHeightAt, stageFloorAt } from '../game/stages.js';
-import { tickHeroForm } from '../game/hero-form.js';
+import { endHeroForm, tickHeroForm } from '../game/hero-form.js';
 
 export const FRAME_SECONDS = 1 / 60;
 export const KNOCKDOWN_FRAMES = 38;
+const specialSkills = new Set(['closeSkill', 'rangedSkill', 'ultimate', 'motionSuper']);
 
 export class Fighter {
   constructor(config, x, facing, rules) {
@@ -19,6 +20,10 @@ export class Fighter {
     this.airDirection = 0;
     this.superMotionFrames = 0;
     this.onGround = true;
+    this.airStepWindow = 0;
+    this.airStepUsed = false;
+    this.runJump = null;
+    this.jumpBuffer = null;
     this.moving = false;
     this.walkDistance = 0;
     this.crouching = false;
@@ -30,6 +35,7 @@ export class Fighter {
     this.hitstun = 0;
     this.knockdown = 0;
     this.knockdownOnLanding = false;
+    this.kickWallBounce = false;
     this.knockVelocity = 0;
     this.flash = 0;
     this.attackLock = 0;
@@ -40,9 +46,13 @@ export class Fighter {
     this.combo = 0;
     this.meter = 0;
     this.chargeFrames = 0;
-    this.awakeningFrames = 0;
+    this.formAge = 0;
     this.awakeningLevel = 0;
+    this.awakeningBarrier = 0;
     this.flightTarget = null;
+    this.flightStamina = 0;
+    this.freeFlying = false;
+    this.flightX = this.flightY = 0;
     this.awakeningUnlocked = false;
     this.awakeningWindow = 0;
     this.lastConfirmedAttack = null;
@@ -56,7 +66,6 @@ export class Fighter {
     this.powerFrames = 0;
     this.regenFrames = 0;
     this.heroEnergy = 0;
-    this.heroFrames = 0;
     this.heroStage = 0;
     this.heroMechUsed = false;
     this.heroCounter = 0;
@@ -69,6 +78,7 @@ export class Fighter {
     this.dashCooldown = 0;
     this.cooldowns = {};
     this.escapeCooldown = 0;
+    this.wallEscapeCooldown = 0;
     this.escapeProtection = 0;
     this.escapeRecovery = 0;
   }
@@ -79,6 +89,8 @@ export class Fighter {
   get attacking() { return this.attack !== null; }
   get canMoveDuringAttack() {
     const attack = this.attack;
+    if (attack?.plantFoot && this.onGround && attack.elapsed >= attack.advanceFrames
+      && attack.elapsed < attack.startup + attack.active + Math.ceil(attack.recovery * .56)) return false;
     return !attack || (!attack.groundOnly && Boolean(attack.pickupWeapon || this.attacks[attack.id]));
   }
   get attackActive() {
@@ -88,7 +100,7 @@ export class Fighter {
 
   get charging() { return this.chargeFrames > 0; }
   get activeHeroForm() {
-    if (!this.heroFrames) return null;
+    if (!this.heroStage) return null;
     return this.heroStage === 1 ? this.heroForm : this.heroUpgrades?.[this.heroStage - 2];
   }
   get jumpMultiplier() { return (1 + (this.equipmentStats?.jump ?? 0) / 100) * (this.activeHeroForm?.jump ?? 1); }
@@ -99,15 +111,22 @@ export class Fighter {
   }
   get awakeningForm() { return this.awakeningLevel === 2 ? this.awakening.levelTwo : this.awakening; }
   get evolution() { return this.awakeningForm?.evolution; }
-  get awakeningDuration() { return this.awakeningForm?.durationFrames ?? 480; }
-  get evolving() { return this.awakeningFrames > 0 && Boolean(this.evolution); }
-  get canFly() { return this.evolving && Boolean(this.evolution.flightHeight); }
+  get evolving() { return this.awakeningLevel > 0 && Boolean(this.evolution); }
+  get formLevel() { return this.awakeningLevel || this.heroStage; }
+  get meterMax() { return this.rules.meterMax + this.formLevel * 25; }
+  get barrierMax() {
+    if (!this.formLevel) return 0;
+    return this.awakeningForm?.barrierHp
+      ?? (([0, 24, 36, 46][this.formLevel]) + (this.activeHeroForm?.hp ?? this.evolution?.bonusHp ?? 0));
+  }
+  get flight() { return this.evolving ? this.evolution.flight : null; }
+  get canFly() { return this.evolving && (this.flight ? this.flightStamina >= 15 : Boolean(this.evolution.flightHeight)); }
   get nextAwakening() {
     if (!this.awakeningLevel) return this.awakening ? 1 : 0;
     return this.awakeningLevel === 1 && this.awakening.levelTwo ? 2 : 0;
   }
   get awakeningReady() {
-    return Boolean(this.nextAwakening && this.awakeningUnlocked && this.meter >= this.rules.meterMax);
+    return Boolean(this.nextAwakening && this.awakeningUnlocked && this.meter >= this.meterMax);
   }
   get canFocus() {
     return this.onGround && !this.disabled && this.stageCondition?.kind !== 'morph' && !this.attackLock && !this.attacking
@@ -127,36 +146,89 @@ export class Fighter {
 
   awaken() {
     if (!this.awakeningReady || !this.canFocus) return false;
-    this.meter = 0;
     this.chargeFrames = 0;
     this.awakeningLevel = this.nextAwakening;
-    this.awakeningFrames = this.awakeningDuration;
+    this.refreshFormResources();
+    this.flightStamina = this.flight?.stamina ?? 0;
     this.attackLock = .32;
-    const bonusHp = this.baseHp + (this.evolution?.bonusHp ?? 0) - this.maxHp;
-    if (bonusHp > 0) {
-      this.maxHp += bonusHp;
-      this.hp += bonusHp;
-    }
     delete this.cooldowns[this.awakeningForm.skill];
     return true;
   }
 
   endAwakening() {
     this.stopFlight();
-    this.awakeningFrames = 0;
+    this.airStepWindow = 0;
     this.awakeningLevel = 0;
-    this.maxHp = this.baseHp;
-    this.hp = Math.min(this.hp, this.maxHp);
+    this.flightStamina = 0;
+    this.clearFormResources();
+  }
+
+  refreshFormResources() {
+    this.formAge = 0;
+    this.awakeningBarrier = this.barrierMax;
+    this.meter = 8;
+  }
+
+  clearFormResources() {
+    this.formAge = 0;
+    this.awakeningBarrier = 0;
+    this.meter = Math.min(this.meter, this.meterMax);
+  }
+
+  checkAwakeningBreak() {
+    if (!this.formLevel || (this.hp > 0 && !this.knockdown && this.awakeningBarrier > 0)) return;
+    if (this.heroStage) endHeroForm(this);
+    else this.endAwakening();
   }
 
   startFlight() {
-    this.flightTarget = this.y - this.evolution.flightHeight;
+    if (this.flight) {
+      this.freeFlying = true;
+      this.vy = 0;
+      this.runJump = null;
+    } else this.flightTarget = this.y - this.evolution.flightHeight;
     this.onGround = false;
   }
 
+  tryAwakeningAirStep(target, jumpVelocity, direction) {
+    const step = this.awakening?.airStep;
+    if (!step || !this.evolving || this.hp <= 0 || this.stageCondition?.kind === 'morph'
+      || this.dash || this.blocking || this.airStepUsed || this.cooldowns.airStep) return false;
+    if (!this.airStepWindow) {
+      this.airStepWindow = step.inputFrames;
+      return false;
+    }
+
+    if (this.disabled) {
+      target.combo = 0;
+      if (target.attack) target.attack.confirmed = false;
+    }
+    this.airStepWindow = 0;
+    this.airStepUsed = true;
+    this.cooldowns.airStep = step.cooldownFrames;
+    this.escapeProtection = Math.max(this.escapeProtection, step.invulnerableFrames);
+    this.hitstun = this.knockdown = this.freezeFrames = this.guardBreak = this.escapeRecovery = this.attackLock = 0;
+    this.knockdownOnLanding = false;
+    this.kickWallBounce = false;
+    if (this.stageCondition?.kind === 'stun') this.stageCondition = null;
+    this.knockVelocity = 0;
+    this.attack = this.bufferedAttack = null;
+    this.crouching = false;
+    this.superMotionFrames = 0;
+    this.stopFlight();
+    this.vy = -jumpVelocity * this.jumpMultiplier * step.jumpScale;
+    this.airDirection = direction;
+    this.runJump = null;
+    this.jumpBuffer = null;
+    this.onGround = false;
+    return true;
+  }
+
   stopFlight() {
-    if (this.flightTarget === null) return;
+    if (this.flightTarget === null && !this.freeFlying) return;
     this.flightTarget = null;
+    this.freeFlying = false;
+    this.flightX = this.flightY = 0;
     this.vy = Math.max(0, this.vy);
   }
 
@@ -165,15 +237,15 @@ export class Fighter {
     if (this.heroUpgrades && this.activeHeroForm) {
       return this.activeHeroForm.skills?.[id === 'closeSkill' && this.heroCounter ? 'counter' : id] ?? skill;
     }
-    if (this.heroFrames && id === 'rangedSkill') return {
+    if (this.heroStage && id === 'rangedSkill') return {
       ...skill, label: 'Lôi Mạch', damage: skill.damage + 3, startup: Math.max(10, skill.startup - 3),
       projectile: { ...skill.projectile, shape: 'piercingRay', speed: skill.projectile.speed * 1.18, color: this.heroForm.color },
     };
-    if (this.heroFrames && id === 'closeSkill') return {
+    if (this.heroStage && id === 'closeSkill') return {
       ...skill, label: 'Cầu Chì Bật', damage: skill.damage + 2, knockback: skill.knockback + 30,
       effect: { ...skill.effect, color: this.heroForm.color },
     };
-    if (!this.awakeningFrames || this.awakeningForm?.skill !== id) return skill;
+    if (!this.evolving || this.awakeningForm?.skill !== id) return skill;
     const { label, changes } = this.awakeningForm;
     return {
       ...skill, ...changes, label,
@@ -204,25 +276,37 @@ export class Fighter {
     return true;
   }
 
+  attackMeter(id, definition) {
+    const surcharge = this.formLevel && specialSkills.has(id) ? 10 + this.formLevel * 5 : 0;
+    const cost = definition.cost ?? 0;
+    return { cost: cost + surcharge, required: (definition.meterRequired ?? cost) + surcharge };
+  }
+
   startAttack(id, definition, target) {
     if (this.disabled || this.stageCondition?.kind === 'morph' || this.dash || this.attackLock > 0 || this.blocking) return false;
-    const cost = definition.cost ?? 0;
-    if ((definition.groundOnly && !this.onGround) || this.cooldowns[id] > 0 || this.meter < (definition.meterRequired ?? cost)) return false;
+    const { cost, required } = this.attackMeter(id, definition);
+    if ((definition.groundOnly && !this.onGround) || this.cooldowns[id] > 0 || this.meter < required) return false;
     const previous = this.attack;
-    if (previous && (!previous.confirmed || !previous.cancelInto.includes(id)
-      || target.hitstun <= definition.startup)) return false;
+    if (previous) {
+      const normalLink = previous.advance && definition.advance && this.onGround &&
+        previous.elapsed >= previous.startup + (previous.confirmed ? 2 : previous.active);
+      const confirmedLink = (!previous.advance || !definition.advance) && previous.confirmed && target.hitstun > definition.startup;
+      const kickLink = id === 'kick' && ['light', 'heavy', 'kick'].includes(previous.id)
+        && !previous.pickupWeapon && !previous.projectile && !definition.pickupWeapon && !definition.projectile
+        && previous.confirmed && this.combo < 3 && previous.elapsed >= previous.startup + 2
+        && target.hitstun > definition.startup && this.onGround && target.onGround;
+      if (!kickLink && (!previous.cancelInto.includes(id) || !(normalLink || confirmedLink))) return false;
+    }
 
     if (!previous) this.combo = 0;
     this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false,
       usesNativeWeapon: Boolean(this.weapon) && !this.weaponUses && !definition.pickupWeapon && !definition.unarmed };
-    if (this.characterId === 'hung' && id === 'light' && !definition.pickupWeapon) {
-      const punch = (previous?.punchChain ?? 0) + 1;
-      this.attack.punchChain = punch;
-      this.attack.cancelInto = definition.cancelInto.filter(move => move !== 'light');
-      if (punch < 3) this.attack.cancelInto.unshift('light');
-      else {
+    this.attack.lightStrikeDrop = this.lightStrikeDrop(this.attack, target);
+    if (definition.advance) {
+      this.attack.normalChain = (previous?.normalChain ?? 0) + 1;
+      if (this.attack.normalChain >= 3) {
         this.attack.cancelInto = [];
-        this.attack.recovery = Math.max(16, this.attack.recovery);
+        this.attack.recovery = Math.max(12, this.attack.recovery);
         this.attack.hitstun = Math.min(11, this.attack.hitstun);
       }
     }
@@ -244,12 +328,12 @@ export class Fighter {
     if (previous && this.onGround && target.onGround && !definition.projectile
       && !definition.travel && !definition.pickupWeapon) this.attack.followThrough = true;
     if (!definition.projectile && !definition.pickupWeapon) {
-      if (id === 'light' || id === 'heavy') {
-        this.attack.limbSide = this.nextPunchSide;
-        this.nextPunchSide = this.nextPunchSide === 'left' ? 'right' : 'left';
-      } else if (id === 'kick') {
+      if (id === 'kick') {
         this.attack.limbSide = this.nextKickSide;
         this.nextKickSide = this.nextKickSide === 'left' ? 'right' : 'left';
+      } else if (id === 'light' || id === 'heavy') {
+        this.attack.limbSide = this.nextPunchSide;
+        this.nextPunchSide = this.nextPunchSide === 'left' ? 'right' : 'left';
       }
     }
     const equipment = this.equipmentStats;
@@ -268,7 +352,7 @@ export class Fighter {
     if (this.evolving && this.evolution.punchMultiplier && (id === 'light' || id === 'heavy')) {
       this.attack.evolvedPunch = true;
     }
-    this.crouching = false;
+    this.crouching = Boolean(definition.lowStance);
     this.meter -= cost;
     if (definition.cooldownFrames) {
       this.cooldowns[id] = Math.ceil(definition.cooldownFrames * (1 - (equipment?.cooldown ?? 0) / 100));
@@ -278,11 +362,11 @@ export class Fighter {
 
   gainMeter(amount) {
     const gain = amount * (1 + (this.equipmentStats?.energy ?? 0) / 100);
-    this.meter = Math.min(this.rules.meterMax, Math.round((this.meter + gain) * 100) / 100);
+    this.meter = Math.min(this.meterMax, Math.round((this.meter + gain) * 100) / 100);
   }
 
-  startDash(enhanced, rollDirection = 0) {
-    if (this.activeHeroForm?.mech) return false;
+  startDash(enhanced, rollDirection = 0, direction = this.facing) {
+    if (this.activeHeroForm?.mech || this.freeFlying) return false;
     const dash = rollDirection
       ? { frames: 18, distance: 104, invulnerableFrames: 10, roll: true }
       : this.dashOptions[enhanced ? 'enhanced' : 'normal'];
@@ -292,33 +376,54 @@ export class Fighter {
 
     this.meter -= cost;
     this.dashCooldown = this.dashCooldownFrames;
-    this.dash = { ...dash, facing: rollDirection || this.facing, elapsed: 0 };
+    this.dash = { ...dash, facing: rollDirection || direction, elapsed: 0 };
+    if (!rollDirection) this.facing = direction;
     this.crouching = false;
     this.knockVelocity = 0;
     return true;
   }
 
-  escapeFrom(attacker) {
-    const escape = this.rules.escape;
-    if (this.hp <= 0 || this.hitstun <= 0 || attacker.combo < escape.minCombo
-      || this.escapeCooldown > 0 || this.meter < escape.cost) return false;
+  wallEscapeDirection(attacker, width) {
+    if (this.hp <= 0 || this.knockdown || this.wallEscapeCooldown
+      || !(this.hitstun || this.guardBreak || this.knockdownOnLanding)) return 0;
+    const wallRange = this.width / 2 + 28;
+    const inward = this.x <= wallRange ? 1 : this.x >= width - wallRange ? -1 : 0;
+    const gap = (attacker.x - this.x) * inward;
+    return gap >= 0 && gap <= 108 ? inward : 0;
+  }
 
-    this.meter -= escape.cost;
-    this.escapeCooldown = escape.cooldownFrames;
-    this.escapeProtection = escape.invulnerableFrames;
+  escapeFrom(attacker, width) {
+    const escape = this.rules.escape;
+    const wall = this.wallEscapeDirection(attacker, width);
+    if (!wall && (this.hp <= 0 || this.hitstun <= 0 || attacker.combo < escape.minCombo
+      || this.escapeCooldown > 0 || this.meter < escape.cost)) return false;
+
+    if (wall) {
+      this.wallEscapeCooldown = 360;
+      this.stopFlight();
+      this.vy = -490;
+      this.onGround = false;
+      this.guardBreak = 0;
+    } else {
+      this.meter -= escape.cost;
+      this.escapeCooldown = escape.cooldownFrames;
+    }
+    this.escapeProtection = wall ? 23 : escape.invulnerableFrames;
     this.escapeRecovery = escape.recoveryFrames;
     this.hitstun = 0;
     this.attack = null;
     this.flash = 0;
-    this.knockVelocity = (Math.sign(this.x - attacker.x) || -this.facing) * escape.pushSpeed;
+    this.knockVelocity = wall ? wall * 1060 : (Math.sign(this.x - attacker.x) || -this.facing) * escape.pushSpeed;
     this.knockdownOnLanding = false;
+    this.kickWallBounce = false;
     attacker.combo = 0;
     if (attacker.attack) attacker.attack.confirmed = false;
-    return true;
+    return wall ? 'wall' : 'combo';
   }
 
   endFrame() {
     tickHeroForm(this);
+    this.airStepWindow = Math.max(0, this.airStepWindow - 1);
     if (this.stageCondition) {
       const effect = this.stageCondition;
       if (--effect.remaining % 30 === 0 && effect.kind === 'poison' && this.hp > 1) {
@@ -330,7 +435,7 @@ export class Fighter {
       this.regenFrames = 0;
       const stats = this.equipmentStats;
       if (stats?.regenHp) this.hp = Math.min(this.maxHp, this.hp + stats.regenHp);
-      if (stats?.regenMana) this.meter = Math.min(this.rules.meterMax, this.meter + stats.regenMana);
+      if (stats?.regenMana) this.meter = Math.min(this.meterMax, this.meter + stats.regenMana);
     }
     if (this.weaponFrames > 0 && --this.weaponFrames === 0) this.weaponUses = 0;
     this.knockdown = Math.max(0, this.knockdown - 1);
@@ -341,7 +446,11 @@ export class Fighter {
       if (--this.poisonFrames === 0) this.poisonStacks = 0;
       else if (this.poisonFrames % 30 === 0 && this.hp > 1) this.hp = Math.max(1, Math.round((this.hp - 1) * 100) / 100);
     }
-    if (this.awakeningFrames > 0 && --this.awakeningFrames === 0) this.endAwakening();
+    if (this.formLevel) this.formAge++;
+    const flight = this.flight;
+    if (flight && this.onGround) {
+      this.flightStamina = Math.min(flight.stamina, this.flightStamina + flight.regen * FRAME_SECONDS);
+    }
     this.powerFrames = Math.max(0, this.powerFrames - 1);
     this.awakeningWindow = Math.max(0, this.awakeningWindow - 1);
     for (const id of Object.keys(this.cooldowns)) {
@@ -352,6 +461,7 @@ export class Fighter {
     this.escapeRecovery = Math.max(0, this.escapeRecovery - 1);
     this.dashCooldown = Math.max(0, this.dashCooldown - 1);
     this.escapeCooldown = Math.max(0, this.escapeCooldown - 1);
+    this.wallEscapeCooldown = Math.max(0, this.wallEscapeCooldown - 1);
   }
 
   update(dt, world, target) {
@@ -373,7 +483,13 @@ export class Fighter {
       const attack = this.attack;
       attack.elapsed++;
       const activeFrame = attack.elapsed - attack.startup;
-      if (attack.followThrough && activeFrame <= 0 && this.onGround && target.onGround
+      const advanceFrames = attack.advanceFrames ?? attack.startup + attack.active - 1;
+      if (attack.advance && this.onGround && attack.elapsed <= advanceFrames) {
+        const step = attack.advance / advanceFrames;
+        const gap = (target.x - this.x) * attack.facing - (this.width + target.width) / 2;
+        const distance = Math.abs(this.y - target.y) < this.height ? Math.min(step, Math.max(0, gap)) : step;
+        this.x += attack.facing * distance;
+      } else if (!attack.advance && attack.followThrough && activeFrame <= 0 && this.onGround && target.onGround
         && Math.abs(this.y - target.y) < 12) {
         const gap = (target.x - this.x) * attack.facing - (this.width + target.width) / 2;
         this.x += attack.facing * Math.max(0, Math.min(gap, 18 / Math.max(1, attack.startup)));
@@ -394,13 +510,36 @@ export class Fighter {
       }
       if (this.attack.elapsed >= this.attack.startup + this.attack.active + this.attack.recovery) this.attack = null;
     }
+    if (this.freeFlying && (this.disabled || this.stageCondition?.kind === 'morph')) this.stopFlight();
+    if (this.freeFlying) {
+      const flight = this.flight;
+      const speed = flight.speed / Math.max(1, Math.hypot(this.flightX, this.flightY));
+      this.x += this.flightX * speed * dt;
+      this.clampX(world);
+      const floor = stageFloorAt(world, this.x, this.y);
+      const ceiling = Math.min(floor, this.height + 8 - world.height * world.groundRatio);
+      this.y = Math.max(ceiling, Math.min(floor, this.y + this.flightY * speed * dt));
+      this.flightStamina = Math.max(0, this.flightStamina - flight.drain * dt);
+      if ((this.flightY > 0 && this.y >= floor) || this.flightStamina === 0) this.stopFlight();
+    }
     this.x += this.knockVelocity * dt;
     this.knockVelocity *= Math.pow(0.001, dt);
+    const unclampedX = this.x;
     this.clampX(world);
+    const wallRebound = this.kickWallBounce && unclampedX !== this.x;
+    if (wallRebound) {
+      const inward = unclampedX > this.x ? -1 : 1;
+      this.knockVelocity = inward * Math.max(480, Math.abs(this.knockVelocity) * .72);
+      this.vy = Math.min(this.vy, -170);
+      this.kickWallBounce = false;
+    }
     this.updateVertical(dt, world);
+    this.checkAwakeningBreak();
+    return wallRebound;
   }
 
   updateVertical(dt, world) {
+    if (this.freeFlying) return;
     if (this.flightTarget !== null) {
       if (this.canFly && !this.disabled) {
         this.y = Math.max(this.flightTarget, this.y - 245 * dt);
@@ -416,18 +555,22 @@ export class Fighter {
     this.y = walkingDownRamp ? floor : Math.min(floor, this.y + this.vy * dt);
     this.onGround = this.y === floor;
     if (this.onGround) {
+      if (this.runJump) this.walkDistance = this.runJump.stride;
+      this.runJump = null;
+      this.airStepUsed = false;
       this.vy = 0;
       this.airDirection = 0;
-      if (this.knockdownOnLanding && this.hp > 0) {
+      if (this.knockdownOnLanding) {
         this.knockdownOnLanding = false;
-        this.knockdown = KNOCKDOWN_FRAMES;
+        this.kickWallBounce = false;
+        if (this.hp > 0) this.knockdown = this.knockdownFrames ?? KNOCKDOWN_FRAMES;
         this.hitstun = 0;
       }
-    }
+    } else if (this.runJump) this.runJump.frames++;
   }
 
   clampX(world) {
-    const margin = this.width / 2 + 15;
+    const margin = this.width / 2;
     this.x = Math.max(margin, Math.min(world.width - margin, this.x));
   }
 
@@ -441,15 +584,38 @@ export class Fighter {
   }
 
   get attackBoxes() {
-    return this.attackBoxesFor(this.attack, this.attack.facing);
+    const attack = this.attack;
+    const pulse = this.activePulse;
+    return this.attackBoxesFor(pulse?.limbBoxes ? { ...attack, limbBoxes: pulse.limbBoxes } : attack, attack.facing);
   }
 
-  attackBoxesFor(attack, facing) {
+  get activePulse() {
+    const attack = this.attack;
+    if (!attack?.pulses) return null;
+    const age = attack.elapsed - attack.startup;
+    return attack.pulses.find(({ from, to }) => age >= from && age < to);
+  }
+
+  lightStrikeDrop(attack, target) {
+    if (attack.id !== 'light' || attack.projectile || attack.pickupWeapon || attack.lowStance
+      || !this.onGround || !target?.onGround || Math.abs(this.y - target.y) > 10) return 0;
+    const standingHeight = target.hurtboxSize.height;
+    if (standingHeight > this.hurtboxSize.height - 12) return 0;
+    const limb = attack.limbBoxes?.[0];
+    const center = limb ? limb.top - limb.height / 2 : this.height - attack.yOffset - attack.height / 2;
+    // Aim at the standing opponent's upper torso at startup. Ducking or jumping
+    // during the attack still changes the defender's actual collision box.
+    const torso = standingHeight * .82 + this.y - target.y;
+    return Math.max(0, Math.min(26, center - torso));
+  }
+
+  attackBoxesFor(attack, facing, target) {
     const limbs = attack.limbBoxes ?? [undefined];
-    return limbs.map(limb => this.attackBoxFor(attack, facing, limb));
+    const drop = attack.lightStrikeDrop ?? this.lightStrikeDrop(attack, target);
+    return limbs.map(limb => this.attackBoxFor(attack, facing, limb, drop));
   }
 
-  attackBoxFor(attack, facing = this.facing, segment = attack.limbBoxes?.[0]) {
+  attackBoxFor(attack, facing = this.facing, segment = attack.limbBoxes?.[0], drop = attack.lightStrikeDrop ?? 0) {
     const limb = segment ?? { near: this.width * .18, far: this.width * .18 + attack.range,
       top: this.height - attack.yOffset, height: attack.height };
     // Basic strikes can connect when fighters are standing on top of each other.
@@ -457,7 +623,7 @@ export class Fighter {
       ? Math.min(0, limb.near) : limb.near;
     return {
       x: this.x + (facing > 0 ? near : -limb.far),
-      y: this.y - limb.top,
+      y: this.y - limb.top + drop,
       width: limb.far - near,
       height: limb.height,
     };

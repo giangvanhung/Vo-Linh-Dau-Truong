@@ -13,8 +13,7 @@ export function findHit(attacker, defender) {
     return null;
   };
   if (attack.pulses) {
-    const frame = attack.elapsed - attack.startup;
-    const pulse = attack.pulses.findIndex(({ from, to }) => frame >= from && frame < to);
+    const pulse = attack.pulses.indexOf(attacker.activePulse);
     if (pulse === -1 || pulse === attack.lastPulse) return null;
     hit = { ...attack, ...attack.pulses[pulse] };
     const contact = contactFor();
@@ -52,10 +51,12 @@ export function findContact(attacker, defender, attack, box, sourceX, direction)
 export function applyHit(contact) {
   const { attacker, defender, attack, blocked } = contact;
   const rules = attacker.rules;
+  const basicKick = attack.id === 'kick' && !attack.pickupWeapon && !contact.projectile;
   contact.onContact?.();
   attack.hit = true;
   attack.confirmed = !blocked;
-  const combo = blocked ? 0 : contact.projectile ? 1 : attacker.combo + 1;
+  const continuingKick = !basicKick || defender.hitstun > 0 || defender.knockdownOnLanding;
+  const combo = blocked ? 0 : contact.projectile || !continuingKick ? 1 : attacker.combo + 1;
   if (!contact.projectile || !attacker.attacking) attacker.combo = combo;
   const scale = rules.comboScaling[Math.min(combo - 1, rules.comboScaling.length - 1)];
   // Apply chip separately from the damage that passes through guard.
@@ -69,8 +70,11 @@ export function applyHit(contact) {
     * (defender.activeHeroForm?.defense ?? 1);
   const weakened = attacker.stageCondition?.kind === 'weaken' ? .82 : 1;
   const incoming = Math.round(attack.damage * multiplier * attackBonus * critical * defense * weakened * 100) / 100;
-  const absorbed = Math.min(defender.shieldHp, incoming);
-  defender.shieldHp = Math.round((defender.shieldHp - absorbed) * 100) / 100;
+  const barrier = Math.min(defender.awakeningBarrier, incoming);
+  defender.awakeningBarrier = Math.round((defender.awakeningBarrier - barrier) * 100) / 100;
+  const shield = Math.min(defender.shieldHp, incoming - barrier);
+  defender.shieldHp = Math.round((defender.shieldHp - shield) * 100) / 100;
+  const absorbed = barrier + shield;
   defender.hp = Math.max(0, Math.round((previousHP - incoming + absorbed) * 100) / 100);
   defender.knockVelocity = contact.direction * attack.knockback * (blocked ? .16 : 1);
   const damage = Math.round((previousHP - defender.hp) * 100) / 100;
@@ -129,11 +133,19 @@ export function applyHit(contact) {
     defender.attack = null;
     defender.dash = null;
     defender.chargeFrames = 0;
-    if (attack.launch) {
-      defender.vy = -attack.launch;
+    const kickFinisher = basicKick && combo >= 3 && !inflicted && attacker.onGround && defender.onGround;
+    const standingKick = kickFinisher && !attack.lowStance;
+    if (kickFinisher) attack.cancelInto = [];
+    const lift = standingKick ? Math.max(355, attack.launch ?? 0) : basicKick ? 0 : attack.launch;
+    if (lift) {
+      defender.vy = -lift;
       defender.onGround = false;
     }
-    if (attack.knockdownOnLanding) defender.knockdownOnLanding = true;
+    if (standingKick) {
+      defender.knockVelocity = contact.direction * Math.max(660, attack.knockback);
+      defender.kickWallBounce = true;
+    }
+    if ((standingKick || (!basicKick && attack.knockdownOnLanding)) && !defender.onGround) defender.knockdownOnLanding = true;
     if ((attacker.characterId === 'hung' && attacker.awakeningWindow && attack.id === 'heavy')
       || (attacker.characterId === 'mai' && attacker.awakeningWindow)
       || (attacker.characterId === 'linh' && combo >= 2 && attacker.lastConfirmedAttack === 'kick' && attack.id === 'closeSkill')
@@ -146,12 +158,12 @@ export function applyHit(contact) {
     }
     attacker.lastConfirmedAttack = attack.id;
     const normal = !contact.projectile && !attack.pickupWeapon && ['light', 'heavy', 'kick'].includes(attack.id);
-    const grounded = attacker.onGround && defender.onGround && !attack.launch;
-    const sweep = attack.animation === 'sweep' && !contact.projectile && !attack.pickupWeapon;
-    const finisher = normal && combo >= 2 && attack.id !== 'light' && !attack.cancelInto.length;
-    const knockdown = grounded && defender.hp > 0 && !inflicted && (sweep || finisher || attack.knocksDown);
+    const grounded = attacker.onGround && defender.onGround && !lift;
+    const finisher = normal && combo >= 3 && attack.id === 'heavy' && !attack.cancelInto.length;
+    const knockdown = grounded && defender.hp > 0 && !inflicted
+      && (basicKick ? kickFinisher : finisher || attack.knocksDown);
     if (knockdown) {
-      defender.knockdown = KNOCKDOWN_FRAMES;
+      defender.knockdown = defender.knockdownFrames ?? KNOCKDOWN_FRAMES;
       defender.knockVelocity = contact.direction * Math.min(attack.knockback, 70);
       defender.hitstun = 0;
       defender.bufferedAttack = null;
@@ -162,6 +174,7 @@ export function applyHit(contact) {
     defender.crouching = false;
     defender.flash = .13;
   }
+  defender.checkAwakeningBreak();
 
   return {
     ...contact, combo, broken, inflicted,

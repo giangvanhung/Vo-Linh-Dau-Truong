@@ -384,7 +384,11 @@ export function createEquipmentPanel(characters, state, combat) {
     notice.textContent = saved ? 'Đã nâng ' + itemLabel(selected) + '.' : 'Nâng cấp chỉ được lưu trong phiên này.';
     if (upgrade.disabled) item.querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
   });
-  return () => {
+  return fighterId => {
+    if (fighterId && characters[fighterId]) {
+      fighter.value = fighterId;
+      fighter.dispatchEvent(new Event('change'));
+    }
     selectView(shop || skinMode ? 'list' : 'fighter');
     refresh();
   };

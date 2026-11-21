@@ -4,10 +4,8 @@ export class TeamRoster {
     this.reset();
   }
 
-  selectCpu(roster) {
-    const first = roster[Math.floor(Math.random() * roster.length)];
-    const remaining = roster.filter(id => id !== first);
-    this.cpuIds = [first, remaining[Math.floor(Math.random() * remaining.length)]];
+  selectCpu(id) {
+    this.cpuIds = [id, id];
   }
 
   reset() {

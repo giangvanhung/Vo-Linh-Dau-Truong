@@ -18,6 +18,10 @@ export function mainWeaponAttack(fighter, id) {
   const type = fighter.weapon?.weaponType;
   const profile = profiles[type];
   if (!profile) return null;
+  const personal = fighter.skillFor(id);
+  if (personal?.visual || (personal?.cost && fighter.characterId === 'hung')) {
+    return strengthenSkill(fighter, personal, type);
+  }
   const color = fighter.glow ?? '#ffc97e';
   if (id === 'rangedSkill' && type === 'staff' && !fighter.prototypeStyle) {
     const poison = fighter.characterId === 'diep';
@@ -31,7 +35,6 @@ export function mainWeaponAttack(fighter, id) {
   }
   const launcher = id === 'closeSkill' && type === 'spear' && !fighter.prototypeStyle;
   if (!launcher && id !== 'light' && id !== 'heavy') {
-    const personal = fighter.skillFor(id);
     return personal ? strengthenSkill(fighter, personal, type) : null;
   }
   const chain = id === 'light' && fighter.attack?.id === 'light' && fighter.attack.mainWeapon === type;

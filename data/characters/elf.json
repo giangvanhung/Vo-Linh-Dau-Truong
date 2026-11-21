@@ -22,7 +22,6 @@
     },
     "levelTwo": {
       "skill": "closeSkill",
-      "durationFrames": 540,
       "label": "Thương Long Thiên Diệp",
       "changes": {
         "launch": 450,

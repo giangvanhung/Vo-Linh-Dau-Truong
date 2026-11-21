@@ -38,7 +38,7 @@ function inputState() {
     },
     consume() {
       const input = { direction: Number(held.has('d')) - Number(held.has('a')),
-        charge: held.has('f'), crouch: held.has('s'), guard: held.has('p'), jump, downPressed, attack, action };
+        ascend: held.has('w'), charge: held.has('f'), crouch: held.has('s'), guard: held.has('p'), jump, downPressed, attack, action };
       attack = action = undefined;
       jump = downPressed = false;
       return input;
@@ -53,9 +53,12 @@ export function mergeInputs(local, remote) {
     crouch: local.crouch || remote.crouch,
     guard: local.guard || remote.guard,
     jump: local.jump || remote.jump,
+    ascend: local.ascend || remote.ascend,
     downPressed: local.downPressed || remote.downPressed,
     attack: local.attack ?? remote.attack,
+    attackSequence: local.attackSequence,
     action: local.action ?? remote.action,
+    dashDirection: local.dashDirection,
   };
 }
 

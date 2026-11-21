@@ -17,7 +17,6 @@
     "levelTwo": {
       "skill": "closeSkill",
       "label": "Búa Triều Nham · Sơn Băng",
-      "durationFrames": 540,
       "changes": {
         "launch": 430,
         "knockback": 320,

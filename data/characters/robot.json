@@ -3,7 +3,6 @@
     "unlockAttack": "heavy",
     "condition": "Đánh trúng bằng Nắm Đấm Thủy Lực khi đối thủ hở thủ",
     "skill": "rangedSkill",
-    "durationFrames": 480,
     "label": "Động Cơ Tăng Áp",
     "changes": {
       "damage": 16,
@@ -19,7 +18,6 @@
     },
     "levelTwo": {
       "skill": "rangedSkill",
-      "durationFrames": 540,
       "label": "Lõi Nhiệt Tối Đa",
       "changes": {
         "damage": 19,

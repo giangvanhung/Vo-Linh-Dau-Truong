@@ -25,7 +25,6 @@
     "levelTwo": {
       "skill": "rangedSkill",
       "label": "Trụ Ngọc · Long Mạch",
-      "durationFrames": 540,
       "changes": {
         "launch": 330,
         "hitstun": 24,

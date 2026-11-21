@@ -3,7 +3,6 @@
     "unlockAttack": "closeSkill",
     "condition": "Đánh trúng bằng Long Trảo khi đối thủ hở thủ",
     "skill": "closeSkill",
-    "durationFrames": 480,
     "label": "Vảy Ngọc Hiện Thân",
     "changes": {
       "range": 96,
@@ -24,7 +23,6 @@
     },
     "levelTwo": {
       "skill": "closeSkill",
-      "durationFrames": 540,
       "label": "Thanh Long Hiện Thế",
       "changes": {
         "range": 110,

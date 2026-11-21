@@ -217,6 +217,7 @@
   },
   "weaponType": "spear",
   "starterWeapon": "tide-weapon-0",
+  "supportPoses": "/assets/characters/mio/support-poses.png",
   "prototypeStyle": {
     "index": 0
   },
@@ -228,7 +229,6 @@
     "unlockAttack": "closeSkill",
     "skill": "rangedSkill",
     "label": "Sóng Xuyên Cầu · Bộc Phát",
-    "durationFrames": 480,
     "changes": {
       "damage": 15
     },

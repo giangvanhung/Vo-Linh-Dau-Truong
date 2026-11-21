@@ -33,6 +33,9 @@ const continuousKeys = new Set(['a', 'd', 's', 'p', 'f']);
 
 export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, onCompositionIssue, keyFor, allowArrows = () => true }) {
   let queuedAttack = null, queuedAction = null, queuedJump = false;
+  let attackSequence = [];
+  let lastDirectionTap = null;
+  let dashDirection = 0;
   let downPressed = false;
   const heldInputs = new Map();
 
@@ -75,12 +78,28 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, o
     if (heldInputs.has(input) || (event.repeat && !continuousKeys.has(key))) return;
     heldInputs.set(input, key);
     if (event.repeat) return;
+    if (key === 'a' || key === 'd') {
+      const direction = key === 'a' ? -1 : 1;
+      if (lastDirectionTap?.direction === direction && event.timeStamp - lastDirectionTap.time <= 240) {
+        queuedAction = 'dash';
+        dashDirection = direction;
+        lastDirectionTap = null;
+      } else {
+        lastDirectionTap = { direction, time: event.timeStamp };
+      }
+    }
     onInput?.(keyFor ? (key === 'q' && event.shiftKey ? 'Shift+' : '') + keyLabel(keyCode(event)) : key === 'q' && event.shiftKey ? 'Shift+Q' : (event.key?.startsWith('Arrow')
       ? { a: '←', d: '→', w: '↑', s: '↓' }[key] : key.toUpperCase()));
     if (key === 'w') queuedJump = true;
     if (key === 's') downPressed = true;
-    if (attackKeys[key]) queuedAttack = attackKeys[key];
-    if (key === 'q') queuedAction = event.shiftKey ? 'enhancedDash' : 'dash';
+    if (attackKeys[key]) {
+      queuedAttack = attackKeys[key];
+      if (attackSequence.length < 3) attackSequence.push({ id: queuedAttack, crouch: isHeld('s') });
+    }
+    if (key === 'q') {
+      queuedAction = event.shiftKey ? 'enhancedDash' : 'dash';
+      dashDirection = 0;
+    }
     if (key === 'r') queuedAction = 'roll';
     if (key === 'g') queuedAction = 'awaken';
     if (key === 't') queuedAction = 'escape';
@@ -101,17 +120,22 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, o
   }, { capture: true });
   function clearInputs() {
     heldInputs.clear();
+    lastDirectionTap = null;
+    dashDirection = 0;
     queuedAttack = queuedAction = null;
+    attackSequence = [];
     queuedJump = downPressed = false;
     onClear();
   }
 
   function consumeActions() {
     const actions = {
-      attack: queuedAttack, action: queuedAction, jump: queuedJump, downPressed,
-      charge: isHeld('f'), guard: isHeld('p'), crouch: isHeld('s'), direction: movementDirection(),
+      attack: queuedAttack, attackSequence, action: queuedAction, dashDirection, jump: queuedJump, downPressed,
+      ascend: isHeld('w'), charge: isHeld('f'), guard: isHeld('p'), crouch: isHeld('s'), direction: movementDirection(),
     };
     queuedAttack = queuedAction = null;
+    dashDirection = 0;
+    attackSequence = [];
     queuedJump = downPressed = false;
     return actions;
   }

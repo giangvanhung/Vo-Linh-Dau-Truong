@@ -1,41 +1,41 @@
-import { activeZone, groundHeightAt, stageConditionAt, stageFloorAt, zoneRanges, zoneWarning } from '../game/stages.js';
+import { activeZone, stageConditionAt, stageFloorAt, zoneRanges, zoneWarning } from '../game/stages.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
-import { createCombatEffects } from './combat-effects.js';
-import { createEvolutionEffects, evolutionFist, advancedAura } from './evolution-effects.js';
+import { createCombatEffects, fireGuardianPath } from './combat-effects.js';
+import { createEvolutionEffects, advancedAura } from './evolution-effects.js';
+import { drawHungAura, drawHungChargeLayers, hungChargePath, hungEffectsPath } from './hung-evolution.js';
+import { hungFallFrame } from './hung-action-poses.js';
 import { drawChargeVariant } from './charge-effects.js';
 import { createStageBackground } from './stage-background.js';
 import { drawStrikeTrail } from './fighter-motion.js';
-import { drawHeldWeapon, drawLooseWeapon } from './held-weapon.js';
+import { drawHeldWeapon, drawLooseWeapon, hungDaoPath } from './held-weapon.js';
 import { ballRadius } from '../game/stage-ball.js';
 import { gear } from '../game/pickups.js';
 import { weaponTypes } from '../game/equipment.js';
-import { drawMorph, drawStageCondition, drawStageLife } from './stage-life.js';
+import { drawMorph, drawStageCondition, drawStageLife, drawStageRain } from './stage-life.js';
 import { createSeasonSnow } from './season-snow.js';
-
-const terrainArt = Object.fromEntries(['crate', 'steel', 'stone', 'timber'].map(kind =>
-  [kind, '/assets/backgrounds/terrain-' + kind + '.png']));
 
 export function createArenaRenderer(canvas, config) {
   const ctx = canvas.getContext('2d');
   const drawBackground = createStageBackground(document.getElementById('arena-background'));
   const drawSeasonSnow = createSeasonSnow(ctx);
   const h = canvas.height;
-  // Leave room for wide attack poses and evolved bodies beyond the arena walls.
-  const wallClearance = 48;
 
   const images = new Map();
   const drawSprite = createSpriteRenderer(ctx, config.characters,
-    (fighter, hand, drawHand) => drawHeldWeapon(ctx, images, fighter, hand, drawHand));
-  const { drawProjectile, drawCombatEffects } = createCombatEffects(ctx, images);
+    (fighter, hand, drawHand) => drawHeldWeapon(ctx, images, fighter, hand, drawHand),
+    () => images.get(hungEffectsPath));
+  const { drawProjectile, drawCombatEffects, drawFireGuardian } = createCombatEffects(ctx, images);
   const sparkSheet = '/assets/effects/combat-sparks.png';
-  const { drawEvolutionBody, drawEvolutionFist, drawEvolutionWings } = createEvolutionEffects(ctx, images, drawFighter);
+  const { drawEvolutionBody, drawEvolutionWings } = createEvolutionEffects(ctx, images, drawFighter);
   const paths = new Set();
   paths.add(sparkSheet);
-  paths.add(evolutionFist);
   paths.add(advancedAura);
+  paths.add(hungEffectsPath);
+  paths.add(hungChargePath);
+  paths.add(hungDaoPath);
+  paths.add(fireGuardianPath);
   for (const item of Object.values(gear)) if (item.image) paths.add(item.image);
   for (const weapon of Object.values(weaponTypes)) if (weapon.image) paths.add(weapon.image);
-  for (const asset of Object.values(terrainArt)) paths.add(asset);
   for (const character of Object.values(config.characters)) {
     const { wings, overlay } = character.awakening?.evolution ?? {};
     if (wings) paths.add(wings);
@@ -44,26 +44,31 @@ export function createArenaRenderer(canvas, config) {
   }
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
-  function render({ stage, stageFrame, width: w, fighters, offsets, projectiles, particles, floaters, trails,
+  function render({ stage, stageFrame, width: w, fighters, offsets, movementPoses, projectiles, particles, floaters, trails,
     shake, screenEffect, debug, animationTime, ball, drop, looseWeapons, seasonActive }) {
     const ground = h * config.stage.groundRatio;
+    const displayWidth = canvas.clientWidth;
     const displayHeight = canvas.clientHeight;
-    const scale = Math.min(canvas.clientWidth / w, displayHeight / h);
-    const pixelScale = Math.min(2, Math.max(1, scale * (window.devicePixelRatio || 1)));
-    const pixelWidth = Math.round(w * pixelScale);
-    const pixelHeight = Math.round(h * pixelScale);
+    if (!displayWidth || !displayHeight) return;
+    const scale = Math.min(displayWidth / w, displayHeight / h);
+    const top = (displayHeight - h * scale) / 2;
+    const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+    const pixelWidth = Math.max(1, Math.round(displayWidth * pixelRatio));
+    const pixelHeight = Math.max(1, Math.round(displayHeight * pixelRatio));
     if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
     if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
-    ctx.setTransform(pixelWidth / w, 0, 0, pixelHeight / h, 0, 0);
-    ctx.clearRect(0, 0, w, h);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, pixelWidth, pixelHeight);
+    ctx.setTransform(pixelWidth / w, 0, 0, scale * pixelHeight / displayHeight, 0, top * pixelHeight / displayHeight);
     const center = (fighters[0].x + offsets[0][0] + fighters[1].x + offsets[1][0]) / 2;
-    const floor = canvas.parentElement.offsetTop + (displayHeight - h * scale) / 2 + ground * scale;
-    drawBackground(stage, floor, center / w);
+    const floor = canvas.parentElement.offsetTop + top + ground * scale;
+    drawBackground(stage, floor, center / w, animationTime);
     ctx.save();
-    applyArenaView(w, ground, shake, screenEffect);
+    applyArenaView(shake, screenEffect);
     drawStageAmbience(stage, stageFrame, w, ground);
     drawStageLife(ctx, stage.wildlife, stageFrame, w, ground);
-    drawTerrain(stage, stageFrame, w, ground);
+    if (stage.weather === 'rain') drawStageRain(ctx, w, ground, animationTime);
+    drawStageHazards(stage, stageFrame, w, ground);
     drawSeasonSnow(stage, stageFrame, w, ground, fighters, animationTime, seasonActive);
     if (ball) drawBall(ball, ground);
     for (const item of looseWeapons) drawLooseWeapon(ctx, images, item, ground, animationTime);
@@ -95,6 +100,7 @@ export function createArenaRenderer(canvas, config) {
       ctx.save();
       ctx.translate(...offsets[index]);
       drawAura(f, ground, animationTime);
+      drawFireGuardian(f, ground);
       ctx.restore();
     }
     for (const [index, f] of fighters.entries()) {
@@ -104,12 +110,12 @@ export function createArenaRenderer(canvas, config) {
       if (morphed) drawMorph(ctx, f, ground, animationTime);
       else {
         if (f.evolving && f.hp > 0) drawEvolutionWings(f, ground, animationTime);
-        drawEvolutionBody(f, ground, animationTime);
+        drawEvolutionBody(f, ground, animationTime, movementPoses?.[index]);
+        if (f.characterId === 'hung') drawHungChargeLayers(ctx, images.get(hungChargePath), f, ground, animationTime, true);
       }
       drawStageCondition(ctx, f, ground, animationTime);
       drawStrikeTrail(ctx, f, ground);
       drawCombatEffects(f, ground);
-      if (f.attack?.evolvedPunch) drawEvolutionFist(f, ground, animationTime);
       if (f.hp <= 0 || (!f.freezeFrames && !f.poisonFrames)) {
         ctx.restore();
         continue;
@@ -177,6 +183,7 @@ export function createArenaRenderer(canvas, config) {
       }
     }
     ctx.globalAlpha = 1;
+    if (stage.weather === 'rain') drawStageRain(ctx, w, ground, animationTime, true);
     ctx.restore();
     if (screenEffect && screenEffect.elapsed < screenEffect.flashSeconds) {
       ctx.globalAlpha = Math.min(.15, screenEffect.flashOpacity) * (1 - screenEffect.elapsed / screenEffect.flashSeconds);
@@ -186,7 +193,7 @@ export function createArenaRenderer(canvas, config) {
     }
     if (debug) {
       ctx.save();
-      applyArenaView(w, ground, shake, screenEffect);
+      applyArenaView(shake, screenEffect);
       drawCollisionBoxes(fighters, projectiles, ground);
       ctx.restore();
     }
@@ -195,12 +202,16 @@ export function createArenaRenderer(canvas, config) {
   function drawContactShadow(fighter, stage, width, ground) {
     const floor = stageFloorAt({ width, platforms: stage.platforms, rises: stage.rises }, fighter.x, fighter.y);
     const proximity = 1 / (1 + (floor - fighter.y) / 56);
-    const radius = fighter.width * (.55 + .25 * proximity);
+    const fall = fighter.characterId === 'hung' && fighter.knockdown > 0
+      ? hungFallFrame(fighter.knockdown, fighter.knockdownFrames) : -1;
+    const lying = fall === 2 || fall === 3 || (fighter.characterId === 'mai'
+      && (fighter.hp <= 0 || (fighter.knockdown > 5 && fighter.knockdownFrames - fighter.knockdown >= 10)));
+    const radius = fighter.width * (lying ? 1.36 : .55 + .25 * proximity);
     ctx.save();
     ctx.fillStyle = '#090713';
     ctx.globalAlpha = .32 * proximity;
     ctx.beginPath();
-    ctx.ellipse(Math.round(fighter.x), Math.round(ground + floor + 2), radius, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(Math.round(fighter.x), Math.round(ground + floor + (lying ? 0 : 2)), radius, lying ? 5 : 4, 0, 0, Math.PI * 2);
     ctx.fill();
     if (fighter.equipmentColor && fighter.hp > 0) {
       ctx.globalAlpha = .75 * proximity;
@@ -211,10 +222,7 @@ export function createArenaRenderer(canvas, config) {
     ctx.restore();
   }
 
-  function applyArenaView(w, ground, shake, screenEffect) {
-    const viewScale = w / (w + 2 * wallClearance);
-    ctx.translate((1 - viewScale) * w / 2, (1 - viewScale) * ground);
-    ctx.scale(viewScale, viewScale);
+  function applyArenaView(shake, screenEffect) {
     if (shake) ctx.translate(Math.sin(shake * 180) * shake * 25, 0);
     if (screenEffect && screenEffect.elapsed < screenEffect.shakeSeconds) {
       const remaining = screenEffect.shakeSeconds - screenEffect.elapsed;
@@ -244,103 +252,137 @@ export function createArenaRenderer(canvas, config) {
     }
   }
 
-  function drawTerrain(stage, frame, w, ground) {
+  function drawStageHazards(stage, frame, width, ground) {
+    const zone = stage.zone;
+    if (!zone) return;
+    const active = activeZone(zone, frame);
+    const warning = zoneWarning(zone, frame);
+    const condition = stageConditionAt(zone, frame);
+    const color = condition?.color ?? zone.color;
     ctx.save();
-    const edgeColor = stage.terrainColor ?? '#90a7b8';
-    const world = { width: w, rises: stage.rises };
-    for (const { range, rise } of stage.rises ?? []) {
-      const [left, right] = range.map(value => value * w);
-      const ramp = (right - left) * .35;
-      const points = [left, left + ramp, right - ramp, right];
-      ctx.beginPath();
-      for (const x of points) ctx.lineTo(x, ground + groundHeightAt(world, x));
-      ctx.lineTo(right, ground + 11);
-      ctx.lineTo(left, ground + 11);
-      ctx.closePath();
-      const paint = ctx.createLinearGradient(0, ground - 26, 0, ground + 12);
-      paint.addColorStop(0, edgeColor);
-      paint.addColorStop(1, '#20212c');
-      ctx.fillStyle = paint;
-      ctx.fill();
-      const stone = images.get(terrainArt.stone);
-      if (stone) {
-        ctx.save();
-        ctx.clip();
-        ctx.globalAlpha = .72;
-        ctx.drawImage(stone, stone.width * .08, stone.height * .28, stone.width * .84, stone.height * .62,
-          left, ground - rise, right - left, rise + 11);
-        ctx.restore();
-      }
-      ctx.beginPath();
-      for (const x of points) ctx.lineTo(x, ground + groundHeightAt(world, x));
-      ctx.strokeStyle = edgeColor;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-    ctx.strokeStyle = edgeColor;
-    ctx.globalAlpha = .65;
-    ctx.lineWidth = 2;
-    for (const x of [15, w - 15]) {
-      const towardCenter = x < w / 2 ? 1 : -1;
-      ctx.beginPath();
-      ctx.moveTo(x, ground - 13);
-      ctx.lineTo(x, ground + 4);
-      ctx.lineTo(x + towardCenter * 17, ground + 4);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-    for (const platform of stage.platforms ?? []) {
-      const [left, right] = platform.range.map(value => Math.round(value * w));
-      const y = ground + platform.y;
-      const art = images.get(terrainArt[platform.art]);
-      if (art) {
-        const width = right - left;
-        const available = ground + Math.min(groundHeightAt(world, left), groundHeightAt(world, right)) - y;
-        const thickness = Math.max(17, Math.min(available, width * art.height / art.width, platform.art === 'steel' ? 98 : 63));
-        ctx.drawImage(art, left, y, width, thickness);
-        ctx.globalAlpha = .62;
-        ctx.fillStyle = edgeColor;
-        ctx.fillRect(left + 2, y, width - 4, 2);
-        ctx.globalAlpha = 1;
+    for (const [start, end] of zoneRanges(zone)) {
+      const left = start * width;
+      const span = (end - start) * width;
+      if (zone.kind === 'wind') {
+        drawWind(left, span, ground, frame, active ? 1 : warning ? .44 : .1);
         continue;
       }
-      ctx.fillStyle = '#182939';
-      ctx.fillRect(left + 5, y + 4, right - left - 10, 13);
-      ctx.fillStyle = stage.zone?.color ?? '#92a6b7';
-      ctx.fillRect(left, y, right - left, 4);
-      ctx.fillStyle = '#536579';
-      for (let x = left + 16; x < right - 6; x += 24) ctx.fillRect(x, y + 7, 8, 4);
-    }
-    const zone = stage.zone;
-    if (zone) {
-      const active = activeZone(zone, frame);
-      const warning = zoneWarning(zone, frame);
-      const condition = stageConditionAt(zone, frame);
-      const zoneColor = condition?.color ?? zone.color;
-      ctx.fillStyle = zoneColor;
-      for (const [start, end] of zoneRanges(zone)) {
-        const left = start * w, width = (end - start) * w;
-        const lava = zone.kind === 'lava';
-        if (condition && warning) {
-          ctx.globalAlpha = active ? .23 : .11;
-          ctx.fillRect(left, ground - 26, width, 28);
-          ctx.globalAlpha = .92;
-          ctx.font = '700 15px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.strokeStyle = '#1a1722';
-          ctx.lineWidth = 3;
-          ctx.strokeText(condition.label, left + width / 2, ground - 124);
-          ctx.fillText(condition.label, left + width / 2, ground - 124);
-        }
-        ctx.globalAlpha = active ? .55 : warning ? .35 : .15;
-        ctx.fillRect(left, ground + (lava ? -3 : 2), width, lava ? 13 : zone.kind === 'slip' ? 5 : 3);
-        if (!active || zone.kind === 'slip') continue;
-        for (let i = 0; i < 12; i++) {
-          const x = left + ((i * 37 + frame * 3) % width);
-          const y = ground - 5 - ((i * 17 + frame * 4) % (zone.kind === 'wind' ? 145 : lava ? 28 : 72));
-          ctx.fillRect(x, y, zone.kind === 'wind' ? 15 : 3, zone.kind === 'wind' || lava ? 2 : 9);
-        }
+      if (zone.kind === 'slip' && stage.weather === 'rain') {
+        drawWetTiles(left, span, ground, frame);
+        continue;
       }
+      drawHazardPatches(left, span, ground, frame, zone.kind, color, active ? 1 : warning ? .7 : .23);
+      if (condition && (warning || active)) {
+        ctx.fillStyle = color;
+        ctx.globalAlpha = .95;
+        ctx.font = '700 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#1a1722';
+        ctx.lineWidth = 3;
+        ctx.strokeText(condition.label, left + span / 2, ground - 124);
+        ctx.fillText(condition.label, left + span / 2, ground - 124);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawHazardPatches(left, width, ground, frame, kind, color, strength) {
+    const lava = kind === 'lava';
+    const ice = kind === 'slip';
+    const count = Math.max(3, Math.round(width / 40));
+    ctx.save();
+    for (let i = 0; i < count; i++) {
+      const x = left + width * (i + .5) / count;
+      const y = ground + (i * 7 % 17) - 5;
+      const radius = width / count * (.26 + i % 3 * .05);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((i % 3 - 1) * .16);
+      ctx.scale(1, ice ? .27 : .36);
+      const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+      glow.addColorStop(0, color);
+      glow.addColorStop(.49, color + '70');
+      glow.addColorStop(1, color + '00');
+      ctx.fillStyle = glow;
+      ctx.globalAlpha = strength * (ice ? .34 : .61);
+      ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
+      if (lava) {
+        ctx.globalAlpha = strength * .85;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-radius * .86, 1);
+        ctx.lineTo(-radius * .29, -radius * .34);
+        ctx.lineTo(radius * .04, radius * .20);
+        ctx.lineTo(radius * .66, -radius * .19);
+        ctx.stroke();
+      }
+      ctx.restore();
+      if (ice || strength < .6) continue;
+      const age = (frame / (lava ? 25 : 44) + i * .43) % 1;
+      ctx.globalAlpha = (1 - age) * strength * .77;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(x + Math.sin(i * 2 + age * 5) * 5, y - age * (lava ? 25 : 62),
+        1.4 + i % 3 * .35, lava ? 1.3 : 2.8 + age, .26, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawWetTiles(left, width, ground, frame) {
+    ctx.save();
+    for (let i = 0; i < 7; i++) {
+      const x = left + width * (.09 + i * .137);
+      const y = ground + 6 + (i * 11 % 17);
+      const radius = width * (.065 + i % 3 * .013);
+      ctx.fillStyle = '#211d2f';
+      ctx.globalAlpha = .2;
+      ctx.beginPath();
+      ctx.ellipse(x, y, radius, 1.7 + i % 3 * .65, -.025, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = i % 2 ? '#ffb7bc' : '#c8c5d9';
+      ctx.globalAlpha = .19 + .06 * Math.sin(frame / 17 + i * 1.6);
+      ctx.lineWidth = .8;
+      ctx.beginPath();
+      ctx.moveTo(x - radius * .59, y + 1);
+      ctx.quadraticCurveTo(x, y + 2.2, x + radius * .42, y + .4);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawWind(left, width, ground, frame, strength) {
+    ctx.save();
+    for (let i = 0; i < 12; i++) {
+      const length = 37 + (i * 19 % 74);
+      const travel = (frame * (1.4 + i % 5 * .47) + i * 79) % (width + length);
+      const x = left + travel - length;
+      const sway = Math.sin(frame * .049 + i * 1.7);
+      const y = ground - 12 - (i * 37 % 134) + sway * 10;
+      const lift = 6 + i % 4 * 4;
+      const fade = Math.min(1, travel / length, (width + length - travel) / length);
+      const mist = ctx.createLinearGradient(x, 0, x + length, 0);
+      mist.addColorStop(0, '#d9f1ff00');
+      mist.addColorStop(.62, '#d9f1ffb0');
+      mist.addColorStop(1, '#d9f1ff00');
+      ctx.globalAlpha = fade * strength * (.32 + i % 3 * .09);
+      ctx.fillStyle = mist;
+      ctx.beginPath();
+      ctx.moveTo(x, y + 4);
+      ctx.bezierCurveTo(x + length * .31, y - lift - sway * 7, x + length * .74, y + sway * 6, x + length, y - lift);
+      ctx.quadraticCurveTo(x + length * .56, y + 10, x, y + 4);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#e8f2df';
+    for (let i = 0; i < 16; i++) {
+      const age = (frame / (73 + i % 5 * 13) + i * .267) % 1;
+      const x = left + ((i * 43 + frame * (1.5 + i % 4 * .6)) % width);
+      const y = ground - 4 - age * (12 + i % 6 * 7) + Math.sin(frame * .08 + i) * 3;
+      ctx.globalAlpha = Math.sin(Math.PI * age) * strength * .55;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 1 + i % 3 * .65, .8, Math.sin(i + frame * .13), 0, 2 * Math.PI);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -408,8 +450,13 @@ export function createArenaRenderer(canvas, config) {
   }
 
   function drawAura(fighter, ground, time) {
-    const fullMeter = fighter.meter >= fighter.rules.meterMax;
-    if (fighter.hp <= 0 || (!fighter.charging && !fighter.awakeningFrames && !fullMeter)) return;
+    const fullMeter = fighter.meter >= fighter.meterMax;
+    if (fighter.hp <= 0 || (!fighter.charging && !fighter.evolving && !fullMeter)) return;
+    if (fighter.characterId === 'hung') {
+      if (drawHungChargeLayers(ctx, images.get(hungChargePath), fighter, ground, time, false)) return;
+      if (drawHungAura(ctx, images.get(hungEffectsPath), fighter, ground, time)) return;
+    }
+    if (fighter.characterId === 'hung' && fighter.evolving && !fighter.charging) return;
     const pulse = Math.sin(time / 110);
     ctx.save();
     ctx.translate(fighter.x, ground + fighter.y);
@@ -423,7 +470,7 @@ export function createArenaRenderer(canvas, config) {
         const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 64 + pulse * 5);
         glow.addColorStop(0, color + '66');
         glow.addColorStop(1, color + '00');
-        ctx.globalAlpha = Math.min(1, fighter.awakeningFrames / 18) / (1 + Math.abs(fighter.y) / 90);
+        ctx.globalAlpha = Math.min(1, fighter.formAge / 18) / (1 + Math.abs(fighter.y) / 90);
         ctx.fillStyle = glow;
         ctx.fillRect(-70, -70, 140, 140);
         ctx.restore();
@@ -435,18 +482,10 @@ export function createArenaRenderer(canvas, config) {
       return;
     }
     ctx.globalAlpha = .78;
-    ctx.lineWidth = fighter.awakeningFrames ? 3 : 2;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.ellipse(0, 0, 35 + pulse * 2, 9, 0, 0, Math.PI * 2);
     ctx.stroke();
-    if (fighter.awakeningFrames) {
-      for (let i = 0; i < 8; i++) {
-        const angle = time / 340 + i * Math.PI / 4;
-        const height = (time / 27 + i * 9) % 66;
-        ctx.globalAlpha = (1 - height / 66) * .65;
-        ctx.fillRect(Math.round(Math.cos(angle) * 34), Math.round(-height), 3, 3);
-      }
-    }
     ctx.restore();
   }
 
@@ -486,13 +525,14 @@ export function createArenaRenderer(canvas, config) {
     ctx.restore();
   }
 
-  function drawFighter(fighter, ground, animationTime) {
-    if (!drawSprite(fighter, ground, animationTime)) {
+  function drawFighter(fighter, ground, animationTime, movementPose) {
+    if (!drawSprite(fighter, ground, animationTime, movementPose)) {
       const body = fighter.hurtbox;
       ctx.fillStyle = fighter.flash > 0 ? '#fff2dc' : fighter.color;
       ctx.fillRect(body.x, ground + body.y, body.width, body.height);
     }
   }
 
+  render.preloadFighter = drawSprite.preloadFighter;
   return render;
 }

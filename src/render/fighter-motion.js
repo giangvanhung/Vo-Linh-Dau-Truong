@@ -1,3 +1,4 @@
+import { hungKickTip } from './hung-action-poses.js';
 import { KNOCKDOWN_FRAMES } from '../combat/fighter.js';
 
 const clamp = value => Math.max(0, Math.min(1, value));
@@ -9,6 +10,14 @@ export function strikePose({ elapsed, startup, active, recovery }) {
     return ease(clamp((progress - .45) / .55)) - .22 * Math.sin(Math.PI * progress);
   }
   return 1 - ease(clamp((elapsed - startup - active) / Math.max(1, recovery)));
+}
+
+export function overheadChopPose({ elapsed, startup, active, recovery }) {
+  const raisedAt = startup * .65;
+  const drop = ease(clamp((elapsed - raisedAt) / (startup + 2 - raisedAt)));
+  const lift = ease(clamp(elapsed / raisedAt)) * (1 - drop);
+  const drive = drop * (1 - ease(clamp((elapsed - startup - active) / Math.min(recovery, 18))));
+  return { lift, drive };
 }
 
 export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
@@ -33,6 +42,8 @@ export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
     const rise = Math.max(-1, Math.min(1, -fighter.vy / 590));
     const drift = fighter.airDirection * fighter.facing;
     ctx.transform(1 - rise * .035, 0, -.045 * rise - .09 * drift, 1 + rise * .06, 0, 0);
+  } else if (name === 'block' && fighter.crouching) {
+    ctx.scale(1, .69);
   } else if (name === 'crouchWalk') {
     const step = Math.sin(fighter.walkDistance * Math.PI / 15);
     ctx.transform(1, 0, -.06 * step, .72 - .035 * Math.abs(step), 0, 0);
@@ -50,7 +61,7 @@ export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
       const motion = strikePose(fighter.attack);
       const age = fighter.attack.elapsed - fighter.attack.startup;
       const recoil = pickup === 'blaster' && age >= 0 ? Math.max(0, 1 - age / 8) : 0;
-      ctx.transform(1, 0, -.16 * motion + .12 * recoil, 1 - (pickup === 'broom' ? .13 : .04) * Math.max(0, motion), 0, 0);
+      ctx.transform(1, 0, -.16 * motion + .12 * recoil, 1 - (pickup === 'broom' ? .25 : .04) * Math.max(0, motion), 0, 0);
       return;
     }
     const motion = fighter.attack ? strikePose(fighter.attack) : 0;
@@ -82,7 +93,7 @@ export function drawStrikeTrail(ctx, fighter, ground) {
   if (!attack || attack.projectile || attack.pickupWeapon || fighter.disabled || !fighter.attackActive) return;
   const kick = attack.id === 'kick';
   const armedStrike = attack.swing && attack.mainWeapon !== 'gauntlet';
-  const punch = !armedStrike && (attack.id === 'light' || attack.id === 'heavy');
+  const punch = !kick && !armedStrike && (attack.id === 'light' || attack.id === 'heavy');
   const slash = !punch && !kick && fighter.weapon && (armedStrike || ['closeSkill', 'ultimate'].includes(attack.id));
   if (!punch && !kick && !slash) return;
   const box = fighter.attackBoxes[0];
@@ -92,14 +103,27 @@ export function drawStrikeTrail(ctx, fighter, ground) {
   const tip = attack.facing > 0 ? box.x + box.width : box.x;
   const color = fighter.evolving ? fighter.evolution.color : fighter.glow;
   ctx.save();
-  ctx.translate(tip, ground + box.y + box.height * (attack.limbSide ? (rear ? .62 : .42) : .5));
+  if (kick && fighter.characterId === 'hung' && fighter.onGround) {
+    const [toeX, toeY] = hungKickTip(attack.lowStance ? 'sweep' : 'kick');
+    const scale = (fighter.sprite?.displaySize ?? 128) / 128;
+    ctx.translate(fighter.x + attack.facing * toeX * scale, ground + fighter.y + toeY * scale);
+  } else ctx.translate(tip, ground + box.y + box.height * (attack.limbSide ? (rear ? .62 : .42) : .5));
   ctx.scale(attack.facing, 1);
   ctx.globalAlpha = .85 * (1 - progress);
   ctx.strokeStyle = color;
   ctx.lineWidth = slash ? 4 : kick || attack.id === 'heavy' ? 4.5 : 3;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  if (kick) {
+  if (kick && attack.lowStance) {
+    ctx.moveTo(-box.width * .8, 7);
+    ctx.bezierCurveTo(-box.width * .47, 13, -box.width * .12, 9, 3, 1);
+  } else if (punch && attack.lowStance) {
+    ctx.moveTo(-box.width * (attack.id === 'heavy' ? .74 : .43), 5);
+    ctx.quadraticCurveTo(-box.width * .23, 4, 2, -2);
+  } else if (kick && attack.plantFoot) {
+    ctx.moveTo(-box.width * .78, 8);
+    ctx.bezierCurveTo(-box.width * .49, 12, -8, 4, 5, -4);
+  } else if (kick) {
     const sweep = rear ? -1 : 1;
     ctx.moveTo(-box.width * .68, 15 * sweep);
     ctx.bezierCurveTo(-box.width * .31, 19 * sweep, box.width * .23, 5 * sweep, -2, -11 * sweep);

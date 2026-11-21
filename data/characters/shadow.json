@@ -3,7 +3,6 @@
     "unlockAttack": "rangedSkill",
     "condition": "Đánh trúng bằng Mực Tím khi đối thủ hở thủ",
     "skill": "closeSkill",
-    "durationFrames": 480,
     "label": "Hộ Vệ Thức Tỉnh",
     "changes": {
       "range": 81,
@@ -31,7 +30,6 @@
     },
     "levelTwo": {
       "skill": "closeSkill",
-      "durationFrames": 540,
       "label": "Song Ảnh Đồng Bộ",
       "changes": {
         "range": 95,

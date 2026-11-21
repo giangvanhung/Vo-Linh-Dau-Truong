@@ -218,6 +218,7 @@
   },
   "weaponType": "staff",
   "starterWeapon": "tide-staff-0",
+  "supportPoses": "/assets/characters/bang-nghi/support-poses.png",
   "prototypeStyle": {
     "index": 4
   },
@@ -229,7 +230,6 @@
     "unlockAttack": "closeSkill",
     "skill": "rangedSkill",
     "label": "Mảnh Băng Lam · Bộc Phát",
-    "durationFrames": 480,
     "changes": {
       "damage": 14
     },

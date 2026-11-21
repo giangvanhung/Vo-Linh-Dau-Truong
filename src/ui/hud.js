@@ -6,7 +6,7 @@ import { heroEnergyMax, nextHeroForm } from '../game/hero-form.js';
 
 export const damageFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
 
-export function createHud(config) {
+export function createHud() {
   const byId = id => document.getElementById(id);
   const ui = {};
   for (const id of ["round-label","match-format","guide-format","hung-damage-score","mai-damage-score","hung-wins","mai-wins","hung-health","mai-health","hung-hp","mai-hp","timer","score-hung","score-mai"]) {
@@ -15,6 +15,7 @@ export function createHud(config) {
   const meterUI = {};
   for (const side of ['hung', 'mai']) meterUI[side] = {
     hero: byId(side + '-hero-energy'),
+    flight: byId(side + '-flight-stamina'),
     focus: document.getElementById(side + '-focus'),
     fill: document.getElementById(side + '-meter-fill'),
     value: document.getElementById(side + '-meter-value'),
@@ -41,7 +42,11 @@ export function createHud(config) {
   function updateUI({ hung, mai, practice, seconds, round, winsHung, winsMai, bestOf, damageHung, damageMai }) {
     for (const [side, fighter] of [['hung', hung], ['mai', mai]]) {
       const bar = ui[side + '-health'];
-      const width = 100 * fighter.hp / fighter.maxHp + '%';
+      const capacity = fighter.maxHp + fighter.barrierMax;
+      const width = 100 * fighter.hp / capacity + '%';
+      const barrierWidth = 100 * fighter.awakeningBarrier / capacity + '%';
+      const barrier = bar.nextElementSibling;
+      if (barrier.style.width !== barrierWidth) barrier.style.width = barrierWidth;
       if (bar.style.width !== width) {
         bar.style.width = width;
         bar.parentElement.style.setProperty('--remaining-hp', width);
@@ -75,31 +80,40 @@ export function createHud(config) {
 
   function updateMeterUI(fighter, side) {
     const meter = meterUI[side];
+    const flight = fighter.flight;
+    meter.flight.hidden = !flight;
+    if (flight) {
+      const bar = meter.flight.querySelector('progress');
+      bar.max = flight.stamina;
+      bar.value = fighter.flightStamina;
+    }
     meter.hero.hidden = !fighter.heroForm;
     if (fighter.heroForm) {
       const bar = meter.hero.querySelector('progress');
       const form = fighter.activeHeroForm;
       const next = nextHeroForm(fighter);
       const charge = Math.floor(fighter.heroEnergy) + '/' + heroEnergyMax;
-      bar.value = form && !next ? 100 * fighter.heroFrames / fighter.heroDuration : fighter.heroEnergy;
+      bar.value = form && !next ? 100 * fighter.awakeningBarrier / fighter.barrierMax : fighter.heroEnergy;
       const label = form
-        ? [form.label + ' · ' + Math.ceil(fighter.heroFrames / 60) + 's',
+        ? [form.label,
           next ? 'Cấp ' + (fighter.heroStage + 1) + ' · ' + charge : '',
           fighter.heroCounter ? 'Phản đòn sẵn sàng' : ''].filter(Boolean).join(' · ')
         : 'Biến hình · ' + charge;
       setText(meter.hero.querySelector('span'), label);
     }
     const value = Math.floor(fighter.meter);
-    if (meter.fill) meter.fill.style.width = fighter.meter / config.combat.meterMax * 100 + '%';
-    meter.fill?.parentElement.classList.toggle('full', fighter.meter >= config.combat.meterMax);
-    if (meter.value) setText(meter.value, value + '/' + config.combat.meterMax);
+    if (meter.fill) meter.fill.style.width = fighter.meter / fighter.meterMax * 100 + '%';
+    meter.fill?.parentElement.classList.toggle('full', fighter.meter >= fighter.meterMax);
+    if (meter.value) setText(meter.value, value + '/' + fighter.meterMax);
     for (const indicator of meter.skills.children) {
       const id = indicator.dataset.skill;
       const skill = mainWeaponAttack(fighter, id) ?? fighter.skillFor(id);
       const cooldown = fighter.cooldowns[id];
-      const ready = !cooldown && fighter.meter >= (skill.cost ?? 0);
-      const status = cooldown ? (cooldown * FRAME_SECONDS).toFixed(1) + 's' : ready ? 'Sẵn sàng' : skill.cost + ' NL';
-      setText(indicator, skill.label + ' · ' + status);
+      const { required: cost } = fighter.attackMeter(id, skill);
+      const ready = !cooldown && fighter.meter >= cost;
+      const status = cooldown ? (cooldown * FRAME_SECONDS).toFixed(1) + 's' : ready ? 'Sẵn sàng' : 'Thiếu nộ';
+      const meterCost = cost ? ' · ' + cost + ' nộ' : '';
+      setText(indicator, skill.label + meterCost + ' · ' + status);
       indicator.classList.toggle('ready', ready);
     }
     const status = [
@@ -111,21 +125,23 @@ export function createHud(config) {
       fighter.freezeFrames ? 'Đóng băng' : fighter.frostStacks ? 'Hàn ' + fighter.frostStacks + '/3' : '',
       fighter.poisonFrames ? 'Trúng độc ' + fighter.poisonStacks + '/3' : '',
     ].filter(Boolean).join(' · ');
-    const activeForm = fighter.awakeningFrames
-      ? 'Cấp ' + fighter.awakeningLevel + ' · ' + (fighter.awakeningFrames * FRAME_SECONDS).toFixed(1) + 's' : '';
+    const activeForm = fighter.formLevel
+      ? [fighter.evolving ? 'Tiến hóa cấp ' + fighter.awakeningLevel : '',
+        'Giáp ' + Math.ceil(fighter.awakeningBarrier) + '/' + fighter.barrierMax].filter(Boolean).join(' · ') : '';
     const next = fighter.nextAwakening;
     const focus = fighter.awakeningReady ? 'Cấp ' + next + ' sẵn sàng'
       : fighter.charging ? 'Đang tụ khí'
       : fighter.awakeningUnlocked && next ? 'Nạp đầy để lên cấp ' + next
-      : next && fighter.meter >= fighter.rules.meterMax ? fighter.awakening.condition : '';
+      : next && fighter.meter >= fighter.meterMax ? fighter.awakening.condition : '';
     const message = [activeForm, focus, status].filter(Boolean).join(' · ');
     if (meter.focus.textContent !== message) meter.focus.textContent = message;
     if (meter.dash) setText(meter.dash, fighter.dashCooldown
       ? 'Lướt ' + (fighter.dashCooldown * FRAME_SECONDS).toFixed(1) + 's'
       : 'Lướt sẵn sàng');
-    if (meter.escape) setText(meter.escape, fighter.escapeCooldown
-      ? 'Thoát ' + (fighter.escapeCooldown * FRAME_SECONDS).toFixed(1) + 's'
-      : '');
+    if (meter.escape) setText(meter.escape, [
+      fighter.escapeCooldown ? 'Thoát ' + (fighter.escapeCooldown * FRAME_SECONDS).toFixed(1) + 's' : '',
+      fighter.wallEscapeCooldown ? 'Bật tường ' + (fighter.wallEscapeCooldown * FRAME_SECONDS).toFixed(1) + 's' : '',
+    ].filter(Boolean).join(' · '));
   }
 
   function setText(element, text) {

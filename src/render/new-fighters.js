@@ -15,7 +15,7 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   const rear = attack?.limbSide === 'right';
   const walk = fighter.moving ? Math.sin(fighter.walkDistance / 10) : 0;
   const idle = name === 'idle' ? Math.sin(time / 175) * 1.2 : 0;
-  const hero = fighter.heroFrames > 0;
+  const hero = Boolean(fighter.activeHeroForm);
   const fabric = hero ? '#334e96' : fighter.color;
   const trim = form?.color ?? fighter.glow;
   const hand = [17, -61 + idle];
@@ -24,7 +24,7 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   ctx.translate(fighter.x, ground + fighter.y);
   ctx.scale(attack?.facing ?? fighter.facing, 1);
   if (name === 'ko' || name === 'knockdown') ctx.rotate(-1.4);
-  if (name === 'crouch' || name === 'crouchWalk') ctx.scale(1, .76);
+  if (name === 'crouch' || name === 'crouchWalk' || (name === 'block' && fighter.crouching)) ctx.scale(1, .76);
   if (name === 'hit') ctx.transform(1, 0, .12, 1, 0, 0);
   if (hero) {
     ctx.strokeStyle = trim;

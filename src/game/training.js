@@ -125,7 +125,7 @@ export function createTrainingActions(training, { canUse, fighters, resetFighter
         focusArena();
         return;
       }
-      player.gainMeter(player.rules.meterMax);
+      player.gainMeter(player.meterMax);
       player.awakeningUnlocked = true;
       if (!player.nextAwakening) player.endAwakening();
       updateScore();

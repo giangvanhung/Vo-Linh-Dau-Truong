@@ -22,7 +22,6 @@
     "levelTwo": {
       "skill": "rangedSkill",
       "label": "Độc Vụ · Mạn Đà La",
-      "durationFrames": 540,
       "changes": {
         "projectile": {
           "poolFrames": 170,
