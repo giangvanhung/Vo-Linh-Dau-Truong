@@ -1,4 +1,5 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
+import { heroEnergyMax } from './hero-form.js';
 
 const maxFrames = Math.round(10 / FRAME_SECONDS);
 
@@ -105,7 +106,10 @@ export function createTrainingActions(training, { canUse, fighters, resetFighter
       const vitals = fighters().map(({ hp, meter }) => ({ hp, meter }));
       training.resetActivity();
       resetFighters();
-      fighters().forEach((fighter, index) => Object.assign(fighter, vitals[index]));
+      fighters().forEach((fighter, index) => {
+        fighter.hp = Math.min(fighter.maxHp, vitals[index].hp);
+        fighter.meter = vitals[index].meter;
+      });
       updateScore();
     },
     resetHealth() {
@@ -116,6 +120,11 @@ export function createTrainingActions(training, { canUse, fighters, resetFighter
     testAwakening() {
       if (!canUse()) return;
       const [player] = fighters();
+      if (player.heroForm) {
+        player.heroEnergy = heroEnergyMax;
+        focusArena();
+        return;
+      }
       player.gainMeter(player.rules.meterMax);
       player.awakeningUnlocked = true;
       if (!player.nextAwakening) player.endAwakening();
@@ -124,7 +133,10 @@ export function createTrainingActions(training, { canUse, fighters, resetFighter
     },
     resetMeter() {
       if (!canUse()) return;
-      for (const fighter of fighters()) fighter.meter = 0;
+      for (const fighter of fighters()) {
+        fighter.meter = 0;
+        fighter.heroEnergy = 0;
+      }
     },
   };
 }

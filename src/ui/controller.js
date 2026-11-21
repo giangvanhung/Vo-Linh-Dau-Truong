@@ -2,6 +2,10 @@ import { createControllerInput } from './controller-input.js';
 import { createControllerQr } from './controller-qr.js';
 import { createControllerLayout } from './controller-layout.js';
 import { lanSocket } from '../platform/lan.js';
+import { loadSettings } from '../platform/settings.js';
+import { connectThemeSettings } from '../platform/theme.js';
+
+connectThemeSettings(loadSettings());
 
 const query = new URLSearchParams(location.search);
 let room = query.get('room');

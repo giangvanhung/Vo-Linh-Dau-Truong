@@ -36,6 +36,7 @@
       }
     },
     "ice": {
+      "seasonClimate": "frozen",
       "name": "Hang băng",
       "description": "Hai gờ băng để nhảy lên. Mặt băng giữa sân kéo dài đà trượt.",
       "background": "/assets/backgrounds/ice.webp",
@@ -68,6 +69,7 @@
       }
     },
     "cloud": {
+      "seasonClimate": "windy",
       "name": "Đền trên mây",
       "description": "Hai bệ cao. Gió báo trước rồi đẩy võ sĩ đang ở trên không sang phải.",
       "background": "/assets/backgrounds/cloud.webp",
@@ -101,6 +103,7 @@
       }
     },
     "forge": {
+      "seasonClimate": "hot",
       "name": "Lò rèn dưới núi",
       "description": "Cầu cao giữa sân. Khe hơi hai bên nhấc võ sĩ lên khi sáng.",
       "background": "/assets/backgrounds/forge.webp",
@@ -127,6 +130,7 @@
       }
     },
     "lava": {
+      "seasonClimate": "hot",
       "name": "Vực Dung Nham",
       "description": "Vệt dung nham sáng lên trước khi phun. Đứng trong vùng nóng mất 6 HP mỗi nửa giây. Nhảy qua để tránh.",
       "background": "/assets/backgrounds/lava-arena.jpg",
@@ -145,6 +149,7 @@
       }
     },
     "observatory": {
+      "seasonClimate": "night",
       "name": "Đài Vọng Nguyệt",
       "description": "Vùng lam dưới kính thiên văn hồi nộ cho đấu sĩ đứng trên mặt đất khi phát sáng.",
       "background": "/assets/backgrounds/moon-observatory.jpg",
@@ -194,6 +199,7 @@
       "platforms": [{ "range": [0.40, 0.57], "y": -66, "art": "stone" }]
     },
     "hoian": {
+      "seasonClimate": "night",
       "name": "Phố Đèn Hội An",
       "description": "Sân lát đá bên sông, đèn lồng, thuyền nhỏ và xe đạp trước dãy nhà vàng.",
       "background": "/assets/backgrounds/hoian-lanterns.jpg",
@@ -264,6 +270,7 @@
       ]
     },
     "skybridge": {
+      "seasonClimate": "windy",
       "name": "Cầu Đá Trên Mây",
       "description": "Chim bay qua đảo nổi và cầu đá. Ấn tím hóa thỏ, ấn vàng gây choáng ngắn. Nhảy lên bệ để tránh.",
       "background": "/assets/backgrounds/skybridge.jpg",
@@ -280,6 +287,7 @@
       "zone": { "kind": "condition", "range": [0.40, 0.60], "cycle": 420, "active": 48, "conditions": ["morph", "stun"], "color": "#f5adff" }
     },
     "sunken": {
+      "seasonClimate": "underwater",
       "name": "Đền Chìm San Hô",
       "description": "Cá bơi qua rạn san hô. Luồng xanh lục gây độc nhẹ, luồng lam làm chậm. Các gờ đá giữ chân bạn trên dòng nước.",
       "background": "/assets/backgrounds/sunken-temple.jpg",
@@ -296,6 +304,7 @@
       "zone": { "kind": "condition", "range": [0.38, 0.62], "cycle": 390, "active": 58, "conditions": ["poison", "slow"], "color": "#b3ec82" }
     },
     "parking": {
+      "seasonClimate": "rainy",
       "name": "Bãi Xe Sau Mưa",
       "description": "Bậc bê tông và thùng thép chia sân. Ô cam phản một đòn cận chiến, ô tím giảm sức đánh.",
       "background": "/assets/backgrounds/rain-parking.jpg",

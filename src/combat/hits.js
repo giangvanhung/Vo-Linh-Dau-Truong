@@ -66,7 +66,7 @@ export function applyHit(contact) {
   const critical = blocked ? 1 : attack.criticalRoll < attack.criticalChance - (defender.equipmentStats?.resistCrit ?? 0)
     ? attack.criticalPower : attack.criticalMultiplier ?? 1;
   const defense = (1 - (defender.equipmentStats?.defense ?? 0) / 100) * (defender.armor ?? 1)
-    * (defender.heroFrames ? defender.heroForm.defense : 1);
+    * (defender.activeHeroForm?.defense ?? 1);
   const weakened = attacker.stageCondition?.kind === 'weaken' ? .82 : 1;
   const incoming = Math.round(attack.damage * multiplier * attackBonus * critical * defense * weakened * 100) / 100;
   const absorbed = Math.min(defender.shieldHp, incoming);
@@ -115,6 +115,11 @@ export function applyHit(contact) {
   if (!blocked && attack.weaponPerk === 'surge') attacker.gainMeter(4);
   defender.gainMeter(blocked ? rules.meterOnBlock : damage * rules.meterOnReceive);
   const broken = blocked && defender.spendGuard(attack.guardDamage);
+  if (blocked && !broken && defender.heroGuardWindow > 0) {
+    defender.heroGuardWindow = 0;
+    defender.heroCounter = 60;
+    delete defender.cooldowns.closeSkill;
+  }
   if (blocked && !broken && defender.characterId === 'hung') defender.awakeningWindow = 150;
   if (broken && attacker.characterId === 'ngoc') attacker.awakeningUnlocked = true;
   if (blocked) {

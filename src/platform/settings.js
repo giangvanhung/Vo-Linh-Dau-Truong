@@ -14,12 +14,14 @@ export const roundFormats = [3, 5, 7, 9];
 const settingsKey = 'vo-linh-settings';
 
 export function loadSettings() {
-  const settings = { sound: true, music: 35, musicTrack: 'synthwave', effects: 65, difficulty: 'normal', theme: 'auto' };
+  const settings = { sound: true, music: 35, musicTrack: 'synthwave', effects: 65, difficulty: 'normal', theme: 'auto', themeEffects: true };
   settings.roundFormats = {};
   settings.bindings = defaultBindings.map(keys => ({ ...keys }));
   try {
     const saved = JSON.parse(localStorage.getItem(settingsKey));
     if (Object.prototype.hasOwnProperty.call(themes, saved?.theme)) settings.theme = saved.theme;
+    if (typeof saved?.themeEffects === 'boolean') settings.themeEffects = saved.themeEffects;
+    if (typeof saved?.youtubeMusic === 'string' && /^[\w-]{11}$/.test(saved.youtubeMusic)) settings.youtubeMusic = saved.youtubeMusic;
     if (Object.prototype.hasOwnProperty.call(musicChoices, saved?.musicTrack)) settings.musicTrack = saved.musicTrack;
     for (const mode of ['solo', 'versus', 'team', 'lan']) {
       const value = saved?.roundFormats?.[mode];

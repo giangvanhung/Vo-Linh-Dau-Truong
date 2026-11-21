@@ -57,6 +57,10 @@ export class Fighter {
     this.regenFrames = 0;
     this.heroEnergy = 0;
     this.heroFrames = 0;
+    this.heroStage = 0;
+    this.heroMechUsed = false;
+    this.heroCounter = 0;
+    this.heroGuardWindow = 0;
     this.stageCondition = null;
     this.pickupWeapon = null;
     this.weaponUses = 0;
@@ -83,11 +87,15 @@ export class Fighter {
   }
 
   get charging() { return this.chargeFrames > 0; }
-  get jumpMultiplier() { return 1 + (this.equipmentStats?.jump ?? 0) / 100; }
+  get activeHeroForm() {
+    if (!this.heroFrames) return null;
+    return this.heroStage === 1 ? this.heroForm : this.heroUpgrades?.[this.heroStage - 2];
+  }
+  get jumpMultiplier() { return (1 + (this.equipmentStats?.jump ?? 0) / 100) * (this.activeHeroForm?.jump ?? 1); }
   get walkingSpeed() {
     const kind = this.stageCondition?.kind;
     return this.moveSpeed * (kind === 'slow' ? .78 : kind === 'morph' ? .88 : 1)
-      * (this.heroFrames ? this.heroForm.speed : 1);
+      * (this.activeHeroForm?.speed ?? 1);
   }
   get awakeningForm() { return this.awakeningLevel === 2 ? this.awakening.levelTwo : this.awakening; }
   get evolution() { return this.awakeningForm?.evolution; }
@@ -154,6 +162,9 @@ export class Fighter {
 
   skillFor(id) {
     const skill = this.skills[id];
+    if (this.heroUpgrades && this.activeHeroForm) {
+      return this.activeHeroForm.skills?.[id === 'closeSkill' && this.heroCounter ? 'counter' : id] ?? skill;
+    }
     if (this.heroFrames && id === 'rangedSkill') return {
       ...skill, label: 'Lôi Mạch', damage: skill.damage + 3, startup: Math.max(10, skill.startup - 3),
       projectile: { ...skill.projectile, shape: 'piercingRay', speed: skill.projectile.speed * 1.18, color: this.heroForm.color },
@@ -173,9 +184,14 @@ export class Fighter {
   }
 
   setGuard(held) {
+    const wasBlocking = this.blocking;
     if (!held) this.guardReleaseRequired = false;
     this.blocking = held && !this.guardReleaseRequired && !this.disabled
       && !this.attacking && !this.dash && this.onGround && this.guard > 0;
+    if (this.activeHeroForm?.skills?.counter) {
+      if (!this.blocking) this.heroGuardWindow = 0;
+      else if (!wasBlocking) this.heroGuardWindow = 9;
+    }
   }
 
   spendGuard(amount) {
@@ -246,7 +262,8 @@ export class Fighter {
       this.attack.criticalPower = (strength[definition.mainWeapon] ?? 1.5) + (equipment?.critDamage ?? 0) / 100;
     }
     if (this.powerFrames) this.attack.damage *= 1.22;
-    if (this.heroFrames) this.attack.damage *= this.heroForm.damage;
+    if (this.activeHeroForm) this.attack.damage *= this.activeHeroForm.damage;
+    if (definition.heroCounter) this.heroCounter = 0;
     if (this.evolving && this.evolution.damageMultiplier) this.attack.damage *= this.evolution.damageMultiplier;
     if (this.evolving && this.evolution.punchMultiplier && (id === 'light' || id === 'heavy')) {
       this.attack.evolvedPunch = true;
@@ -265,6 +282,7 @@ export class Fighter {
   }
 
   startDash(enhanced, rollDirection = 0) {
+    if (this.activeHeroForm?.mech) return false;
     const dash = rollDirection
       ? { frames: 18, distance: 104, invulnerableFrames: 10, roll: true }
       : this.dashOptions[enhanced ? 'enhanced' : 'normal'];
@@ -416,8 +434,9 @@ export class Fighter {
   get hurtbox() {
     const { width: standingWidth, height: standingHeight } = this.hurtboxSize;
     const morph = this.stageCondition?.kind === 'morph';
-    const width = standingWidth * (morph ? .86 : 1);
-    const height = standingHeight * (morph ? .68 : this.crouching ? .66 : 1);
+    const mech = this.activeHeroForm?.mech && !morph;
+    const width = standingWidth * (morph ? .86 : mech ? 1.5 : 1);
+    const height = standingHeight * (morph ? .68 : (this.crouching ? .66 : 1) * (mech ? 1.32 : 1));
     return { x: this.x - width / 2, y: this.y - height, width, height };
   }
 

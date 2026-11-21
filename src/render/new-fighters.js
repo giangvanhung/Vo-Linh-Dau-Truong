@@ -1,16 +1,21 @@
 import { strikePose } from './fighter-motion.js';
+import { drawLamKinh } from './lam-kinh.js';
 
 export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
+  const form = fighter.activeHeroForm;
+  if (form?.mech) return drawLamKinh(ctx, fighter, name, ground, time, drawWeapon);
   const { index } = fighter.prototypeStyle;
+  const rider = index === 6;
   const attack = fighter.attack;
   const swing = attack ? Math.max(0, strikePose(attack)) : 0;
-  const kicking = attack?.id === 'kick';
+  const heelDash = rider && fighter.heroStage === 1 && attack?.id === 'closeSkill' && !attack.pickupWeapon;
+  const kicking = attack?.id === 'kick' || heelDash;
   const rear = attack?.limbSide === 'right';
   const walk = fighter.moving ? Math.sin(fighter.walkDistance / 10) : 0;
   const idle = name === 'idle' ? Math.sin(time / 175) * 1.2 : 0;
   const hero = fighter.heroFrames > 0;
   const fabric = hero ? '#334e96' : fighter.color;
-  const trim = hero ? fighter.heroForm.color : fighter.glow;
+  const trim = form?.color ?? fighter.glow;
   const hand = [17, -61 + idle];
   const dark = '#232238';
   ctx.save();
@@ -38,7 +43,7 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   };
   for (const side of [0, 1]) {
     const strike = kicking && Boolean(side) === rear ? swing : 0;
-    const landing = [9 * (side ? 1 : -1) + 10 * walk * (side ? 1 : -1) + strike * (side ? 57 : 49), -4 - 41 * strike];
+    const landing = [9 * (side ? 1 : -1) + 10 * walk * (side ? 1 : -1) + strike * (side ? 57 : 49), -4 - (heelDash ? 55 : 41) * strike];
     line([[side ? 6 : -6, -39], [landing[0] * .52, -24 - strike * 14], landing], side ? fabric : dark, 10);
     line([landing, [landing[0] + 6, landing[1]]], dark, 6);
   }
@@ -56,12 +61,22 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   ctx.beginPath();
   ctx.ellipse(3, -85 + idle, 11, 13, .08, 0, 2 * Math.PI);
   ctx.fill();
-  ctx.fillStyle = hero ? '#182750' : ['#1b756d','#31274e','#774531','#785581','#303f69','#212435'][index];
+  ctx.fillStyle = hero ? '#182750' : ['#1b756d','#31274e','#774531','#785581','#303f69','#212435','#152a42'][index];
   ctx.beginPath();
   ctx.ellipse(1, -92 + idle, 14, 9, -.16, 0, 2 * Math.PI);
   ctx.fill();
   if (index === 0 || index === 3 || index === 4) line([[-9, -91], [-12, -81], [-18 - walk * 4, -67]], ctx.fillStyle, 7);
   line([[6, -86 + idle], [hero ? 14 : 10, -86 + idle]], hero ? trim : dark, hero ? 3 : 1.7);
+  if (rider) {
+    if (hero) {
+      line([[-8, -88 + idle], [3, -78 + idle], [13, -83 + idle]], '#182750', 9);
+      line([[-4, -89 + idle], [4, -84 + idle], [15, -87 + idle]], trim, 3.5);
+      line([[-11, -67 + idle], [2, -58 + idle], [12, -65 + idle]], trim, 4);
+    } else {
+      line([[-9, -90], [-14, -79], [-22 - walk * 3, -67]], '#152a42', 10);
+      line([[-13, -65], [-3, -62], [11, -65]], trim, 3);
+    }
+  }
   if (index === 2 || index === 5) line([[-9, -96], [10, -95]], trim, 3);
   if (index === 1 || index === 3) line([[-10, -74], [-22, -71 + walk * 8], [-30, -73]], trim, 4);
   for (const side of [0, 1]) {
@@ -72,5 +87,14 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
     if (!side || strength > .3) hand.splice(0, 2, ...fist);
   }
   if (fighter.weapon || fighter.weaponUses) drawWeapon(hand);
+  if (rider) {
+    const [x, y] = hand;
+    line([[x - 8, y], [x - 4, y + 1]], trim, 3);
+    if (form?.skills?.counter) {
+      const forward = fighter.blocking || attack?.id === 'closeSkill' ? x + 5 : x - 9;
+      line([[forward, y - 17], [forward + 6, y - 5], [forward + 4, y + 12], [forward - 3, y + 18]], dark, 12);
+      line([[forward + 2, y - 16], [forward + 8, y - 4], [forward + 6, y + 11], [forward - 1, y + 17]], trim, fighter.heroCounter ? 5 : 2);
+    }
+  }
   ctx.restore();
 }

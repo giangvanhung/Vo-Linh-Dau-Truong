@@ -10,6 +10,7 @@ import { ballRadius } from '../game/stage-ball.js';
 import { gear } from '../game/pickups.js';
 import { weaponTypes } from '../game/equipment.js';
 import { drawMorph, drawStageCondition, drawStageLife } from './stage-life.js';
+import { createSeasonSnow } from './season-snow.js';
 
 const terrainArt = Object.fromEntries(['crate', 'steel', 'stone', 'timber'].map(kind =>
   [kind, '/assets/backgrounds/terrain-' + kind + '.png']));
@@ -17,6 +18,7 @@ const terrainArt = Object.fromEntries(['crate', 'steel', 'stone', 'timber'].map(
 export function createArenaRenderer(canvas, config) {
   const ctx = canvas.getContext('2d');
   const drawBackground = createStageBackground(document.getElementById('arena-background'));
+  const drawSeasonSnow = createSeasonSnow(ctx);
   const h = canvas.height;
   // Leave room for wide attack poses and evolved bodies beyond the arena walls.
   const wallClearance = 48;
@@ -43,7 +45,7 @@ export function createArenaRenderer(canvas, config) {
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
   function render({ stage, stageFrame, width: w, fighters, offsets, projectiles, particles, floaters, trails,
-    shake, screenEffect, debug, animationTime, ball, drop, looseWeapons }) {
+    shake, screenEffect, debug, animationTime, ball, drop, looseWeapons, seasonActive }) {
     const ground = h * config.stage.groundRatio;
     const displayHeight = canvas.clientHeight;
     const scale = Math.min(canvas.clientWidth / w, displayHeight / h);
@@ -62,6 +64,7 @@ export function createArenaRenderer(canvas, config) {
     drawStageAmbience(stage, stageFrame, w, ground);
     drawStageLife(ctx, stage.wildlife, stageFrame, w, ground);
     drawTerrain(stage, stageFrame, w, ground);
+    drawSeasonSnow(stage, stageFrame, w, ground, fighters, animationTime, seasonActive);
     if (ball) drawBall(ball, ground);
     for (const item of looseWeapons) drawLooseWeapon(ctx, images, item, ground, animationTime);
     if (drop) {

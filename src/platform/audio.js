@@ -24,6 +24,11 @@ export class GameAudio {
     this.syncMusic();
   }
 
+  setMusicPreview(active) {
+    this.musicPreview = active;
+    this.syncMusic();
+  }
+
   unlock() {
     if (!this.settings.sound) return;
     this.musicUnlocked = true;
@@ -57,6 +62,10 @@ export class GameAudio {
 
   syncMusic() {
     if (!this.musicUnlocked) return;
+    if (this.musicPreview) {
+      this.track?.pause();
+      return;
+    }
     const id = this.settings.musicTrack;
     const choice = musicChoices[id];
     const src = choice.file ? assetRoot + choice.file : this.musicFiles.get(id);

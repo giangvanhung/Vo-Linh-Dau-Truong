@@ -1,5 +1,6 @@
 import { enableMenuNavigation } from './menu-navigation.js';
 import { createEquipmentPanel } from './equipment-panel.js';
+import { createYouTubeMusic } from './youtube-music.js';
 
 import { ambiguousCompositionKey, assignable, bindingLabels, defaultBindings, keyCode, keyLabel } from '../platform/keyboard.js';
 import { musicChoices, roundFormats } from '../platform/settings.js';
@@ -42,7 +43,7 @@ function choiceCard(group, id, name, image, checked, onSelect) {
   return card;
 }
 
-export function createPanels({ characters, stages, combat, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile }) {
+export function createPanels({ characters, stages, combat, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile, setMusicPreview }) {
   connectThemeSettings(settings, saveSettings);
   const stageWrap = byId('menu-panel').closest('.stage-wrap');
   const panels = [...stageWrap.querySelectorAll(':scope > .game-panel')];
@@ -52,8 +53,10 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   const utilityPanels = [...utilityDialog.querySelectorAll('.utility-content')];
   const utilityTitles = { settings: 'Cài đặt', bindings: 'Phím bàn phím', guide: 'Hướng dẫn' };
   let popupTrigger;
+  const youtubeMusic = createYouTubeMusic(settings, saveSettings, setMusicPreview);
 
   function showUtility(name, trigger) {
+    if (name !== 'settings') youtubeMusic.stop();
     if (trigger) popupTrigger = trigger;
     byId('utility-title').textContent = utilityTitles[name];
     for (const panel of utilityPanels) panel.hidden = panel.id !== name + '-panel';
@@ -65,6 +68,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
 
   utilityDialog.addEventListener('close', () => {
     if (utilityDialog.open) return;
+    youtubeMusic.stop();
     for (const panel of utilityPanels) panel.hidden = true;
     pendingBinding = null;
     popupTrigger?.focus({ preventScroll: true });
@@ -72,7 +76,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   });
   dialogClose.addEventListener('click', () => utilityDialog.close());
   const utilityButtons = {
-    settings: ['settings-button', 'equipment-settings'],
+    settings: ['settings-button', 'equipment-settings', 'pause-settings-button'],
     guide: ['guide-button', 'equipment-guide', 'pause-guide-button'],
   };
   for (const [name, buttons] of Object.entries(utilityButtons)) {
@@ -147,10 +151,10 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
       detail.textContent = fighter
         ? [fighter.profile.role, fighter.prototypeStyle && fighter.profile.description, ...Object.values(fighter.skills).map(skill => skill.label)].filter(Boolean).join(' · ')
         : 'Võ sĩ sẽ được chọn khi vào trận.';
-      condition.hidden = !fighter?.awakening;
+      condition.hidden = !fighter?.awakening && !fighter?.heroUpgrades;
       condition.textContent = fighter?.awakening
         ? 'Cấp 1 · ' + fighter.awakening.condition + (fighter.awakening.levelTwo ? ' · Cấp 2: nạp đầy nộ lần nữa' : '')
-        : '';
+        : fighter?.heroUpgrades ? 'Biến hình: Giáp Lam → Khiên Triều → Lam Kình. Đầy năng lượng thì lên cấp trước khi dạng hiện tại hết giờ.' : '';
     }
 
     const options = [...entries, ['random', { name: 'Ngẫu nhiên' }]];

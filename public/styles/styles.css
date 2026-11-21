@@ -717,6 +717,40 @@ body:has(#utility-dialog[open]) { overflow: hidden; }
 #utility-dialog .settings-fields select { min-width: 0; font-size: inherit; }
 #utility-dialog .settings-fields select:focus { outline-offset: -2px; }
 #utility-dialog #music-file-controls { grid-column: 1 / -1; }
+#youtube-music {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--theme-edge, #63586b);
+}
+#youtube-music h3 { margin: 0 0 6px; font-size: 1.1em; }
+.youtube-music-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 6px;
+}
+.youtube-music-actions :is(input, button) { min-height: 44px; font: inherit; }
+#youtube-music-link {
+  flex: 1 1 240px;
+  min-width: 0;
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--theme-surface, #231f2b);
+  color: #fff8ef;
+  border: 1px solid var(--theme-edge, #7d687d);
+  border-radius: 5px;
+}
+#youtube-music-status { margin: 8px 0; }
+#youtube-music-status:empty { display: none; }
+#youtube-music-player iframe {
+  display: block;
+  width: min(100%, 540px);
+  min-height: 200px;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+#youtube-music-open { display: inline-block; margin-top: 8px; color: var(--theme-accent, #ffbf8b); }
 #guide-panel:not([hidden]) {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
@@ -742,6 +776,8 @@ body:has(#utility-dialog[open]) { overflow: hidden; }
 .hero-energy { display: flex; align-items: center; gap: 7px; margin: 5px 0; color: #ffec8a; font-size: 11px; }
 .hero-energy[hidden], #hero-transform[hidden] { display: none; }
 .hero-energy progress { width: min(110px, 42%); height: 7px; accent-color: #ffe373; }
+.hero-energy > span { min-width: 0; overflow-wrap: anywhere; }
+.hero-energy > progress { flex: none; }
 #hero-transform { position: absolute; top: 10px; left: 10px; z-index: 2; min-height: 44px; color: #211600; background: #ffe373; }
 @media (max-width: 760px) {
   .equipment-panel .equipment-layout { grid-template-columns: minmax(0, 1fr); }

@@ -43,6 +43,7 @@ export function enableMenuNavigation() {
       }
     }
     if (current?.matches('input[type="range"]') && direction[0]) return;
+    if (!tv && current?.matches('input[type="text"]') && direction[0]) return;
     if (current.matches('[data-menu-scroll]') && direction[1]) {
       const atTop = current.scrollTop <= 0;
       const atBottom = current.scrollTop + current.clientHeight >= current.scrollHeight - 1;

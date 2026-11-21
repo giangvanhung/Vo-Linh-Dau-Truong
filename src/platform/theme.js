@@ -21,11 +21,25 @@ export function themeForDate(date) {
 export function connectThemeSettings(settings, saveSettings) {
   const select = document.getElementById('theme-setting');
   const status = document.getElementById('theme-status');
+  const effectsButton = document.getElementById('theme-effects');
   const meta = document.querySelector('meta[name="theme-color"]');
-  for (const [value, label] of Object.entries(themes)) {
-    select.add(new Option(label, value));
+  if (select) {
+    for (const [value, label] of Object.entries(themes)) select.add(new Option(label, value));
+    select.value = settings.theme;
   }
-  select.value = settings.theme;
+  for (const scene of document.querySelectorAll('.season-scene')) {
+    const count = scene.classList.contains('season-arena') ? 12 : 32;
+    for (let i = 0; i < count; i++) {
+      const particle = document.createElement('i');
+      particle.className = 'season-particle';
+      particle.style.left = `${(i * 61 % 103) / 103 * 100}%`;
+      particle.style.setProperty('--size', `${2 + i % 5}px`);
+      particle.style.setProperty('--drift', `${(i % 2 ? -1 : 1) * (18 + i % 7 * 8)}px`);
+      particle.style.setProperty('--duration', `${7 + i % 11 * .8}s`);
+      particle.style.setProperty('--delay', `-${i * 29 % 127 / 10}s`);
+      scene.append(particle);
+    }
+  }
 
   let timer;
   function applyTheme() {
@@ -34,16 +48,26 @@ export function connectThemeSettings(settings, saveSettings) {
     const automatic = settings.theme === 'auto';
     const theme = automatic ? themeForDate(now) : settings.theme;
     document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.themeEffects = settings.themeEffects ? 'on' : 'off';
     meta.content = getComputedStyle(document.documentElement).getPropertyValue('--theme-base').trim();
-    status.textContent = automatic ? `Đang dùng ${themes[theme]} theo ngày trên thiết bị.` : '';
+    if (status) status.textContent = automatic ? `Đang dùng ${themes[theme]} theo ngày trên thiết bị.` : '';
+    if (effectsButton) {
+      effectsButton.setAttribute('aria-pressed', String(settings.themeEffects));
+      effectsButton.firstElementChild.textContent = settings.themeEffects ? 'Bật' : 'Tắt';
+    }
     if (automatic) {
       const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
       timer = window.setTimeout(applyTheme, midnight - now);
     }
   }
 
-  select.addEventListener('change', () => {
+  select?.addEventListener('change', () => {
     settings.theme = select.value;
+    saveSettings();
+    applyTheme();
+  });
+  effectsButton?.addEventListener('click', () => {
+    settings.themeEffects = !settings.themeEffects;
     saveSettings();
     applyTheme();
   });

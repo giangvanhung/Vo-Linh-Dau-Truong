@@ -2,6 +2,7 @@ import { FRAME_SECONDS } from '../combat/fighter.js';
 import { difficultyLabels } from '../platform/settings.js';
 import { gear } from '../game/pickups.js';
 import { mainWeaponAttack } from '../game/weapon-attacks.js';
+import { heroEnergyMax, nextHeroForm } from '../game/hero-form.js';
 
 export const damageFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
 
@@ -77,10 +78,16 @@ export function createHud(config) {
     meter.hero.hidden = !fighter.heroForm;
     if (fighter.heroForm) {
       const bar = meter.hero.querySelector('progress');
-      bar.value = fighter.heroFrames ? 100 * fighter.heroFrames / (fighter.heroDuration ?? fighter.heroForm.duration) : fighter.heroEnergy;
-      setText(meter.hero.querySelector('span'), fighter.heroFrames
-        ? fighter.heroForm.label + ' · ' + Math.ceil(fighter.heroFrames / 60) + 's'
-        : 'Biến hình · ' + fighter.heroEnergy + '/100');
+      const form = fighter.activeHeroForm;
+      const next = nextHeroForm(fighter);
+      const charge = Math.floor(fighter.heroEnergy) + '/' + heroEnergyMax;
+      bar.value = form && !next ? 100 * fighter.heroFrames / fighter.heroDuration : fighter.heroEnergy;
+      const label = form
+        ? [form.label + ' · ' + Math.ceil(fighter.heroFrames / 60) + 's',
+          next ? 'Cấp ' + (fighter.heroStage + 1) + ' · ' + charge : '',
+          fighter.heroCounter ? 'Phản đòn sẵn sàng' : ''].filter(Boolean).join(' · ')
+        : 'Biến hình · ' + charge;
+      setText(meter.hero.querySelector('span'), label);
     }
     const value = Math.floor(fighter.meter);
     if (meter.fill) meter.fill.style.width = fighter.meter / config.combat.meterMax * 100 + '%';

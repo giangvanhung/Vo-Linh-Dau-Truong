@@ -13,7 +13,7 @@ const fighterWeapons = {
   vy: 'gauntlet', lam: 'gauntlet', diep: 'staff', golem: 'hammer',
   fox: 'spear', goblin: 'blade', elf: 'spear', jackal: 'staff',
   robot: 'gauntlet', corgi: 'pan', dragon: 'gauntlet', shadow: 'gauntlet',
-  mio: 'spear', rin: 'blade', nami: 'gauntlet', yuna: 'staff', 'bang-nghi': 'staff', 'an-tin': 'gauntlet',
+  mio: 'spear', rin: 'blade', nami: 'gauntlet', yuna: 'staff', 'bang-nghi': 'staff', 'an-tin': 'gauntlet', 'ha-mien': 'gauntlet',
 };
 export const weaponTypeFor = id => fighterWeapons[id];
 export const canEquip = (fighterId, item) => Boolean(item)

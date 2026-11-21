@@ -1,0 +1,369 @@
+{
+  "name": "Hạ Miên",
+  "hp": 98,
+  "width": 40,
+  "height": 100,
+  "color": "#284667",
+  "glow": "#59dce9",
+  "cpu": true,
+  "armor": 1,
+  "moveSpeed": 235,
+  "hurtboxSize": {
+    "width": 39,
+    "height": 101
+  },
+  "dash": {
+    "frames": 11,
+    "distance": 134,
+    "invulnerableFrames": 5
+  },
+  "enhancedDash": {
+    "cost": 25,
+    "frames": 13,
+    "distance": 200,
+    "invulnerableFrames": 8
+  },
+  "dashCooldownFrames": 52,
+  "profile": {
+    "role": "Kỵ sĩ Mạch Lam",
+    "description": "Nữ kỹ sư cứu hộ chế robot từ linh kiện thu hồi ở bến cảng.",
+    "weakness": "Cần giữ nhịp để lên cấp. Lam Kình di chuyển chậm và hồi đòn lâu."
+  },
+  "attacks": {
+    "light": {
+      "label": "Đấm Thẳng",
+      "damage": 6,
+      "startup": 5,
+      "active": 4,
+      "recovery": 10,
+      "range": 39,
+      "knockback": 68,
+      "hitstun": 18,
+      "hitstop": 2,
+      "guardDamage": 13,
+      "cancelInto": [
+        "heavy",
+        "kick"
+      ],
+      "limbBoxes": [
+        { "near": 14, "far": 46, "top": 77, "height": 16 }
+      ]
+    },
+    "heavy": {
+      "label": "Đấm Móc",
+      "damage": 11,
+      "startup": 12,
+      "active": 5,
+      "recovery": 21,
+      "range": 61,
+      "knockback": 140,
+      "hitstun": 20,
+      "hitstop": 4,
+      "guardDamage": 23,
+      "cancelInto": [],
+      "limbBoxes": [
+        { "near": 19, "far": 70, "top": 76, "height": 25 }
+      ]
+    },
+    "kick": {
+      "label": "Đá Gót",
+      "damage": 9,
+      "startup": 8,
+      "active": 5,
+      "recovery": 14,
+      "range": 58,
+      "knockback": 125,
+      "hitstun": 18,
+      "hitstop": 3,
+      "guardDamage": 17,
+      "cancelInto": [],
+      "level": "mid",
+      "limbBoxes": [
+        { "near": 15, "far": 67, "top": 65, "height": 27 }
+      ]
+    }
+  },
+  "skills": {
+    "closeSkill": {
+      "label": "Chỏ Cứu Hộ",
+      "damage": 11,
+      "startup": 13,
+      "active": 5,
+      "recovery": 23,
+      "range": 55,
+      "hitstun": 24,
+      "hitstop": 3,
+      "knockback": 120,
+      "guardDamage": 22,
+      "cooldownFrames": 155,
+      "cancelInto": [],
+      "limbBoxes": [
+        { "near": 3, "far": 61, "top": 72, "height": 33 }
+      ],
+      "effect": {
+        "color": "#56ddea",
+        "particles": 10,
+        "trailSeconds": 0.18
+      }
+    },
+    "rangedSkill": {
+      "label": "Xung Cổ Tay",
+      "damage": 9,
+      "startup": 16,
+      "active": 1,
+      "recovery": 24,
+      "range": 70,
+      "hitstun": 17,
+      "hitstop": 2,
+      "knockback": 100,
+      "guardDamage": 16,
+      "cooldownFrames": 200,
+      "cancelInto": [],
+      "projectile": {
+        "speed": 475,
+        "width": 34,
+        "height": 14,
+        "yOffset": 55,
+        "lifetimeFrames": 66,
+        "shape": "bolt",
+        "color": "#56ddea"
+      }
+    },
+    "ultimate": {
+      "label": "Đường Thoát Hiểm",
+      "damage": 24,
+      "startup": 26,
+      "active": 7,
+      "recovery": 34,
+      "range": 55,
+      "hitstun": 24,
+      "hitstop": 3,
+      "knockback": 235,
+      "guardDamage": 22,
+      "cooldownFrames": 155,
+      "cancelInto": [],
+      "limbBoxes": [
+        { "near": 0, "far": 90, "top": 88, "height": 65 }
+      ],
+      "effect": {
+        "color": "#59dce9",
+        "particles": 20,
+        "flashSeconds": 0.15,
+        "flashOpacity": 0.15,
+        "shakeSeconds": 0.24,
+        "shakeIntensity": 30,
+        "trailSeconds": 0.24
+      },
+      "cost": 100,
+      "groundOnly": true,
+      "knocksDown": true,
+      "travel": {
+        "speed": 640,
+        "frames": 9,
+        "passesThrough": false
+      }
+    }
+  },
+  "weaponType": "gauntlet",
+  "prototypeStyle": {
+    "index": 6
+  },
+  "unarmedChain": true,
+  "quote": "Giữ vững tuyến. Tôi mở đường.",
+  "heroForm": {
+    "label": "Giáp Lam",
+    "duration": 1320,
+    "duelDuration": 900,
+    "hp": 5,
+    "speed": 1.12,
+    "defense": 0.96,
+    "damage": 1.06,
+    "color": "#59dce9",
+    "energyGain": 1.8,
+    "skills": {
+      "closeSkill": {
+        "label": "Lướt Đá Gót",
+        "damage": 13,
+        "startup": 10,
+        "active": 6,
+        "recovery": 20,
+        "range": 55,
+        "hitstun": 24,
+        "hitstop": 3,
+        "knockback": 120,
+        "guardDamage": 22,
+        "cooldownFrames": 155,
+        "cancelInto": [
+          "light"
+        ],
+        "limbBoxes": [
+          { "near": 2, "far": 66, "top": 63, "height": 29 }
+        ],
+        "effect": {
+          "color": "#56ddea",
+          "particles": 10,
+          "trailSeconds": 0.18
+        },
+        "travel": {
+          "speed": 620,
+          "frames": 8,
+          "passesThrough": false
+        }
+      }
+    }
+  },
+  "heroUpgrades": [
+    {
+      "label": "Khiên Triều",
+      "duration": 1380,
+      "duelDuration": 1020,
+      "hp": 9,
+      "speed": 0.96,
+      "defense": 0.89,
+      "damage": 1.07,
+      "color": "#9befff",
+      "energyGain": 2,
+      "skills": {
+        "closeSkill": {
+          "label": "Khiên Xô",
+          "damage": 10,
+          "startup": 18,
+          "active": 5,
+          "recovery": 34,
+          "range": 55,
+          "hitstun": 24,
+          "hitstop": 3,
+          "knockback": 120,
+          "guardDamage": 26,
+          "cooldownFrames": 155,
+          "cancelInto": [],
+          "limbBoxes": [
+            { "near": 3, "far": 61, "top": 72, "height": 33 }
+          ],
+          "effect": {
+            "color": "#56ddea",
+            "particles": 10,
+            "trailSeconds": 0.18
+          }
+        },
+        "counter": {
+          "label": "Xung Triều",
+          "damage": 16,
+          "startup": 8,
+          "active": 5,
+          "recovery": 24,
+          "range": 55,
+          "hitstun": 26,
+          "hitstop": 3,
+          "knockback": 190,
+          "guardDamage": 22,
+          "cooldownFrames": 155,
+          "cancelInto": [],
+          "limbBoxes": [
+            { "near": 0, "far": 105, "top": 91, "height": 57 }
+          ],
+          "effect": {
+            "color": "#9befff",
+            "particles": 20,
+            "shakeSeconds": 0.15,
+            "shakeIntensity": 21,
+            "trailSeconds": 0.22
+          },
+          "heroCounter": true
+        }
+      }
+    },
+    {
+      "label": "Lam Kình",
+      "duration": 840,
+      "duelDuration": 480,
+      "hp": 14,
+      "speed": 0.69,
+      "defense": 0.83,
+      "damage": 1.1,
+      "color": "#9befff",
+      "mech": true,
+      "jump": 0.58,
+      "skills": {
+        "closeSkill": {
+          "label": "Lam Kình Dậm Sàn",
+          "damage": 17,
+          "startup": 25,
+          "active": 7,
+          "recovery": 41,
+          "range": 55,
+          "hitstun": 24,
+          "hitstop": 3,
+          "knockback": 185,
+          "guardDamage": 31,
+          "cooldownFrames": 180,
+          "cancelInto": [],
+          "limbBoxes": [
+            { "near": -79, "far": 79, "top": 25, "height": 25 }
+          ],
+          "effect": {
+            "color": "#b4f7ff",
+            "particles": 24,
+            "shakeSeconds": 0.26,
+            "shakeIntensity": 36,
+            "trailSeconds": 0.22
+          },
+          "groundOnly": true,
+          "radial": true,
+          "knocksDown": true
+        },
+        "rangedSkill": {
+          "label": "Lam Kình Quét Tay",
+          "damage": 14,
+          "startup": 19,
+          "active": 7,
+          "recovery": 36,
+          "range": 120,
+          "hitstun": 24,
+          "hitstop": 3,
+          "knockback": 182,
+          "guardDamage": 22,
+          "cooldownFrames": 140,
+          "cancelInto": [],
+          "limbBoxes": [
+            { "near": 8, "far": 121, "top": 89, "height": 56 }
+          ],
+          "effect": {
+            "color": "#9befff",
+            "particles": 16,
+            "trailSeconds": 0.22
+          }
+        },
+        "ultimate": {
+          "label": "Lam Kình Mở Lối",
+          "damage": 24,
+          "startup": 31,
+          "active": 8,
+          "recovery": 45,
+          "range": 55,
+          "hitstun": 24,
+          "hitstop": 3,
+          "knockback": 230,
+          "guardDamage": 22,
+          "cooldownFrames": 155,
+          "cancelInto": [],
+          "limbBoxes": [
+            { "near": 2, "far": 138, "top": 105, "height": 94 }
+          ],
+          "effect": {
+            "color": "#b4f7ff",
+            "particles": 30,
+            "flashSeconds": 0.16,
+            "flashOpacity": 0.14,
+            "shakeSeconds": 0.33,
+            "shakeIntensity": 38,
+            "trailSeconds": 0.27
+          },
+          "cost": 100,
+          "groundOnly": true,
+          "knocksDown": true
+        }
+      }
+    }
+  ]
+}
