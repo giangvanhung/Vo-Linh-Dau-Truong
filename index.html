@@ -279,18 +279,14 @@
               <label>Độ khó mặc định <select id="default-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
             </div>
             <section id="youtube-music" aria-labelledby="youtube-music-title">
-              <h3 id="youtube-music-title">Nghe nhạc YouTube</h3>
+              <h3 id="youtube-music-title">Nhạc nền YouTube</h3>
               <form id="youtube-music-form">
-                <label for="youtube-music-link">Link video YouTube</label>
+                <label for="youtube-music-link">Dán link video bạn muốn nghe</label>
                 <div class="youtube-music-actions">
                   <input id="youtube-music-link" type="text" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://youtu.be/…" aria-describedby="youtube-music-status">
-                  <button class="panel-button" type="submit">Nghe nhạc</button>
-                  <button class="panel-button" type="button" id="youtube-music-stop" hidden>Dừng</button>
+                  <button class="panel-button" type="submit">Phát nhạc nền</button>
                 </div>
               </form>
-              <p id="youtube-music-status" role="status"></p>
-              <div id="youtube-music-player" hidden></div>
-              <a id="youtube-music-open" target="_blank" rel="noopener noreferrer" hidden>Mở video trên YouTube</a>
             </section>
           </div>
           <div class="game-panel utility-content" id="bindings-panel" hidden>
@@ -358,6 +354,15 @@
 
         <div class="arena-footer"><span><i class="status-dot"></i> SẴN SÀNG KHI BẠN</span><span id="status-text">CHỌN THỜI ĐIỂM RA ĐÒN</span><span class="latency"><span id="network-mode">OFFLINE</span> <b>●</b></span></div>
       </section>
+      <aside id="youtube-music-dock" aria-label="Nhạc nền YouTube">
+        <div class="youtube-music-dock-bar">
+          <span id="youtube-music-now-playing">Nhạc nền YouTube</span>
+          <button class="panel-button" type="button" id="youtube-music-stop" hidden>Dừng nhạc</button>
+          <a id="youtube-music-open" target="_blank" rel="noopener noreferrer" hidden>Mở video</a>
+        </div>
+        <p id="youtube-music-status" role="status"></p>
+        <div id="youtube-music-player" hidden></div>
+      </aside>
 
     </main>
     <script defer src="/src/game.bundle.js"></script>

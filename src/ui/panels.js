@@ -56,7 +56,6 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   const youtubeMusic = createYouTubeMusic(settings, saveSettings, setMusicPreview);
 
   function showUtility(name, trigger) {
-    if (name !== 'settings') youtubeMusic.stop();
     if (trigger) popupTrigger = trigger;
     byId('utility-title').textContent = utilityTitles[name];
     for (const panel of utilityPanels) panel.hidden = panel.id !== name + '-panel';
@@ -68,7 +67,6 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
 
   utilityDialog.addEventListener('close', () => {
     if (utilityDialog.open) return;
-    youtubeMusic.stop();
     for (const panel of utilityPanels) panel.hidden = true;
     pendingBinding = null;
     popupTrigger?.focus({ preventScroll: true });

@@ -22,14 +22,38 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
   const player = byId('player');
   const stopButton = byId('stop');
   const open = byId('open');
+  const dock = document.getElementById('youtube-music-dock');
+  const nowPlaying = document.getElementById('youtube-music-now-playing');
   if (settings.youtubeMusic) field.value = 'https://youtu.be/' + settings.youtubeMusic;
 
-  function stop() {
-    if (player.hidden) return;
+  function stop(clearSavedLink = false) {
     player.replaceChildren();
     player.hidden = stopButton.hidden = open.hidden = true;
+    dock.classList.remove('is-playing');
     status.textContent = '';
     setMusicPreview(false);
+    if (clearSavedLink) {
+      delete settings.youtubeMusic;
+      saveSettings();
+      field.value = '';
+    }
+  }
+
+  function play(id) {
+    settings.youtubeMusic = id;
+    saveSettings();
+    const iframe = document.createElement('iframe');
+    iframe.title = 'Trình phát nhạc nền YouTube';
+    iframe.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+    iframe.src = `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&loop=1&playlist=${id}`;
+    player.replaceChildren(iframe);
+    player.hidden = false;
+    stopButton.hidden = open.hidden = false;
+    dock.classList.add('is-playing');
+    nowPlaying.textContent = 'Đang phát nhạc nền YouTube';
+    open.href = 'https://www.youtube.com/watch?v=' + id;
+    status.textContent = 'Nhạc tiếp tục phát khi chuyển màn hình. Nếu video chưa chạy, hãy bấm phát trong trình nghe.';
   }
 
   form.addEventListener('submit', event => {
@@ -44,18 +68,7 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
 
     field.removeAttribute('aria-invalid');
     setMusicPreview(true);
-    settings.youtubeMusic = id;
-    saveSettings();
-    const iframe = document.createElement('iframe');
-    iframe.title = 'Trình phát nhạc YouTube';
-    iframe.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
-    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
-    iframe.src = `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&loop=1&playlist=${id}`;
-    player.replaceChildren(iframe);
-    player.hidden = stopButton.hidden = open.hidden = false;
-    open.href = 'https://www.youtube.com/watch?v=' + id;
-    status.textContent = 'Nếu video chưa chạy, bấm nút phát trên trình phát. Video chặn nhúng có thể mở trên YouTube.';
-    player.scrollIntoView({ block: 'nearest' });
+    play(id);
   });
   field.addEventListener('input', () => {
     if (!field.hasAttribute('aria-invalid')) return;
@@ -63,9 +76,12 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
     status.textContent = '';
   });
   stopButton.addEventListener('click', () => {
-    stop();
+    stop(true);
     field.focus();
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) setMusicPreview(false);
+  });
+  if (settings.youtubeMusic) play(settings.youtubeMusic);
   return { stop };
 }
