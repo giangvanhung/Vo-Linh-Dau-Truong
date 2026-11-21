@@ -1,6 +1,7 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
 import { difficultyLabels } from '../platform/settings.js';
 import { gear } from '../game/pickups.js';
+import { mainWeaponAttack } from '../game/weapon-attacks.js';
 
 export const damageFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
 
@@ -12,6 +13,7 @@ export function createHud(config) {
   }
   const meterUI = {};
   for (const side of ['hung', 'mai']) meterUI[side] = {
+    hero: byId(side + '-hero-energy'),
     focus: document.getElementById(side + '-focus'),
     fill: document.getElementById(side + '-meter-fill'),
     value: document.getElementById(side + '-meter-value'),
@@ -72,13 +74,21 @@ export function createHud(config) {
 
   function updateMeterUI(fighter, side) {
     const meter = meterUI[side];
+    meter.hero.hidden = !fighter.heroForm;
+    if (fighter.heroForm) {
+      const bar = meter.hero.querySelector('progress');
+      bar.value = fighter.heroFrames ? 100 * fighter.heroFrames / (fighter.heroDuration ?? fighter.heroForm.duration) : fighter.heroEnergy;
+      setText(meter.hero.querySelector('span'), fighter.heroFrames
+        ? fighter.heroForm.label + ' · ' + Math.ceil(fighter.heroFrames / 60) + 's'
+        : 'Biến hình · ' + fighter.heroEnergy + '/100');
+    }
     const value = Math.floor(fighter.meter);
     if (meter.fill) meter.fill.style.width = fighter.meter / config.combat.meterMax * 100 + '%';
     meter.fill?.parentElement.classList.toggle('full', fighter.meter >= config.combat.meterMax);
     if (meter.value) setText(meter.value, value + '/' + config.combat.meterMax);
     for (const indicator of meter.skills.children) {
       const id = indicator.dataset.skill;
-      const skill = fighter.skillFor(id);
+      const skill = mainWeaponAttack(fighter, id) ?? fighter.skillFor(id);
       const cooldown = fighter.cooldowns[id];
       const ready = !cooldown && fighter.meter >= (skill.cost ?? 0);
       const status = cooldown ? (cooldown * FRAME_SECONDS).toFixed(1) + 's' : ready ? 'Sẵn sàng' : skill.cost + ' NL';
@@ -86,9 +96,11 @@ export function createHud(config) {
       indicator.classList.toggle('ready', ready);
     }
     const status = [
+      fighter.stageCondition ? fighter.stageCondition.label : '',
       fighter.shieldHp > 0 ? 'Giáp ' + Math.ceil(fighter.shieldHp) : '',
       fighter.powerFrames ? '+Công ' + Math.ceil(fighter.powerFrames * FRAME_SECONDS) + 's' : '',
-      fighter.weaponUses ? gear[fighter.pickupWeapon].label + ' ×' + fighter.weaponUses : '',
+      fighter.weaponUses ? gear[fighter.pickupWeapon].label + ' ×' + fighter.weaponUses + ' · '
+        + Math.ceil(fighter.weaponFrames * FRAME_SECONDS) + 's' : fighter.weapon?.label ?? '',
       fighter.freezeFrames ? 'Đóng băng' : fighter.frostStacks ? 'Hàn ' + fighter.frostStacks + '/3' : '',
       fighter.poisonFrames ? 'Trúng độc ' + fighter.poisonStacks + '/3' : '',
     ].filter(Boolean).join(' · ');

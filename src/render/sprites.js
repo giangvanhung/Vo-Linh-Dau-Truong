@@ -1,6 +1,8 @@
-import { drawStillAttack } from './still-attacks.js';
+import { drawHungRearPunch, drawStillAttack, hasPaintedWeapon } from './still-attacks.js';
 import { applyFighterMotion, drawLowStride } from './fighter-motion.js';
 import { drawPoseSheet } from './pose-sheet.js';
+import { atlasGrip, poseGrip, stillGrip } from './weapon-grips.js';
+import { drawNewFighter } from './new-fighters.js';
 
 const attackClips = {
   light: ['light_punch', 1], heavy: ['heavy_punch', 2], kick: ['kick', 1],
@@ -35,6 +37,7 @@ async function loadAtlas(atlasPath, imagePath) {
 
 export function animationName(fighter) {
   if (fighter.hp <= 0) return 'ko';
+  if (fighter.knockdown > 0) return 'knockdown';
   if (fighter.freezeFrames || fighter.hitstun || fighter.guardBreak) return 'hit';
   if (fighter.attack) return fighter.attack.animation ?? attackClips[fighter.attack.id]?.[0] ?? fighter.attack.id;
   if (fighter.dash) return fighter.dash.roll ? 'roll' : 'dash';
@@ -68,7 +71,7 @@ function selectFrame({ frames, strikeFrame }, fighter, name, elapsed) {
   return frames[durations.findIndex(duration => (time -= duration) < 0)];
 }
 
-export function createSpriteRenderer(ctx, characters) {
+export function createSpriteRenderer(ctx, characters, drawHeld = () => {}) {
   const sheets = new Map();
   const evolvedStills = new Map();
   const clocks = new WeakMap();
@@ -78,7 +81,7 @@ export function createSpriteRenderer(ctx, characters) {
       const sheet = {};
       sheets.set(id, sheet);
       if (paths.poseSheet) sheet.posePath = paths.poseSheet;
-      else loadImage(paths.still).then(image => { sheet.still = image; }).catch(() => {});
+      loadImage(paths.still).then(image => { sheet.still = image; }).catch(() => {});
       const evolved = character.awakening?.levelTwo?.evolution?.sprite;
       if (evolved) loadImage(evolved).then(image => evolvedStills.set(id, image)).catch(() => {});
       sheet.extraPath = paths.extraPoses;
@@ -92,7 +95,16 @@ export function createSpriteRenderer(ctx, characters) {
   }
 
   return function draw(fighter, ground, animationTime) {
+    const drawWeapon = (hand, redraw) => drawHeld(fighter, hand, redraw);
+    const filter = [fighter.skinFilter, fighter.flash > 0 && 'brightness(1.5)'].filter(Boolean).join(' ');
     const name = animationName(fighter);
+    if (fighter.prototypeStyle) {
+      ctx.save();
+      if (filter) ctx.filter = filter;
+      drawNewFighter(ctx, fighter, name, ground, animationTime, drawWeapon);
+      ctx.restore();
+      return true;
+    }
     let clock = clocks.get(fighter);
     if (!clock) {
       clock = { name, start: animationTime, last: animationTime, crouch: 0 };
@@ -123,7 +135,8 @@ export function createSpriteRenderer(ctx, characters) {
     }
     if (sheet?.still || sheet?.poses) {
       const poses = evolved && sheet.evolved ? sheet.evolved : sheet.poses;
-      const image = evolved && !sheet.evolved ? evolvedStills.get(fighter.characterId) ?? sheet.still : sheet.still;
+      if (!poses && hasPaintedWeapon(fighter.characterId)) return false;
+      const image = evolved ? evolvedStills.get(fighter.characterId) ?? sheet.still : sheet.still;
       const height = fighter.sprite.displaySize;
       const attack = fighter.attack;
       const sway = fighter.moving ? Math.sin(fighter.walkDistance / 9) : Math.sin(animationTime / 170) * .35;
@@ -132,26 +145,49 @@ export function createSpriteRenderer(ctx, characters) {
       ctx.scale(attack?.facing ?? fighter.dash?.facing ?? fighter.facing, 1);
       if (name === 'ko') ctx.rotate(-Math.PI / 2);
       else {
-        applyFighterMotion(ctx, fighter, name, height, clock.crouch, Boolean(image));
+        applyFighterMotion(ctx, fighter, name, height, clock.crouch, !poses);
         if (name === 'run' || name === 'idle') ctx.transform(1, 0, -.035 * sway, 1 + sway * .035, 0, 0);
       }
       if (fighter.invulnerable) ctx.globalAlpha = .78;
-      if (fighter.flash > 0) ctx.filter = 'brightness(1.5)';
-      if (!image) drawPoseSheet(ctx, poses, evolved ? null : sheet.extras, fighter, name, height);
-      else {
-        const width = height * image.width / image.height;
-        const articulated = image === sheet.still && name !== 'hit' && name !== 'ko'
-          && drawStillAttack(ctx, image, width, height, fighter);
-        if (name === 'crouchWalk') {
-          drawLowStride(ctx, image, 0, 0, image.width, image.height, -width / 2, -height, width, height, fighter.walkDistance);
-        } else if (!articulated) ctx.drawImage(image, -width / 2, -height, width, height);
+      if (filter) ctx.filter = filter;
+      const useRearLimb = attack?.limbSide === 'right' && attack.animation !== 'sweep'
+        && name !== 'hit' && name !== 'ko' && name !== 'knockdown';
+      const paintedWeapon = hasPaintedWeapon(fighter.characterId);
+      const width = image && height * image.width / image.height;
+      const hand = image && stillGrip(fighter.characterId, width, height);
+      const drawAtHand = (strikeHand, redraw) => {
+        const grip = strikeHand ?? hand;
+        if (grip && !paintedWeapon) drawWeapon(grip, redraw);
+      };
+      let articulated = false;
+      if (useRearLimb && paintedWeapon && poses) {
+        const size = height * 256 / 210;
+        const [handX, handY] = poseGrip(fighter.characterId, 0, false);
+        articulated = drawStillAttack(ctx, poses, size, size * 244 / 256, fighter,
+          grip => drawWeapon(grip ?? [size * (handX / 256 - .5), size * (handY - 244) / 256]), poses.width / 4);
+      } else if (useRearLimb && image) {
+        articulated = drawStillAttack(ctx, image, width, height, fighter, drawAtHand);
+      }
+      if (!articulated && poses) drawPoseSheet(ctx, poses, evolved ? null : sheet.extras, fighter, name, height, drawWeapon);
+      else if (!articulated && image) {
+        const fallbackStrike = name !== 'hit' && name !== 'ko' && name !== 'knockdown'
+          && drawStillAttack(ctx, image, width, height, fighter, drawAtHand);
+        if (!fallbackStrike) {
+          const drawImage = () => {
+            if (name === 'crouchWalk') {
+              drawLowStride(ctx, image, 0, 0, image.width, image.height, -width / 2, -height, width, height, fighter.walkDistance);
+            } else ctx.drawImage(image, -width / 2, -height, width, height);
+          };
+          drawImage();
+          drawAtHand(null, drawImage);
+        }
       }
       ctx.restore();
       return true;
     }
     const clips = sheet?.clips;
     const fallback = name === 'roll' ? 'dash' : name === 'charge' ? 'block' : attackClips[fighter.attack?.id]?.[0];
-    const walk = name === 'crouchWalk' ? 'run' : name;
+    const walk = name === 'crouchWalk' ? 'run' : name === 'knockdown' ? 'hit' : name;
     const clip = clips?.get(walk) ?? clips?.get(fallback) ?? clips?.get('idle');
     if (!clip) return false;
     const elapsed = walk === 'run' ? fighter.walkDistance * (name === 'crouchWalk' ? 16 : 1000 / fighter.moveSpeed)
@@ -170,9 +206,19 @@ export function createSpriteRenderer(ctx, characters) {
     ctx.scale((fighter.attack?.facing ?? fighter.dash?.facing ?? fighter.facing) < 0 ? -1 : 1, 1);
     applyFighterMotion(ctx, fighter, name, scale * source.h, clock.crouch, false);
     if (fighter.invulnerable) ctx.globalAlpha = .78;
-    if (fighter.flash > 0) ctx.filter = 'brightness(1.5)';
-    ctx.drawImage(sheet.image, x, y, w, h,
-      Math.round((trim.x - pivot.x) * scale), Math.round((trim.y - pivot.y) * scale), w * scale, h * scale);
+    if (filter) ctx.filter = filter;
+    const left = Math.round((trim.x - pivot.x) * scale);
+    const top = Math.round((trim.y - pivot.y) * scale);
+    if (fighter.characterId === 'hung' && fighter.attack?.punchChain && fighter.attack.limbSide === 'right'
+      && (name === 'light_punch' || name === 'heavy_punch')) {
+      drawHungRearPunch(ctx, sheet.image, fighter.attack, scale, drawWeapon);
+      ctx.restore();
+      return true;
+    }
+    const drawImage = () => ctx.drawImage(sheet.image, x, y, w, h, left, top, w * scale, h * scale);
+    drawImage();
+    const hand = atlasGrip(fighter.characterId, entry.frame);
+    if (hand) drawWeapon([left + hand[0] * scale, top + hand[1] * scale], drawImage);
     ctx.restore();
     return true;
   };

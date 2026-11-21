@@ -1,3 +1,5 @@
+import { KNOCKDOWN_FRAMES } from '../combat/fighter.js';
+
 const clamp = value => Math.max(0, Math.min(1, value));
 const ease = value => value * value * (3 - 2 * value);
 
@@ -10,7 +12,13 @@ export function strikePose({ elapsed, startup, active, recovery }) {
 }
 
 export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
-  if (name === 'roll') {
+  if (name === 'knockdown') {
+    const fall = ease(clamp((KNOCKDOWN_FRAMES - fighter.knockdown) / 7));
+    const rise = ease(clamp(fighter.knockdown / 10));
+    const tilt = fall * rise;
+    ctx.translate(0, -height * .14 * tilt);
+    ctx.rotate(-Math.PI * .48 * tilt);
+  } else if (name === 'roll') {
     const progress = clamp(fighter.dash.elapsed / fighter.dash.frames);
     const tuck = Math.sin(Math.PI * progress);
     const radius = height * .24;

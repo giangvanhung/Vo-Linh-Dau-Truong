@@ -198,6 +198,7 @@
       "hitstop": 0,
       "guardDamage": 15,
       "cancelInto": [
+        "heavy",
         "kick"
       ],
       "limbBoxes": [

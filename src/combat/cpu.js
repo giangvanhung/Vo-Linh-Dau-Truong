@@ -1,4 +1,5 @@
 import { FRAME_SECONDS } from './fighter.js';
+import { overlapsSurface, stageConditionAt, zoneWarning } from '../game/stages.js';
 
 export const difficulties = {
   easy:   { reaction: [.30, .50], guard: .18, evade: .15, skill: .14, punish: .20, ultimate: .40, escape: .10, spacing: 72 },
@@ -80,10 +81,20 @@ export class CpuController {
 
     if (cpu.disabled || cpu.dash || cpu.attacking || !cpu.onGround) {
       cpu.setGuard(false);
+      if (this.state === 'JumpApproach' && !cpu.onGround && !cpu.disabled && !cpu.attacking) {
+        cpu.x += towards * Math.min(Math.max(0, distance - 34), cpu.walkingSpeed * .82 * dt);
+      }
       if (comboReady && cpu.meter >= this.config.combat.escape.cost) {
         this.consume(attack, 'escape');
         if (this.random() < this.profile.escape && escape()) this.setState('Retreat', .35);
       }
+      return;
+    }
+    const condition = stageConditionAt(world.zone, world.stageFrame ?? 0);
+    if (condition && condition.kind !== 'reflect' && zoneWarning(world.zone, world.stageFrame)
+      && !cpu.stageCondition && Math.abs(cpu.y) < 28 && overlapsSurface(cpu.x, world.width, world.zone.range)) {
+      const center = (world.zone.range[0] + world.zone.range[1]) * world.width / 2;
+      cpu.x += (cpu.x < center ? -1 : 1) * cpu.walkingSpeed * dt;
       return;
     }
 
@@ -170,6 +181,12 @@ export class CpuController {
         if (this.startMove(skill, 'Attack', useAttack)) return;
       }
       if (this.startMove(normals[Math.floor(this.random() * normals.length)], 'Attack', useAttack)) return;
+      if (!shot && world.platforms?.length && distance < 165 && cpu.y - player.y > 34 && player.onGround) {
+        cpu.vy = -this.config.stage.jumpVelocity;
+        cpu.onGround = false;
+        this.setState('JumpApproach', 0);
+        return;
+      }
       if (distance < approachRange - 18) {
         this.setState('Retreat', .20);
       } else if (!shot && distance > approachRange + 4) {
@@ -187,7 +204,7 @@ export class CpuController {
 
     const direction = this.state === 'Approach' && distance > this.approachDistance ? towards
       : this.state === 'Retreat' && distance < this.profile.spacing + 34 ? -towards : 0;
-    cpu.x += direction * cpu.moveSpeed * dt;
+    cpu.x += direction * cpu.walkingSpeed * dt;
     cpu.clampX(world);
   }
 }

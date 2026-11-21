@@ -1,3 +1,6 @@
+import { KNOCKDOWN_FRAMES } from './fighter.js';
+import { gainHeroEnergy } from '../game/hero-form.js';
+
 export function findHit(attacker, defender) {
   const attack = attacker.attack;
   if (!attacker.attackActive || attack.projectile) return null;
@@ -21,7 +24,7 @@ export function findHit(attacker, defender) {
 }
 
 export function findContact(attacker, defender, attack, box, sourceX, direction) {
-  if (defender.hp <= 0) return null;
+  if (defender.hp <= 0 || defender.knockdown > 0) return null;
   const hurt = defender.hurtbox;
   const left = Math.max(box.x, hurt.x);
   const right = Math.min(box.x + box.width, hurt.x + hurt.width);
@@ -29,6 +32,10 @@ export function findContact(attacker, defender, attack, box, sourceX, direction)
   const bottom = Math.min(box.y + box.height, hurt.y + hurt.height);
   if (left >= right || top >= bottom) return null;
   if (defender.invulnerable) {
+    if (defender.dash?.roll && defender.heroDodge !== attack) {
+      defender.heroDodge = attack;
+      gainHeroEnergy(defender, 11);
+    }
     if (defender.characterId === 'mai' && defender.dash?.roll) defender.awakeningWindow = 150;
     return null;
   }
@@ -56,14 +63,25 @@ export function applyHit(contact) {
   const multiplier = blocked ? 1 - rules.blockReduction + rules.chipRate : scale * (evolution?.punchMultiplier ?? 1);
   const previousHP = defender.hp;
   const attackBonus = attack.equipmentAttack ?? 1;
-  const critical = blocked ? 1 : attack.criticalMultiplier ?? 1;
-  const defense = 1 - (defender.equipmentStats?.defense ?? 0) / 100;
-  const incoming = Math.round(attack.damage * multiplier * attackBonus * critical * defense * 100) / 100;
+  const critical = blocked ? 1 : attack.criticalRoll < attack.criticalChance - (defender.equipmentStats?.resistCrit ?? 0)
+    ? attack.criticalPower : attack.criticalMultiplier ?? 1;
+  const defense = (1 - (defender.equipmentStats?.defense ?? 0) / 100) * (defender.armor ?? 1)
+    * (defender.heroFrames ? defender.heroForm.defense : 1);
+  const weakened = attacker.stageCondition?.kind === 'weaken' ? .82 : 1;
+  const incoming = Math.round(attack.damage * multiplier * attackBonus * critical * defense * weakened * 100) / 100;
   const absorbed = Math.min(defender.shieldHp, incoming);
   defender.shieldHp = Math.round((defender.shieldHp - absorbed) * 100) / 100;
   defender.hp = Math.max(0, Math.round((previousHP - incoming + absorbed) * 100) / 100);
   defender.knockVelocity = contact.direction * attack.knockback * (blocked ? .16 : 1);
   const damage = Math.round((previousHP - defender.hp) * 100) / 100;
+  if (blocked) gainHeroEnergy(defender, 8);
+  else if (damage > 0) gainHeroEnergy(attacker, Math.min(14, 6 + Math.round(damage / 3)) + (defender.hp <= 0 ? 16 : 0));
+  const reflected = !blocked && !contact.projectile && damage > 0 && defender.stageCondition?.kind === 'reflect'
+    ? Math.min(5, Math.round(damage * .20), Math.max(0, attacker.hp - 1)) : 0;
+  if (reflected) {
+    attacker.hp = Math.round((attacker.hp - reflected) * 100) / 100;
+    defender.stageCondition = null;
+  }
   let inflicted;
   if (!blocked) {
     if (evolution?.lifeSteal && attacker.hp > 0) {
@@ -94,6 +112,7 @@ export function applyHit(contact) {
     }
   }
   if (!attack.projectile?.meterPerFrame) attacker.gainMeter(damage * rules.meterOnDeal);
+  if (!blocked && attack.weaponPerk === 'surge') attacker.gainMeter(4);
   defender.gainMeter(blocked ? rules.meterOnBlock : damage * rules.meterOnReceive);
   const broken = blocked && defender.spendGuard(attack.guardDamage);
   if (blocked && !broken && defender.characterId === 'hung') defender.awakeningWindow = 150;
@@ -109,6 +128,7 @@ export function applyHit(contact) {
       defender.vy = -attack.launch;
       defender.onGround = false;
     }
+    if (attack.knockdownOnLanding) defender.knockdownOnLanding = true;
     if ((attacker.characterId === 'hung' && attacker.awakeningWindow && attack.id === 'heavy')
       || (attacker.characterId === 'mai' && attacker.awakeningWindow)
       || (attacker.characterId === 'linh' && combo >= 2 && attacker.lastConfirmedAttack === 'kick' && attack.id === 'closeSkill')
@@ -120,14 +140,27 @@ export function applyHit(contact) {
       attacker.awakeningSide = Math.sign(defender.x - attacker.x);
     }
     attacker.lastConfirmedAttack = attack.id;
-    defender.hitstun = inflicted === 'poisonStun' ? Math.max(42, attack.hitstun) : attack.hitstun;
+    const normal = !contact.projectile && !attack.pickupWeapon && ['light', 'heavy', 'kick'].includes(attack.id);
+    const grounded = attacker.onGround && defender.onGround && !attack.launch;
+    const sweep = attack.animation === 'sweep' && !contact.projectile && !attack.pickupWeapon;
+    const finisher = normal && combo >= 2 && attack.id !== 'light' && !attack.cancelInto.length;
+    const knockdown = grounded && defender.hp > 0 && !inflicted && (sweep || finisher || attack.knocksDown);
+    if (knockdown) {
+      defender.knockdown = KNOCKDOWN_FRAMES;
+      defender.knockVelocity = contact.direction * Math.min(attack.knockback, 70);
+      defender.hitstun = 0;
+      defender.bufferedAttack = null;
+    } else {
+      if (normal && grounded && !inflicted) defender.knockVelocity *= .36;
+      defender.hitstun = inflicted === 'poisonStun' ? Math.max(42, attack.hitstun) : attack.hitstun;
+    }
     defender.crouching = false;
     defender.flash = .13;
   }
 
   return {
     ...contact, combo, broken, inflicted,
-    damage, critical: critical > 1,
+    damage, reflected, critical: critical > 1,
     absorbed,
     hitstop: blocked ? 0 : attack.hitstop,
   };

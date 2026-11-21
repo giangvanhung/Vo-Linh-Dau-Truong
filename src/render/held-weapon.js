@@ -2,44 +2,46 @@ import { gear } from '../game/pickups.js';
 import { strikePose } from './fighter-motion.js';
 
 const pickupProfiles = {
-  sword: { width: 78, tilt: -.7, windup: -1.25, follow: .92, tip: 61, gripX: .23, gripY: .78 },
-  blaster: { width: 55, tilt: -.16, windup: -.15, follow: 0, tip: 40, gripX: .23, gripY: .73 },
+  sword: { width: 78, tilt: -.7, windup: -1.25, follow: .92, tip: 61, gripX: .23, gripY: .78, axis: -.85 },
+  blaster: { width: 55, tilt: -.16, windup: -.15, follow: 0, tip: 40, gripX: .23, gripY: .73, axis: -.36 },
   slipper: { tilt: -.8, windup: -1.6, follow: .7, tip: 34 },
   broom: { tilt: .2, windup: .92, follow: -.24, tip: 61 },
   rattan: { tilt: -.93, windup: -1.75, follow: .36, tip: 74 },
   dogStaff: { tilt: -.77, windup: -1.02, follow: .53, tip: 52 },
+  orb: { tilt: 0, windup: 0, follow: 0, tip: 0 },
+  vial: { tilt: 0, windup: 0, follow: 0, tip: 0 },
+  dart: { tilt: 0, windup: 0, follow: 0, tip: 0 },
 };
 const pickupWeapons = {};
 for (const [kind, profile] of Object.entries(pickupProfiles)) {
   pickupWeapons[kind] = { ...gear[kind], ...profile, kind, pickup: true };
 }
+const imageGrips = {
+  '/assets/effects/party-sword.png': [.23, .78],
+  '/assets/effects/fox-spear.png': [.43, .60],
+  '/assets/effects/golem-hammer.png': [.205, .78],
+};
 
 export function heldWeapon(fighter) {
+  if (fighter.attack?.mainWeapon) return fighter.weapon;
+  if (fighter.attack?.thrownItem && fighter.attack.elapsed >= fighter.attack.startup) return null;
   const pickup = fighter.attack?.pickupWeapon ?? (fighter.weaponUses > 0 ? fighter.pickupWeapon : null);
   return pickup ? pickupWeapons[pickup] : fighter.weapon;
 }
 
-function pickupPose(fighter, weapon, attack, time, frame = attack?.elapsed ?? 0) {
-  const grip = fighter.hurtbox.height * .65;
-  const stride = fighter.moving && !attack ? Math.sin(fighter.walkDistance / 9) : 0;
-  const readyY = -grip + stride * 4 + Math.sin(time / 140) * 1.4;
-  if (!attack) return { x: 15 + stride * 5, y: readyY, angle: weapon.tilt + stride * .16 };
+function pickupAngle(weapon, attack, frame = attack?.elapsed ?? 0) {
+  if (!attack) return weapon.tilt;
   const extension = strikePose({ ...attack, elapsed: frame });
   const wind = Math.max(0, -extension);
   const reach = Math.max(0, extension);
   if (weapon.kind === 'blaster') {
     const recoil = frame < attack.startup ? 0 : Math.max(0, 1 - (frame - attack.startup) / 8);
-    return { x: 15 + 15 * reach - 8 * recoil,
-      y: readyY + (-attack.projectile.yOffset - readyY) * reach,
-      angle: weapon.tilt * (1 - reach) - .25 * recoil };
+    return weapon.tilt * (1 - reach) - .25 * recoil;
   }
-  const low = weapon.kind === 'broom';
-  return { x: 15 + 23 * reach - 38 * wind,
-    y: readyY + (low ? 26 : -11) * reach - 30 * wind,
-    angle: weapon.tilt + (weapon.follow - weapon.tilt) * reach + weapon.windup * wind * 4 };
+  return weapon.tilt + (weapon.follow - weapon.tilt) * reach + weapon.windup * wind * 4;
 }
 
-function drawPickupEffect(ctx, fighter, weapon, attack, animationTime, pose) {
+function drawPickupEffect(ctx, weapon, attack, sizeScale) {
   if (!attack) return;
   const age = attack.elapsed - attack.startup;
   if (weapon.kind === 'blaster') {
@@ -48,8 +50,9 @@ function drawPickupEffect(ctx, fighter, weapon, attack, animationTime, pose) {
     ctx.globalAlpha = 1 - age / 7;
     ctx.fillStyle = weapon.color;
     ctx.beginPath();
-    const x = pose.x + weapon.tip;
-    const y = -attack.projectile.yOffset;
+    const angle = pickupAngle(weapon, attack) + weapon.axis;
+    const x = Math.cos(angle) * weapon.tip * sizeScale;
+    const y = Math.sin(angle) * weapon.tip * sizeScale;
     ctx.moveTo(x - size / 2, y);
     ctx.lineTo(x + size * .35, y - size);
     ctx.lineTo(x + size * 1.7, y);
@@ -67,8 +70,8 @@ function drawPickupEffect(ctx, fighter, weapon, attack, animationTime, pose) {
   ctx.beginPath();
   for (let sample = 0; sample <= 8; sample++) {
     const frame = Math.max(0, Math.min(attack.startup + attack.active, attack.elapsed - 8 + sample));
-    const { x, y, angle } = pickupPose(fighter, weapon, attack, animationTime, frame);
-    ctx.lineTo(x + Math.cos(angle) * weapon.tip, y + Math.sin(angle) * weapon.tip);
+    const angle = pickupAngle(weapon, attack, frame) + (weapon.axis ?? 0);
+    ctx.lineTo(Math.cos(angle) * weapon.tip * sizeScale, Math.sin(angle) * weapon.tip * sizeScale);
   }
   ctx.strokeStyle = weapon.color;
   ctx.lineWidth = weapon.kind === 'sword' ? 10 : weapon.kind === 'rattan' ? 4 : 7;
@@ -78,40 +81,74 @@ function drawPickupEffect(ctx, fighter, weapon, attack, animationTime, pose) {
   ctx.stroke();
 }
 
-export function drawHeldWeapon(ctx, images, fighter, ground, animationTime) {
+export function drawHeldWeapon(ctx, images, fighter, [x, y], drawHand) {
   if (fighter.hp <= 0 || fighter.dash?.roll || fighter.attack?.unarmed) return;
   const weapon = heldWeapon(fighter);
   if (!weapon) return;
-  const image = images.get(weapon.image);
+  const image = weapon.image && images.get(weapon.image);
   if (!image && !weapon.swing && !weapon.kind) return;
   const attack = fighter.attack;
   const swinging = attack && (weapon.pickup ? attack.pickupWeapon === weapon.kind
-    : ['heavy', 'closeSkill', 'ultimate'].includes(attack.id));
+    : attack.mainWeapon || ['heavy', 'closeSkill', 'ultimate'].includes(attack.id));
   const extension = swinging ? strikePose(attack) : 0;
-  const facing = attack?.facing ?? fighter.dash?.facing ?? fighter.facing;
-  const grip = fighter.hurtbox.height * .65;
+  const scale = (fighter.sprite?.displaySize ?? 128) / 128;
   ctx.save();
-  ctx.translate(fighter.x, ground + fighter.y);
-  ctx.scale(facing, 1);
+  ctx.translate(x, y);
   if (weapon.pickup) {
     const weaponAttack = swinging ? attack : null;
-    const pose = pickupPose(fighter, weapon, weaponAttack, animationTime);
     ctx.save();
-    drawPickupEffect(ctx, fighter, weapon, weaponAttack, animationTime, pose);
+    if (!weaponAttack?.projectile || weapon.kind === 'blaster') drawPickupEffect(ctx, weapon, weaponAttack, scale);
     ctx.restore();
-    ctx.translate(pose.x, pose.y);
-    ctx.rotate(pose.angle);
+    ctx.rotate(pickupAngle(weapon, weaponAttack));
   } else {
-    ctx.translate(15 + extension * (weapon.reach ?? 23),
-      -grip + Math.sin(animationTime / 115) * 1.5 - extension * 14);
-    ctx.rotate((weapon.tilt ?? -.45) + extension * (weapon.arc ?? 1.2));
+    const sweep = { slash: 1.05, reverse: -1.4, thrust: .55, lift: -1.15 };
+    ctx.rotate((weapon.tilt ?? -.45) + extension * (sweep[attack?.swing] ?? weapon.arc ?? .85));
   }
+  ctx.scale(scale, scale);
   if (image) {
     const width = weapon.width;
     const height = width * image.height / image.width;
-    ctx.drawImage(image, -width * (weapon.gripX ?? .24), -height * (weapon.gripY ?? .76), width, height);
+    const [gripX, gripY] = imageGrips[weapon.image] ?? [.24, .76];
+    ctx.drawImage(image, -width * (weapon.gripX ?? gripX), -height * (weapon.gripY ?? gripY), width, height);
   } else {
     drawShape(ctx, weapon, extension);
+  }
+  ctx.restore();
+  if (weapon.kind !== 'gauntlet' && drawHand) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(x, y, 4.2 * scale, 3.3 * scale, 0, 0, 2 * Math.PI);
+    ctx.clip();
+    drawHand();
+    ctx.restore();
+  }
+}
+
+export function drawItemShape(ctx, kind, color, extent = 1) {
+  ctx.save();
+  ctx.scale(extent, extent);
+  drawShape(ctx, { kind, color }, 0);
+  ctx.restore();
+}
+
+export function drawLooseWeapon(ctx, images, item, ground, time) {
+  const weapon = item.weapon ?? pickupWeapons[item.kind];
+  if (!weapon) return;
+  const image = images.get(weapon.image);
+  ctx.save();
+  ctx.translate(item.x, ground + item.y - 8);
+  ctx.globalAlpha = .85;
+  ctx.shadowColor = weapon.color ?? '#ffc280';
+  ctx.shadowBlur = 5 + (Math.sin(time / 110) + 1) * 3;
+  if (image) {
+    const width = Math.min(46, (weapon.width ?? 60) * .58);
+    const height = width * image.height / image.width;
+    ctx.rotate(.52);
+    ctx.drawImage(image, -width / 2, -height / 2, width, height);
+  } else {
+    ctx.scale(.63, .63);
+    ctx.translate(['orb', 'vial', 'dart', 'gauntlet'].includes(weapon.kind) ? 0 : -16, 0);
+    drawShape(ctx, weapon, 0);
   }
   ctx.restore();
 }
@@ -120,6 +157,76 @@ function drawShape(ctx, weapon, extension) {
   const { kind, color } = weapon;
   ctx.fillStyle = ctx.strokeStyle = color;
   ctx.lineCap = 'round';
+  if (kind === 'orb') {
+    const glow = ctx.createRadialGradient(-2, -3, 1, 0, 0, 13);
+    glow.addColorStop(0, '#f5ffff');
+    glow.addColorStop(.42, color);
+    glow.addColorStop(1, '#236bac55');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#b8f4ff';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 13, 5, -.48, 0, Math.PI * 2);
+    ctx.stroke();
+    return;
+  }
+  if (kind === 'vial') {
+    ctx.fillStyle = '#d0ab65';
+    ctx.fillRect(-4, -12, 8, 6);
+    ctx.beginPath();
+    ctx.moveTo(-4, -6);
+    ctx.lineTo(4, -6);
+    ctx.lineTo(9, 1);
+    ctx.quadraticCurveTo(12, 11, 0, 11);
+    ctx.quadraticCurveTo(-12, 11, -9, 1);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#f2ffe0';
+    ctx.stroke();
+    ctx.fillStyle = '#3b684b';
+    ctx.fillRect(-6, 4, 12, 4);
+    return;
+  }
+  if (kind === 'dart') {
+    for (let i = 0; i < 4; i++) {
+      ctx.save();
+      ctx.rotate(i * Math.PI / 2);
+      ctx.beginPath();
+      ctx.moveTo(-3, -3);
+      ctx.lineTo(13, 0);
+      ctx.lineTo(2, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#44516c';
+    ctx.fillRect(-2, -2, 4, 4);
+    return;
+  }
+  if (kind === 'gauntlet') {
+    ctx.lineWidth = 1.7;
+    ctx.strokeStyle = '#ffe6a9';
+    ctx.beginPath();
+    ctx.moveTo(-8, -6);
+    ctx.lineTo(2, -9);
+    ctx.lineTo(11, -6);
+    ctx.lineTo(11, 5);
+    ctx.lineTo(2, 8);
+    ctx.lineTo(-8, 5);
+    ctx.closePath();
+    ctx.fillStyle = '#493343';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fillRect(-6, -4, 3, 8);
+    ctx.fillRect(1, -5, 8, 8);
+    ctx.fillStyle = '#fff5d6';
+    ctx.fillRect(2, -4, 6, 2);
+    return;
+  }
   if (kind === 'slipper') {
     ctx.beginPath();
     ctx.ellipse(17, 0, 17, 8, 0, 0, Math.PI * 2);

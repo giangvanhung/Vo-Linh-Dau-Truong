@@ -4,32 +4,57 @@ const directions = {
 const remoteKeys = {
   13: 'Enter', 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown',
 };
+const confirmKeys = new Set(['Enter', 'Accept', 'Select', 'OK']);
 
 export function enableMenuNavigation() {
   window.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-    const panel = document.querySelector('.game-panel:not([hidden])');
+    const current = document.activeElement;
+    const pairing = current.closest('.lan-details:not([hidden])');
+    const dialog = document.querySelector('#utility-dialog[open]');
+    const panel = dialog ?? pairing ?? document.querySelector('.game-panel:not([hidden])');
     if (!panel) return;
 
-    const key = directions[event.key] || event.key === 'Enter'
-      ? event.key : remoteKeys[event.keyCode];
-    const current = document.activeElement;
+    const key = confirmKeys.has(event.key) ? 'Enter' : directions[event.key] ? event.key : remoteKeys[event.keyCode];
     const tv = document.body.classList.contains('tv-layout');
     const fullscreen = document.getElementById('game-fullscreen');
     if (key === 'Enter' && (panel.contains(current) || current === fullscreen)
-      && current.matches(tv ? 'button, a[href], input[type="radio"], input[type="checkbox"]' : 'input[type="radio"], input[type="checkbox"]')) {
+      && current.matches(tv || dialog || panel.id === 'lan-panel' || pairing
+        ? 'button, summary, a[href], input[type="radio"], input[type="checkbox"]'
+        : 'input[type="radio"], input[type="checkbox"]')) {
       event.preventDefault();
       if (!event.repeat) current.click();
       return;
     }
     const direction = directions[key];
     if (!direction) return;
-    // Keep native adjustment keys for selects and sliders.
-    if (current?.matches('select') && direction[1]) return;
+    // TV remotes can leave a select vertically and change its value horizontally.
+    if (current?.matches('select')) {
+      if (!tv && direction[1]) return;
+      if (tv && direction[0]) {
+        event.preventDefault();
+        const index = current.selectedIndex + direction[0];
+        if (current.options[index] && !current.options[index].disabled) {
+          current.selectedIndex = index;
+          current.dispatchEvent(new Event('input', { bubbles: true }));
+          current.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+      }
+    }
     if (current?.matches('input[type="range"]') && direction[0]) return;
+    if (current.matches('[data-menu-scroll]') && direction[1]) {
+      const atTop = current.scrollTop <= 0;
+      const atBottom = current.scrollTop + current.clientHeight >= current.scrollHeight - 1;
+      if (direction[1] < 0 ? !atTop : !atBottom) {
+        event.preventDefault();
+        current.scrollTop += direction[1] * 72;
+        return;
+      }
+    }
 
-    const controls = [...panel.querySelectorAll('button, select, input, a[href], summary'),
-      fullscreen].filter(element => {
+    const controls = [...panel.querySelectorAll('button, select, input, a[href], summary, [data-menu-scroll]'),
+      ...(dialog ? [] : [fullscreen])].filter(element => {
       if (!element || element.disabled || element.closest('[hidden]')) return false;
       return element.getClientRects().length > 0;
     });

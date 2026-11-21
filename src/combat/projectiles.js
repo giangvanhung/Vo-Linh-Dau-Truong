@@ -1,4 +1,4 @@
-import { overlapsSurface } from '../game/stages.js';
+import { stageFloorAt } from '../game/stages.js';
 import { findContact } from './hits.js';
 
 export function updateProjectiles(projectiles, fighters, dt, world) {
@@ -15,6 +15,7 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
     projectiles.push({
       attacker, attack, x: attacker.x + attack.facing * (spawnOffset + width / 2),
       y: attacker.y - yOffset, frames: lifetimeFrames, age: 0, facing: attack.facing, hit: false,
+      vy: attack.projectile.launchY ?? 0,
     });
   }
   for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -48,7 +49,7 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
       }
       continue;
     }
-    const { speed, width, height, pierce, returnAfter, delayFrames, afterfire, poolFrames } = attack.projectile;
+    const { speed, width, height, pierce, returnAfter, delayFrames, afterfire, poolFrames, gravity } = attack.projectile;
     const reachedEdge = shot.facing > 0 ? shot.x >= world.width - width / 2 : shot.x <= width / 2;
     if (returnAfter && !shot.returned && (shot.age >= returnAfter || reachedEdge)) {
       shot.returned = true;
@@ -60,6 +61,15 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
     const oldX = shot.x;
     shot.x += shot.facing * velocity * dt;
     shot.frames--;
+    if (gravity) {
+      const floor = stageFloorAt(world, shot.x, shot.y + height / 2);
+      shot.vy += gravity * dt;
+      shot.y += shot.vy * dt;
+      if (shot.y + height / 2 >= floor) {
+        shot.y = floor - height / 2;
+        shot.frames = 0;
+      }
+    }
     const defender = fighters.find(fighter => fighter !== attacker);
     if (!shot.hit) {
       const hit = findContact(attacker, defender, attack, {
@@ -77,9 +87,8 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
       attack.projectileMissed = true;
     }
     if (expired && poolFrames) {
-      const platform = (world.platforms ?? []).find(surface => shot.y <= surface.y && overlapsSurface(shot.x, world.width, surface.range));
       shot.x = Math.max(42, Math.min(world.width - 42, shot.x));
-      shot.y = (platform?.y ?? 0) - 9;
+      shot.y = stageFloorAt(world, shot.x, shot.y) - 9;
       shot.attack = { ...attack, damage: 2, knockback: 35, hitstun: 8, level: 'low',
         projectile: { ...attack.projectile, poolFrames: 0, speed: 0, width: 84, height: 18, pierce: true, shape: 'pool' } };
       shot.hit = false;
@@ -87,7 +96,7 @@ export function updateProjectiles(projectiles, fighters, dt, world) {
     } else if (expired && afterfire && shot.x >= 0 && shot.x <= world.width) {
       shot.attack = { ...attack, damage: 5, level: 'low', hitstun: 12, knockback: 65,
         projectile: { ...attack.projectile, afterfire: false, speed: 0, width: 65, height: 16, shape: 'embers' } };
-      shot.y = -8;
+      shot.y = stageFloorAt(world, shot.x, shot.y) - 8;
       shot.hit = false;
       shot.frames = 27;
     } else if (expired) projectiles.splice(i, 1);

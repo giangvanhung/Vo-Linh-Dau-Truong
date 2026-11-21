@@ -1,4 +1,5 @@
 import { drawLowStride, strikePose } from './fighter-motion.js';
+import { poseGrip } from './weapon-grips.js';
 
 const basePoses = {
   idle: 0, run: 1, crouch: 2, jump: 3, light_punch: 4, heavy_punch: 5, kick: 6, roll: 7,
@@ -36,7 +37,7 @@ export function poseName(fighter, name, extras) {
 const fallback = { charge: 'block', high_jump: 'jump', run_step: 'run',
   cast: 'light_punch', slash: 'heavy_punch', ultimate: 'heavy_punch', skill_1: 'heavy_punch' };
 
-export function drawPoseSheet(ctx, sheet, extras, fighter, name, height) {
+export function drawPoseSheet(ctx, sheet, extras, fighter, name, height, drawWeapon) {
   const pose = poseName(fighter, name, Boolean(extras));
   const useExtra = Boolean(extras) && extraPoses[pose] !== undefined;
   const image = useExtra ? extras : sheet;
@@ -45,7 +46,12 @@ export function drawPoseSheet(ctx, sheet, extras, fighter, name, height) {
   const size = height * 256 / 210;
   const sx = (index % 4) * cell, sy = Math.floor(index / 4) * cell;
   const x = -size / 2, y = -size * 244 / 256;
-  if (name === 'crouchWalk' && !extras) {
-    drawLowStride(ctx, image, sx, sy, cell, cell, x, y, size, size, fighter.walkDistance);
-  } else ctx.drawImage(image, sx, sy, cell, cell, x, y, size, size);
+  const draw = () => {
+    if (name === 'crouchWalk' && !extras) {
+      drawLowStride(ctx, image, sx, sy, cell, cell, x, y, size, size, fighter.walkDistance);
+    } else ctx.drawImage(image, sx, sy, cell, cell, x, y, size, size);
+  };
+  draw();
+  const hand = poseGrip(fighter.characterId, index, useExtra);
+  if (hand) drawWeapon([x + hand[0] * size / 256, y + hand[1] * size / 256], draw);
 }

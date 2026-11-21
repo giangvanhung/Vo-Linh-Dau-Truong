@@ -22,6 +22,12 @@ Mở địa chỉ `http://localhost:5173` trong trình duyệt.
 
 Nếu có nhiều địa chỉ LAN, chọn địa chỉ của mạng đang dùng. Nếu điện thoại không vào được, kiểm tra quyền nhận kết nối của Node.js trong Windows Firewall trên mạng riêng.
 
+Để chơi trên TV qua mạng nội bộ, chạy `npm start` trên máy tính cùng mạng rồi mở `http://<IP-của-máy-tính>:5173` bằng trình duyệt TV. Vào **Tay cầm điện thoại** và quét mã QR. Màn hình tay cầm đo thời gian khứ hồi từ điện thoại tới máy chủ đang chuyển tiếp tín hiệu.
+
+### Tạo phòng khi mở game trên Vercel
+
+Bản build tĩnh trên Vercel lấy mã QR từ máy chủ Node.js chạy WebSocket. Đặt `LAN_RELAY_URL` trên Vercel thành URL gốc HTTPS của dịch vụ Render, ví dụ `https://ten-dich-vu.onrender.com`. Đặt `LAN_ALLOWED_ORIGINS` trên Render thành URL gốc chính xác của trang game, ví dụ `https://ten-game.vercel.app`. Nếu dùng cả tên miền riêng, liệt kê từng URL gốc và phân cách bằng dấu phẩy. Triển khai lại Render sau khi đổi danh sách và build lại Vercel sau khi đổi URL relay.
+
 ## Điều khiển
 
 | Phím | Hành động |

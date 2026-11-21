@@ -42,7 +42,7 @@ export function createTrainingPanel(training, controls) {
       'training-combo': String(hits.length),
       'training-damage': format.format(hits.reduce((total, hit) => total + hit, 0)),
       'training-hits': hits.map(hit => format.format(hit)).join(' → ') || '—',
-      'training-stun': dummy.hitstun + 'f',
+      'training-stun': dummy.knockdown ? 'Ngã · ' + dummy.knockdown + 'f' : dummy.hitstun + 'f',
       'training-advantage': advantage === null ? '—' : (advantage > 0 ? '+' : '') + advantage + 'f',
       'training-inputs': inputs.join(' → ') || '—',
     };

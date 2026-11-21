@@ -213,10 +213,11 @@
       "recovery": 9,
       "range": 37,
       "knockback": 83,
-      "hitstun": 17,
+      "hitstun": 21,
       "hitstop": 0,
       "guardDamage": 15,
       "cancelInto": [
+        "heavy",
         "kick"
       ],
       "limbBoxes": [

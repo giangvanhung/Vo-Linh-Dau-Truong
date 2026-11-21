@@ -17,6 +17,7 @@
   "stages": {
     "rooftop": {
       "name": "Sân thượng mưa",
+      "wildlife": "urban",
       "description": "Vũng nước làm bước chạy trượt thêm.",
       "background": "/assets/backgrounds/rooftop/preview.jpg",
       "parallax": [
@@ -162,11 +163,16 @@
     },
     "market": {
       "name": "Chợ Sáng",
-      "description": "Sân lát đá trước những sạp trái cây, mái bạt và hàng nón lá.",
+      "description": "Leo lên bục gỗ và thùng hàng, hoặc men theo lối lát đá bên dưới.",
       "background": "/assets/backgrounds/vietnam-market.jpg",
       "parallax": [],
       "artGroundRatio": 0.79,
-      "platforms": []
+      "terrainColor": "#b5906b",
+      "rises": [{ "range": [0.06, 0.25], "rise": 19 }, { "range": [0.73, 0.95], "rise": 24 }],
+      "platforms": [
+        { "range": [0.17, 0.31], "y": -55, "art": "crate" },
+        { "range": [0.48, 0.67], "y": -78, "art": "timber" }
+      ]
     },
     "crossroads": {
       "name": "Ngã Tư Đèn Đỏ",
@@ -178,11 +184,14 @@
     },
     "meadow": {
       "name": "Đồng Cỏ Cao Nguyên",
-      "description": "Sân cỏ rộng dưới nắng, nhìn ra đồi và ruộng bậc thang.",
+      "description": "Lối cỏ gồ ghề với hai bờ đất thoải và một gờ đá để đổi độ cao.",
       "background": "/assets/backgrounds/highland-meadow.jpg",
       "parallax": [],
       "artGroundRatio": 0.72,
-      "platforms": []
+      "wildlife": "garden",
+      "terrainColor": "#8da978",
+      "rises": [{ "range": [0.09, 0.38], "rise": 20 }, { "range": [0.57, 0.92], "rise": 26 }],
+      "platforms": [{ "range": [0.40, 0.57], "y": -66, "art": "stone" }]
     },
     "hoian": {
       "name": "Phố Đèn Hội An",
@@ -216,6 +225,90 @@
       "artGroundRatio": 0.79,
       "platforms": [],
       "football": true
+    },
+    "harbor": {
+      "name": "Bến Hàng Sương Lam",
+      "description": "Lối sát bờ sông chạy xuyên sân. Nhảy qua thùng gỗ lên kiện thép và cầu hàng để đổi tầng.",
+      "background": "/assets/backgrounds/blue-harbor.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "terrainColor": "#70a7b6",
+      "ambient": "#f8c488",
+      "wildlife": "sky",
+      "rises": [{ "range": [0.055, 0.29], "rise": 23 }, { "range": [0.72, 0.96], "rise": 23 }],
+      "platforms": [
+        { "range": [0.11, 0.24], "y": -62, "art": "crate" },
+        { "range": [0.33, 0.54], "y": -99, "art": "steel" },
+        { "range": [0.60, 0.79], "y": -70, "art": "timber" },
+        { "range": [0.81, 0.91], "y": -54, "art": "crate" }
+      ]
+    },
+    "terrace": {
+      "name": "Làng Bậc Thềm",
+      "description": "Ba bờ dốc dẫn lên các gờ đá và cầu gỗ. Nhảy sang tầng trên để ép đối thủ đổi vị trí.",
+      "background": "/assets/backgrounds/lantern-terraces.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "terrainColor": "#b19b8e",
+      "ambient": "#ffe2a8",
+      "wildlife": "garden",
+      "rises": [
+        { "range": [0.045, 0.30], "rise": 25 },
+        { "range": [0.38, 0.62], "rise": 19 },
+        { "range": [0.69, 0.955], "rise": 30 }
+      ],
+      "platforms": [
+        { "range": [0.16, 0.31], "y": -70, "art": "stone" },
+        { "range": [0.41, 0.58], "y": -103, "art": "timber" },
+        { "range": [0.69, 0.84], "y": -80, "art": "stone" }
+      ]
+    },
+    "skybridge": {
+      "name": "Cầu Đá Trên Mây",
+      "description": "Chim bay qua đảo nổi và cầu đá. Ấn tím hóa thỏ, ấn vàng gây choáng ngắn. Nhảy lên bệ để tránh.",
+      "background": "/assets/backgrounds/skybridge.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "terrainColor": "#9ccac6",
+      "wildlife": "sky",
+      "rises": [{ "range": [0.07, 0.24], "rise": 18 }, { "range": [0.76, 0.93], "rise": 18 }],
+      "platforms": [
+        { "range": [0.18, 0.34], "y": -65, "art": "stone" },
+        { "range": [0.43, 0.57], "y": -98, "art": "timber" },
+        { "range": [0.66, 0.82], "y": -65, "art": "stone" }
+      ],
+      "zone": { "kind": "condition", "range": [0.40, 0.60], "cycle": 420, "active": 48, "conditions": ["morph", "stun"], "color": "#f5adff" }
+    },
+    "sunken": {
+      "name": "Đền Chìm San Hô",
+      "description": "Cá bơi qua rạn san hô. Luồng xanh lục gây độc nhẹ, luồng lam làm chậm. Các gờ đá giữ chân bạn trên dòng nước.",
+      "background": "/assets/backgrounds/sunken-temple.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "terrainColor": "#78cdd6",
+      "wildlife": "sea",
+      "rises": [{ "range": [0.10, 0.33], "rise": 25 }, { "range": [0.67, 0.90], "rise": 25 }],
+      "platforms": [
+        { "range": [0.15, 0.29], "y": -60, "art": "stone" },
+        { "range": [0.37, 0.63], "y": -91, "art": "stone" },
+        { "range": [0.71, 0.85], "y": -60, "art": "stone" }
+      ],
+      "zone": { "kind": "condition", "range": [0.38, 0.62], "cycle": 390, "active": 58, "conditions": ["poison", "slow"], "color": "#b3ec82" }
+    },
+    "parking": {
+      "name": "Bãi Xe Sau Mưa",
+      "description": "Bậc bê tông và thùng thép chia sân. Ô cam phản một đòn cận chiến, ô tím giảm sức đánh.",
+      "background": "/assets/backgrounds/rain-parking.jpg",
+      "parallax": [],
+      "artGroundRatio": 0.79,
+      "terrainColor": "#bdb4a6",
+      "wildlife": "urban",
+      "rises": [{ "range": [0.10, 0.28], "rise": 16 }, { "range": [0.72, 0.90], "rise": 16 }],
+      "platforms": [
+        { "range": [0.20, 0.36], "y": -72, "art": "steel" },
+        { "range": [0.64, 0.80], "y": -72, "art": "steel" }
+      ],
+      "zone": { "kind": "condition", "range": [0.41, 0.59], "cycle": 450, "active": 56, "conditions": ["reflect", "weaken"], "color": "#ffbb78" }
     }
   }
 }

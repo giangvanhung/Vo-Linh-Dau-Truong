@@ -29,6 +29,7 @@ function inputState() {
       if (button === 'r') action = 'roll';
       if (button === 'g') action = 'awaken';
       if (button === 't') action = 'escape';
+      if (button === 'b') action = 'dropWeapon';
     },
     clear() {
       held.clear();

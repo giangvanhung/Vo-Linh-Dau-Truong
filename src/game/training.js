@@ -71,7 +71,8 @@ export class TrainingSession {
     this.hits.push(hit.damage);
     const attack = player.attack;
     const remaining = attack ? attack.startup + attack.active + attack.recovery - attack.elapsed : 0;
-    this.advantage = target.hitstun - Math.max(remaining, Math.ceil(player.attackLock / FRAME_SECONDS), player.hitstun);
+    this.advantage = Math.max(target.hitstun, target.knockdown)
+      - Math.max(remaining, Math.ceil(player.attackLock / FRAME_SECONDS), player.hitstun, player.knockdown);
   }
 
   controlDummy(dummy, dt, jumpVelocity) {

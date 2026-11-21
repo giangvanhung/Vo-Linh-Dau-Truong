@@ -248,6 +248,7 @@
       "hitstop": 3,
       "guardDamage": 19,
       "cancelInto": [
+        "heavy",
         "kick",
         "closeSkill"
       ],

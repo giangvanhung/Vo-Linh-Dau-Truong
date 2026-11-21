@@ -1,4 +1,5 @@
 import { gear } from '../game/pickups.js';
+import { drawItemShape } from './held-weapon.js';
 
 export function createCombatEffects(ctx, images) {
   function drawChannelBeam({ x, y, facing, width, height, age }, ground) {
@@ -48,6 +49,13 @@ export function createCombatEffects(ctx, images) {
     ctx.shadowBlur = 10;
     ctx.translate(x, ground + y);
     ctx.scale(facing, 1);
+    if (['slipper', 'orb', 'vial', 'dart'].includes(shape)) {
+      if (shape !== 'orb') ctx.rotate(shot.age * (shape === 'dart' ? .42 : .19));
+      if (shape === 'slipper') ctx.translate(-width / 2, 0);
+      drawItemShape(ctx, shape, color, width / (shape === 'slipper' ? 34 : 26));
+      ctx.restore();
+      return;
+    }
     const weapon = attack.usesNativeWeapon && attacker.weapon?.projectile && images.get(attacker.weapon.image);
     if (weapon) {
       const size = width * 1.08;

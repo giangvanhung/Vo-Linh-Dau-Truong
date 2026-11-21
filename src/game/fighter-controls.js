@@ -1,7 +1,7 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
 import { readSuperMotion, SUPER_COST } from './super-motion.js';
 
-export function applyControls(fighter, target, input, { jumpVelocity, useAttack, activateAwakening, toast }) {
+export function applyControls(fighter, target, input, { jumpVelocity, useAttack, activateAwakening, dropWeapon, toast }) {
   if (input.direction && !input.guard && !fighter.disabled && !fighter.attacking && !fighter.dash) {
     fighter.facing = input.direction;
   }
@@ -11,6 +11,7 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
   const superMotion = readSuperMotion(fighter, input);
   fighter.airDirection = !fighter.onGround && !fighter.disabled ? input.direction : 0;
   if (input.action === 'awaken' && activateAwakening(fighter)) return;
+  if (input.action === 'dropWeapon' && dropWeapon(fighter)) return;
   const charge = input.charge && !input.guard && !input.jump && !input.attack && !input.action && !input.direction && !input.crouch;
   fighter.charge(charge);
   if (fighter.charging) {
@@ -19,7 +20,7 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
   }
   if (input.jump && fighter.onGround && !fighter.disabled && fighter.canMoveDuringAttack && !fighter.dash && !input.guard) {
     if (fighter.canFly) fighter.startFlight();
-    else fighter.vy = -jumpVelocity;
+    else fighter.vy = -jumpVelocity * fighter.jumpMultiplier;
     fighter.airDirection = input.direction;
     fighter.superMotionFrames = 0;
     fighter.onGround = false;
@@ -43,16 +44,18 @@ export function applyControls(fighter, target, input, { jumpVelocity, useAttack,
     }
     if (!useAttack(fighter, target, input.attack) && canBuffer && fighter.attack && fighter.attacks[input.attack]) {
       const { startup, active, recovery, elapsed } = fighter.attack;
-      if (startup + active + recovery - elapsed <= 8) fighter.bufferedAttack = input.attack;
+      const remaining = startup + active + recovery - elapsed;
+      const anticipatingHit = fighter.attack.cancelInto.includes(input.attack) && Math.abs(startup - elapsed) <= 8;
+      if (remaining <= 8 || anticipatingHit) fighter.bufferedAttack = { id: input.attack, frames: 8 };
     }
-  } else if (fighter.bufferedAttack && !fighter.attack) {
-    useAttack(fighter, target, fighter.bufferedAttack);
-    fighter.bufferedAttack = null;
+  } else if (fighter.bufferedAttack) {
+    const buffered = fighter.bufferedAttack;
+    if (useAttack(fighter, target, buffered.id) || --buffered.frames <= 0) fighter.bufferedAttack = null;
   }
   const canMove = !fighter.disabled && !fighter.dash && fighter.canMoveDuringAttack && !fighter.blocking;
   fighter.crouching = canMove && !fighter.attacking && input.crouch && fighter.onGround;
   if (canMove) {
     const direction = fighter.onGround ? input.direction : fighter.airDirection;
-    fighter.x += direction * fighter.moveSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;
+    fighter.x += direction * fighter.walkingSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;
   }
 }

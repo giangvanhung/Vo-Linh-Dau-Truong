@@ -3,6 +3,7 @@ import { createEquipmentPanel } from './equipment-panel.js';
 
 import { ambiguousCompositionKey, assignable, bindingLabels, defaultBindings, keyCode, keyLabel } from '../platform/keyboard.js';
 import { musicChoices, roundFormats } from '../platform/settings.js';
+import { connectThemeSettings } from '../platform/theme.js';
 
 const byId = id => document.getElementById(id);
 
@@ -41,12 +42,44 @@ function choiceCard(group, id, name, image, checked, onSelect) {
   return card;
 }
 
-export function createPanels({ characters, stages, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile }) {
-  const panels = [...document.querySelectorAll('.game-panel')];
-  const stageWrap = panels[0].closest('.stage-wrap');
+export function createPanels({ characters, stages, combat, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile }) {
+  connectThemeSettings(settings, saveSettings);
+  const stageWrap = byId('menu-panel').closest('.stage-wrap');
+  const panels = [...stageWrap.querySelectorAll(':scope > .game-panel')];
   const gameCard = stageWrap.closest('.game-card');
+  const utilityDialog = byId('utility-dialog');
+  const dialogClose = byId('utility-close');
+  const utilityPanels = [...utilityDialog.querySelectorAll('.utility-content')];
+  const utilityTitles = { settings: 'Cài đặt', bindings: 'Phím bàn phím', guide: 'Hướng dẫn' };
+  let popupTrigger;
+
+  function showUtility(name, trigger) {
+    if (trigger) popupTrigger = trigger;
+    byId('utility-title').textContent = utilityTitles[name];
+    for (const panel of utilityPanels) panel.hidden = panel.id !== name + '-panel';
+    if (!utilityDialog.open) utilityDialog.showModal();
+    pendingBinding = null;
+    dialogClose.focus({ preventScroll: true });
+    byId(name + '-panel').scrollTop = 0;
+  }
+
+  utilityDialog.addEventListener('close', () => {
+    if (utilityDialog.open) return;
+    for (const panel of utilityPanels) panel.hidden = true;
+    pendingBinding = null;
+    popupTrigger?.focus({ preventScroll: true });
+    popupTrigger = null;
+  });
+  dialogClose.addEventListener('click', () => utilityDialog.close());
+  const utilityButtons = {
+    settings: ['settings-button', 'equipment-settings'],
+    guide: ['guide-button', 'equipment-guide', 'pause-guide-button'],
+  };
+  for (const [name, buttons] of Object.entries(utilityButtons)) {
+    for (const id of buttons) byId(id).addEventListener('click', event => showUtility(name, event.currentTarget));
+  }
   enableMenuNavigation();
-  const refreshEquipment = createEquipmentPanel(characters, equipment);
+  const refreshEquipment = createEquipmentPanel(characters, equipment, combat);
   byId('equipment-button').addEventListener('click', () => {
     refreshEquipment();
     show('equipment');
@@ -112,7 +145,7 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
       const fighter = characters[id];
       name.textContent = fighter?.name ?? 'Ngẫu nhiên';
       detail.textContent = fighter
-        ? [fighter.profile.role, ...Object.values(fighter.skills).map(skill => skill.label)].join(' · ')
+        ? [fighter.profile.role, fighter.prototypeStyle && fighter.profile.description, ...Object.values(fighter.skills).map(skill => skill.label)].filter(Boolean).join(' · ')
         : 'Võ sĩ sẽ được chọn khi vào trận.';
       condition.hidden = !fighter?.awakening;
       condition.textContent = fighter?.awakening
@@ -228,7 +261,7 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
   byId('bindings-button').addEventListener('click', () => {
     bindingStatus.textContent = 'Chọn thao tác cần đổi. Giữ Shift với phím Lướt để lướt mạnh. Phím Num nằm ở cụm số bên phải.';
     renderBindings();
-    show('bindings');
+    showUtility('bindings');
   });
   byId('bindings-reset').addEventListener('click', () => {
     pendingBinding = null;
@@ -238,22 +271,14 @@ export function createPanels({ characters, stages, settings, equipment, openSetu
     bindingStatus.textContent = 'Đã khôi phục phím mặc định.';
   });
   renderBindings();
-  byId('bindings-back').addEventListener('click', () => show('settings'));
+  byId('bindings-back').addEventListener('click', () => {
+    showUtility('settings');
+    byId('bindings-button').focus({ preventScroll: true });
+  });
   byId('local-button').addEventListener('click', () => openSetup(false, 'versus'));
   byId('team-button').addEventListener('click', () => openSetup(false, 'team'));
   byId('lan-button').addEventListener('click', openLan);
   byId('practice-button').addEventListener('click', () => openSetup(true));
-  byId('settings-button').addEventListener('click', () => show('settings'));
-  function showGuide(fromPause) {
-    byId('guide-menu-button').hidden = fromPause;
-    byId('guide-pause-back').hidden = !fromPause;
-    show('guide');
-    byId(fromPause ? 'guide-pause-back' : 'guide-menu-button').focus({ preventScroll: true });
-    byId('guide-panel').scrollTop = 0;
-  }
-  byId('guide-button').addEventListener('click', () => showGuide(false));
-  byId('pause-guide-button').addEventListener('click', () => showGuide(true));
-  byId('guide-pause-back').addEventListener('click', () => show('pause'));
   pauseButton.addEventListener('click', togglePause);
   byId('resume-button').addEventListener('click', togglePause);
   for (const button of document.querySelectorAll('[data-menu]')) button.addEventListener('click', returnToMenu);

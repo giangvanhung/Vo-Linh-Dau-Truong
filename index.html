@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles/styles.css" />
     <link rel="stylesheet" href="/src/ui/lan.css" />
+    <link rel="stylesheet" href="/styles/themes.css" />
   </head>
   <body>
     <main class="page-shell">
@@ -33,7 +34,7 @@
             <div class="health-track"><div class="health-fill" id="hung-health"></div><span class="health-number" id="hung-hp">100</span></div>
             <div class="damage-score">Điểm sát thương <b id="hung-damage-score">0</b></div>
             <div class="energy-row"><span>NỘ</span><div class="energy-track"><div id="hung-meter-fill" class="energy-fill"></div></div><span id="hung-meter-value">0/100</span></div><div class="focus-status" id="hung-focus"></div>
-            <div class="skill-status" id="hung-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
+            <div id="hung-hero-energy" class="hero-energy" hidden><span></span><progress max="100" value="0" aria-label="Năng lượng biến hình"></progress></div><div class="skill-status" id="hung-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
           <div class="timer-wrap"><div class="timer" id="timer">60</div><div class="timer-caption">THỜI GIAN</div></div>
           <div class="player-hud player-mai">
@@ -41,7 +42,7 @@
             <div class="health-track"><div class="health-fill" id="mai-health"></div><span class="health-number" id="mai-hp">100</span></div>
             <div class="damage-score">Điểm sát thương <b id="mai-damage-score">0</b></div>
             <div class="energy-row"><span>NỘ</span><div class="energy-track"><div id="mai-meter-fill" class="energy-fill"></div></div><span id="mai-meter-value">0/100</span></div><div class="focus-status" id="mai-focus"></div>
-            <div class="skill-status" id="mai-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
+            <div id="mai-hero-energy" class="hero-energy" hidden><span></span><progress max="100" value="0" aria-label="Năng lượng biến hình"></progress></div><div class="skill-status" id="mai-skills"><span data-skill="closeSkill"></span><span data-skill="rangedSkill"></span><span data-skill="ultimate"></span></div>
           </div>
         </div>
 
@@ -86,6 +87,8 @@
             </details>
           </div>
           <button id="pause-button" class="panel-button pause-button" hidden>Tạm dừng <kbd>Esc</kbd></button>
+          <button id="drop-weapon" class="panel-button" type="button" hidden>Thả vũ khí <kbd data-binding="b">B</kbd></button>
+          <button id="hero-transform" class="panel-button" type="button" hidden>BIẾN HÌNH <kbd data-binding="g">G</kbd></button>
           <div class="game-panel" id="menu-panel" aria-labelledby="menu-title">
             <div class="menu-layout">
               <header class="menu-brand">
@@ -96,41 +99,43 @@
                   <button type="button" class="menu-mode menu-mode-featured" id="versus-button"><span>Đấu CPU</span><small>Một người · PvE</small></button>
                   <button type="button" class="menu-mode" id="local-button"><span>Đấu 2 người</span><small>Chung bàn phím</small></button>
                   <button type="button" class="menu-mode" id="team-button"><span>Đấu đội</span><small>2 người gặp 2 CPU</small></button>
-                  <button type="button" class="menu-mode" id="lan-button"><span>Đấu qua mạng</span><small>2 tay cầm điện thoại</small></button>
+                  <button type="button" class="menu-mode" id="lan-button"><span>Tay cầm điện thoại</span><small>Đấu 2 người · Kết nối bằng QR</small></button>
                   <button type="button" class="menu-mode" id="practice-button"><span>Luyện tập</span><small>Thử đòn và combo</small></button>
-                  <button type="button" class="menu-mode" id="equipment-button"><span>Trang bị PvE</span><small>Chọn đồ và nâng cấp</small></button>
+                  <button type="button" class="menu-mode" id="equipment-button"><span>Trang bị PvE</span><small>Kho đồ và cửa hàng vũ khí</small></button>
                 </div>
                 <div class="menu-utilities">
-                  <button type="button" class="menu-utility" id="settings-button">Cài đặt</button>
-                  <button type="button" class="menu-utility" id="guide-button">Hướng dẫn</button>
+                  <button type="button" class="menu-utility" id="settings-button" aria-haspopup="dialog">Cài đặt</button>
+                  <button type="button" class="menu-utility" id="guide-button" aria-haspopup="dialog">Hướng dẫn</button>
                 </div>
               </nav>
             </div>
           </div>
-          <div class="center-callout game-panel" id="lan-panel" hidden>
+          <div class="center-callout game-panel" id="lan-panel" aria-labelledby="lan-title" hidden>
             <h2 id="lan-title">Kết nối tay cầm</h2>
             <div id="lan-lobby">
               <div id="lan-pairing">
                 <p id="lan-status" role="status">Đang tạo phòng…</p>
                 <div id="lan-link-box" hidden>
-                  <img id="lan-qr" width="160" height="160" alt="Quét để mở tay cầm" hidden>
-                  <div class="lan-link-info">
-                    <p>Quét mã QR bằng điện thoại.</p>
-                    <label id="lan-address-label">Mạng máy tính
-                      <select id="lan-address" aria-describedby="lan-address-hint"></select>
-                    </label>
-                    <details>
-                      <summary>Địa chỉ và hướng dẫn</summary>
-                      <p id="lan-network-help">Điện thoại kết nối Wi‑Fi. Nếu máy tính cũng dùng Wi‑Fi, chọn Wi‑Fi. Nếu máy tính cắm dây vào cùng router phát Wi‑Fi, chọn Ethernet.</p>
-                      <p id="lan-address-hint" aria-live="polite"></p>
-                      <a id="lan-link"></a>
+                  <section class="lan-network" aria-labelledby="lan-network-title">
+                    <h3 id="lan-network-title">1. Chọn kết nối</h3>
+                    <div id="lan-addresses" role="group" aria-label="Kết nối khả dụng"></div>
+                    <p id="lan-address-hint" aria-live="polite"></p>
+                  </section>
+                  <section class="lan-scan" aria-labelledby="lan-scan-title">
+                    <h3 id="lan-scan-title">2. Mở tay cầm</h3>
+                    <img id="lan-qr" width="224" height="224" alt="Mã QR để mở tay cầm" hidden>
+                    <p id="lan-scan-help">Dùng camera điện thoại quét mã QR.</p>
+                    <details id="lan-manual">
+                      <summary>Địa chỉ để nhập trên điện thoại</summary>
+                      <p id="lan-link"></p>
                     </details>
-                  </div>
+                  </section>
                 </div>
                 <details id="lan-keyboard-help"><summary>Phím chơi 2 người</summary><p>Xem và đổi phím trong Cài đặt → Đổi phím P1 / P2.</p></details>
               </div>
             </div>
             <div class="panel-actions"><button class="panel-button" data-menu>Về menu</button><button class="primary-button" id="lan-start">Chọn nhân vật</button></div>
+            <p class="lan-remote-help">Dùng phím mũi tên để di chuyển, OK hoặc Enter để chọn.</p>
           </div>
           <div class="center-callout game-panel setup-panel" id="setup-panel" hidden>
             <header class="setup-header">
@@ -156,7 +161,7 @@
                   <label id="round-format-picker">Thể thức <select id="round-format"></select></label>
                   <label id="difficulty-picker">Độ khó CPU <select id="cpu-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
                 </div>
-                <p id="party-items-hint">Hộp rơi sau khoảng 3 giây. Chạm hộp để nhận vũ khí hoặc buff; dùng Đòn nhẹ hoặc Đòn nặng để tấn công bằng vũ khí.</p>
+                <p id="party-items-hint">Đến gần hộp để tự nhặt. Đồ nhặt dùng được cho mọi võ sĩ và có giới hạn lượt hoặc thời gian.</p>
               </section>
             </div>
             <div class="panel-actions setup-footer">
@@ -170,39 +175,88 @@
               <div><h2>Trang bị PvE</h2><p id="equipment-wallet" aria-live="polite"></p></div>
               <button class="panel-button" data-menu>Về menu</button>
             </header>
+            <div class="equipment-tabs" role="group" aria-label="Kho đồ và cửa hàng">
+              <button type="button" class="panel-button" id="equipment-inventory-tab" aria-pressed="true">Kho đồ</button>
+              <button type="button" class="panel-button" id="equipment-shop-tab" aria-pressed="false">Cửa hàng</button>
+              <button type="button" class="panel-button" id="equipment-skins-tab" aria-pressed="false">Skin</button>
+              <button type="button" class="panel-button equipment-utility" id="equipment-settings" aria-label="Cài đặt" aria-haspopup="dialog"><span class="equipment-utility-icon" aria-hidden="true">⚙</span><span class="equipment-utility-label">Cài đặt</span></button>
+              <button type="button" class="panel-button equipment-utility" id="equipment-guide" aria-label="Hướng dẫn" aria-haspopup="dialog"><span class="equipment-utility-icon" aria-hidden="true">?</span><span class="equipment-utility-label">Hướng dẫn</span></button>
+            </div>
+            <div class="equipment-views" role="group" aria-label="Khu vực trang bị">
+              <button type="button" class="panel-button" data-equipment-view="fighter" aria-pressed="false">Võ sĩ</button>
+              <button type="button" class="panel-button" data-equipment-view="list" aria-pressed="true">Danh sách</button>
+              <button type="button" class="panel-button" data-equipment-view="details" aria-pressed="false">Chi tiết</button>
+            </div>
             <div class="equipment-layout">
-              <section class="equipment-card">
-                <label class="equipment-fighter-label">Võ sĩ <select id="equipment-fighter"></select></label>
+              <section class="equipment-card equipment-fighter-card">
+                <label class="equipment-fighter-label">Võ sĩ <select id="equipment-fighter" aria-describedby="equipment-class"></select></label>
+                <p id="equipment-class"></p>
                 <div class="equipment-loadout">
                   <img id="equipment-portrait" alt="">
                   <div id="equipment-worn" class="equipment-slots" role="group" aria-label="Ô trang bị"></div>
                 </div>
                 <div id="equipment-sets" class="equipment-sets"></div>
               </section>
-              <section class="equipment-card" aria-labelledby="equipment-inventory-title">
+              <section class="equipment-card equipment-list-card" aria-labelledby="equipment-inventory-title">
                 <h3 id="equipment-inventory-title">Kho trang bị</h3>
-                <div id="equipment-item" class="equipment-inventory" role="group" aria-labelledby="equipment-inventory-title"></div>
+                <div class="equipment-list-body">
+                  <details id="equipment-filters" hidden>
+                    <summary>Bộ lọc và đổi hàng</summary>
+                    <div class="equipment-filters">
+                      <button type="button" class="panel-button" id="equipment-filter" aria-pressed="true">Lọc tương thích</button>
+                      <label>Loại <select id="equipment-filter-slot"><option value="">Tất cả</option></select></label>
+                      <label>Độ hiếm <select id="equipment-filter-tier"><option value="">Tất cả</option></select></label>
+                      <button type="button" class="panel-button" id="equipment-refresh">Đổi hàng</button>
+                      <p id="equipment-refresh-status"></p>
+                    </div>
+                  </details>
+                  <div id="equipment-item" class="equipment-inventory" role="group" aria-labelledby="equipment-inventory-title"></div>
+                </div>
+                <div id="equipment-pagination" class="equipment-pagination" role="group" aria-label="Phân trang vật phẩm" hidden>
+                  <button type="button" class="panel-button" id="equipment-page-prev" aria-label="Trang trước">‹</button>
+                  <label>Trang <select id="equipment-page"></select></label>
+                  <span id="equipment-page-count"></span>
+                  <button type="button" class="panel-button" id="equipment-page-next" aria-label="Trang sau">›</button>
+                </div>
               </section>
               <section class="equipment-card equipment-details" aria-labelledby="equipment-selection">
                 <h3 id="equipment-selection"></h3>
                 <p id="equipment-rarity"></p>
-                <table class="equipment-stats">
+                <p id="equipment-perk"></p>
+                <div class="equipment-preview">
+                  <canvas id="equipment-preview" width="260" height="166" role="img" aria-label="Võ sĩ cầm vũ khí"></canvas>
+                  <button type="button" class="panel-button" id="equipment-preview-strike">Thử động tác</button>
+                </div>
+                <p id="equipment-preview-label" aria-live="polite"></p>
+                <details id="equipment-stat-details" class="equipment-stat-details">
+                  <summary>So sánh chỉ số</summary>
+                  <table class="equipment-stats">
                   <thead><tr><th>Chỉ số</th><th>Hiện tại</th><th>Khi mặc</th><th>Nâng cấp</th></tr></thead>
                   <tbody id="equipment-stats"></tbody>
-                </table>
+                  </table>
+                </details>
                 <div class="panel-actions">
                   <button class="panel-button" id="equipment-upgrade">Nâng cấp</button>
                   <button class="primary-button" id="equipment-equip">Trang bị</button>
+                  <button type="button" class="primary-button" id="equipment-buy" hidden>Mua</button>
+                  <button type="button" class="panel-button" id="equipment-sell" hidden>Bán</button>
                 </div>
                 <p id="equipment-notice" role="status"></p>
               </section>
             </div>
-            <p class="equipment-note">Kéo món từ kho vào ô cùng loại hoặc chọn món rồi bấm Trang bị. Thắng trận PvE để mở món mới. PvP chỉ hiện dấu màu trang bị.</p>
           </div>
-          <div class="center-callout game-panel" id="settings-panel" hidden>
-            <h2>Cài đặt</h2>
+          <dialog id="utility-dialog" aria-labelledby="utility-title">
+            <header class="utility-header">
+              <h2 id="utility-title"></h2>
+              <button type="button" class="panel-button" id="utility-close">Đóng</button>
+            </header>
+          <div class="game-panel utility-content" id="settings-panel" hidden>
             <button class="panel-button" id="bindings-button">Đổi phím P1 / P2</button>
             <div class="settings-fields">
+              <div class="theme-field">
+                <label>Chủ đề <select id="theme-setting" aria-describedby="theme-status"></select></label>
+                <small id="theme-status" aria-live="polite"></small>
+              </div>
               <label>Âm thanh <input class="toggle-input" type="checkbox" id="sound-setting"></label>
               <label>Nhạc nền <select id="music-track"></select></label>
               <div id="music-file-controls" hidden>
@@ -214,10 +268,8 @@
               <label>Âm lượng hiệu ứng <input type="range" id="effects-setting" min="0" max="100"></label>
               <label>Độ khó mặc định <select id="default-difficulty"><option value="easy">Dễ</option><option value="normal">Thường</option><option value="hard">Khó</option></select></label>
             </div>
-            <button class="panel-button" data-menu>Về menu</button>
           </div>
-          <div class="center-callout game-panel" id="bindings-panel" hidden>
-            <h2>Phím bàn phím</h2>
+          <div class="game-panel utility-content" id="bindings-panel" hidden>
             <p id="binding-status" aria-live="polite"></p>
             <p>Nếu phím chơi không phản hồi khi dùng UniKey, hãy chuyển biểu tượng UniKey từ V sang E.</p>
             <div id="binding-fields"></div>
@@ -226,8 +278,8 @@
               <button class="panel-button" id="bindings-back">Về cài đặt</button>
             </div>
           </div>
-          <div class="center-callout game-panel" id="guide-panel" hidden>
-            <h2>Hướng dẫn</h2>
+          <section class="game-panel utility-content" id="guide-panel" aria-label="Nội dung hướng dẫn" data-menu-scroll tabindex="0" hidden>
+            <div class="guide-instructions">
             <p>Dùng phím hướng và OK hoặc Enter để chọn trong menu.</p>
             <p>Bấm Nhảy cùng Trái hoặc Phải để nhảy chéo. Bấm hướng còn lại để đổi hướng trên không.</p>
             <p>Đấm nhẹ và đấm nặng dùng luân phiên tay trái/phải. Nút Đá luân phiên chân trái/phải theo nhịp riêng.</p>
@@ -235,8 +287,11 @@
             <p>Bấm Trái hoặc Phải để quay mặt và di chuyển. Khi thả nút, nhân vật giữ hướng vừa chọn. Đỡ đòn về phía đang nhìn.</p>
             <p>Giữ hướng hoặc bấm Nhảy trong lúc đấm, đá hay dùng vũ khí để vừa di chuyển vừa đánh. Mỗi đòn giữ hướng đã chọn lúc bắt đầu.</p>
             <p><strong>Long Quyền Khí Pháo · Cần ít nhất 50 nộ</strong> — Khi đứng đất, bấm Xuống rồi bấm hướng muốn bắn cùng Đấm nhẹ. Chưởng rút nộ liên tục, bắn lâu hơn khi có nhiều nộ và tắt nếu hết nộ hoặc bị ngắt đòn. P1 mặc định dùng <kbd data-binding="s">S</kbd> rồi <kbd data-binding="a">A</kbd> hoặc <kbd data-binding="d">D</kbd> + <kbd data-binding="j">J</kbd>. P2 dùng ↓ rồi ← hoặc → + Num 1. Tay cầm dùng nút hướng hoặc joystick và Đấm nhẹ.</p>
+            <p><strong>Vũ khí</strong> · Đi lại gần để tự nhặt. Bấm <kbd data-binding="b">B</kbd> hoặc nút Thả vũ khí để đặt xuống. Khi cầm dép, Đòn nhẹ để vụt và Đòn nặng để ném. Với thương, nối hai đòn nhẹ, đòn nặng rồi chiêu gần để hất đối thủ. Với trượng, nối hai đòn nhẹ rồi chiêu xa để bắn phép.</p>
+            <p><strong>Hùng</strong> · Bấm <kbd data-binding="j">J</kbd> ba lần để nối đấm trái, phải, trái khi đòn trước trúng.</p>
             <p><strong>Uy Áp Tử Ảnh</strong> — Giữ nút Tụ khí khi chơi Tử Ảnh Lam Chi. Mất thêm một nhịp để lấy đà, sau đó nộ tăng nhanh hơn.</p>
             <p><strong>Mai · Bay khi có cánh</strong> — Bấm Nhảy để cất cánh, dùng phím trái/phải và các đòn đánh trên không. Bấm Xuống để hạ cánh. Mai sẽ rơi khi trúng đòn hoặc hết tiến hóa.</p>
+            </div>
             <section class="lower-grid">
               <div class="controls-card"><div class="section-heading"><span class="tiny-icon">⌘</span><h2>ĐIỀU KHIỂN</h2><span class="heading-note">HÙNG · NGƯỜI CHƠI</span></div><div class="controls-list">
                 <div class="control-row"><span class="key-group"><kbd data-binding="a">A</kbd><kbd data-binding="d">D</kbd></span><span>Di chuyển</span></div><div class="control-row"><kbd data-binding="w">W</kbd><span>Nhảy</span></div><div class="control-row"><kbd data-binding="s">S</kbd><span>Ngồi</span></div><div class="control-row"><kbd data-binding="j">J</kbd><span>Đấm nhẹ</span><small>NHANH</small></div><div class="control-row"><kbd data-binding="k">K</kbd><span>Đấm nặng</span><small>UY LỰC</small></div><div class="control-row"><kbd data-binding="l">L</kbd><span id="kick-control">Đá</span><small>TẦM TRUNG</small></div><div class="control-row"><kbd data-binding="p">P</kbd><span>Đỡ đòn</span><small>GIỮ ĐỂ BLOCK</small></div>
@@ -244,6 +299,7 @@
                 <div class="control-row"><kbd data-binding="f">F</kbd><span>Giữ để tụ khí</span></div><div class="control-row"><kbd data-binding="g">G</kbd><span>Tiến hóa</span></div><div class="control-row"><kbd data-binding="r">R</kbd><span>Lộn né</span><small>GIỮ PHÍM HƯỚNG</small></div>
                 <div class="control-row"><span class="key-group"><kbd>Shift</kbd><kbd data-binding="q">Q</kbd></span><span>Lướt mạnh · 25</span></div>
                 <div class="control-row"><kbd data-binding="t">T</kbd><span>Thoát combo · 50</span></div>
+                <div class="control-row"><kbd data-binding="b">B</kbd><span>Thả vũ khí</span></div>
                 <div class="control-row"><kbd data-binding="u">U</kbd><span id="close-control">Kỹ năng gần</span></div>
                 <div class="control-row"><kbd data-binding="i">I</kbd><span id="range-control">Kỹ năng xa</span></div>
                 <div class="control-row"><kbd data-binding="o">O</kbd><span id="ultimate-control">Ultimate · 100</span></div>
@@ -251,15 +307,14 @@
               </div><div class="action-status"><span id="hung-dash">Lướt sẵn sàng</span><span id="hung-escape"></span></div></div>
               <div class="guide-card"><div class="section-heading"><span class="tiny-icon guide-icon">✦</span><h2>LUẬT ĐẤU</h2><span class="heading-note" id="guide-format">BO3 · THẮNG 2 HIỆP</span></div><div class="guide-body"><div class="guide-stat"><strong>60<span>s</span></strong><span>MỖI HIỆP</span></div><div class="guide-divider"></div><p>Hạ HP đối thủ về <b>0</b>, hoặc còn tỷ lệ máu cao hơn khi hết giờ. Ai đủ số hiệp thắng trước sẽ thắng trận. Mỗi HP gây bằng đòn đánh được tính 1 điểm sát thương.</p></div><div class="match-score"><span><span class="score-name">HÙNG</span> <b id="score-hung">0</b></span><span class="score-dash">—</span><span><b id="score-mai">0</b> <span class="score-name">MAI</span></span></div></div>
             </section>
-            <button class="panel-button" id="guide-menu-button" data-menu>Về menu</button>
-            <button class="panel-button" id="guide-pause-back" hidden>Quay lại tạm dừng</button>
-          </div>
+          </section>
+          </dialog>
           <div class="center-callout game-panel" id="pause-panel" hidden>
             <h2>Tạm dừng</h2>
             <p id="pause-keyboard-hint" hidden>Phím di chuyển bị lỗi khi dùng UniKey? Chuyển UniKey từ V sang E bằng Ctrl + Shift nếu dùng phím tắt mặc định.</p>
             <div class="menu-buttons">
               <button class="primary-button" id="resume-button">Tiếp tục</button>
-              <button class="panel-button" id="pause-guide-button">Hướng dẫn</button>
+              <button class="panel-button" id="pause-guide-button" aria-haspopup="dialog">Hướng dẫn</button>
               <button class="panel-button" data-replay>Chơi lại</button>
               <button class="panel-button" data-menu>Về menu</button>
               <button class="panel-button" id="toggle-sound">Tắt âm thanh</button>

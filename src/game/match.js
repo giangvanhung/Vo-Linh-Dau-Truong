@@ -12,14 +12,16 @@ import { createHud, damageFormat } from '../ui/hud.js';
 import { createControllerPairing } from '../ui/controller-pairing.js';
 import { createPanels } from '../ui/panels.js';
 import { createTrainingPanel } from '../ui/training-panel.js';
-import { applyStageEffects, stageForMatch } from './stages.js';
+import { applyStageEffects, groundHeightAt, stageForMatch } from './stages.js';
 import { createTrainingActions, TrainingSession } from './training.js';
 import { TeamRoster } from './team-roster.js';
 import { superAttack } from './super-motion.js';
 import { applyControls } from './fighter-controls.js';
-import { createPickups, equippedAttack, gear } from './pickups.js';
+import { createPickups, equippedAttack } from './pickups.js';
+import { mainWeaponAttack } from './weapon-attacks.js';
+import { heroEnergyMax, startHeroForm } from './hero-form.js';
 import { createStageBall, updateStageBall } from './stage-ball.js';
-import { awardEquipment, equipFighter, loadEquipment, rarities, saveEquipment } from './equipment.js';
+import { awardEquipment, equipFighter, loadEquipment, rarities, reviveFighter, saveEquipment, setMainWeapon } from './equipment.js';
 
 export function startGame(config) {
   const canvas = document.querySelector('#arena');
@@ -34,21 +36,26 @@ export function startGame(config) {
   const equipment = loadEquipment();
   const training = new TrainingSession();
   const canTrain = () => practice && phase === 'fight';
-  const controlRules = { jumpVelocity: config.stage.jumpVelocity, useAttack, activateAwakening: requestAwakening, toast };
+  const controlRules = { jumpVelocity: config.stage.jumpVelocity, useAttack, activateAwakening: requestAwakening, dropWeapon, toast };
+  const dropWeaponButton = byId('drop-weapon');
+  const transformButton = byId('hero-transform');
   const audio = new GameAudio();
   audio.configure(settings);
   for (const event of ['click', 'keydown']) {
     window.addEventListener(event, () => audio.unlock(), { capture: true });
   }
   const world = { width: canvas.width, height: canvas.height, gravity: config.stage.gravity };
+  const minimumArenaWidth = world.width;
   let stage = stageForMatch(config.stage, config.stages.rooftop, true);
   let stageFrame = 0;
   let ball = null;
   let partyItems = false;
   const pickups = createPickups();
+  const issuedWeapons = new Set();
+  const revivedSlots = new Set();
   function setStage(id, hazards) {
     stage = stageForMatch(config.stage, config.stages[id], hazards);
-    Object.assign(world, { platforms: stage.platforms, zone: stage.zone });
+    Object.assign(world, { platforms: stage.platforms, rises: stage.rises, zone: stage.zone });
     byId('stage-name').textContent = stage.name;
   }
   const roundLength = config.stage.roundSeconds;
@@ -75,8 +82,15 @@ export function startGame(config) {
 
   function makeFighter(id, side) {
     const fighter = new Fighter(config.characters[id], fighterX(side), side === 'hung' ? 1 : -1, config.combat);
+    fighter.y = groundHeightAt(world, fighter.x);
     fighter.characterId = id;
-    if (side === 'hung' || lan || localMode === 'versus') equipFighter(fighter, equipment, id, side === 'hung' && isPve() && phase !== 'menu');
+    fighter.matchSlot = side + ':' + (side === 'hung' ? team.activePlayer : team.activeCpu);
+    if (side === 'hung' || lan || localMode === 'versus') {
+      const slot = fighter.matchSlot + ':' + id;
+      equipFighter(fighter, equipment, id, side === 'hung' && isPve() && phase !== 'menu',
+        phase !== 'menu' && !issuedWeapons.has(slot));
+      if (fighter.weapon) issuedWeapons.add(slot);
+    }
     return fighter;
   }
 
@@ -85,15 +99,28 @@ export function startGame(config) {
     updateScore();
   }
 
-  function resetFighters() {
+  function resetFighters(keepMainWeapons = false) {
+    const heroEnergy = keepMainWeapons ? [hung, mai].map(fighter => fighter.heroEnergy) : [0, 0];
+    const carried = keepMainWeapons ? [hung, mai].map((fighter, side) => {
+      if (!(side ? team.activeCpu : team.activePlayer)) return fighter.weapon;
+      pickups.release(fighter, stageFrame, world, true);
+      return null;
+    }) : [];
+    if (!keepMainWeapons) issuedWeapons.clear();
+    if (!keepMainWeapons) revivedSlots.clear();
     team.reset();
     hung = makeFighter(playerId, 'hung');
     mai = makeFighter(localMode === 'team' ? team.cpuIds[0] : opponentId, 'mai');
+    hung.heroEnergy = hung.heroForm ? heroEnergy[0] : 0;
+    mai.heroEnergy = mai.heroForm ? heroEnergy[1] : 0;
+    if (carried[0]) setMainWeapon(hung, carried[0], true);
+    if (carried[1]) setMainWeapon(mai, carried[1], true);
     if (practice) hung.awakeningUnlocked = true;
     seconds = roundLength;
     stageFrame = 0;
+    world.stageFrame = 0;
     ball = createStageBall(stage, world.width);
-    pickups.reset(partyItems);
+    pickups.reset(partyItems, keepMainWeapons);
     hitstop = shake = toastClock = 0;
     clearInputs();
     cpu = new CpuController(difficulty, config);
@@ -104,15 +131,21 @@ export function startGame(config) {
     updateRoster();
   }
 
-  function beginRound() {
-    resetFighters();
+  function beginRound(fitViewport = false) {
+    panels.show('');
+    if (fitViewport) {
+      // Keep a fixed physics size during the match, including when the TV enters fullscreen.
+      const viewportWidth = canvas.clientWidth * world.height / Math.max(1, canvas.clientHeight);
+      world.width = Math.min(1600, Math.max(minimumArenaWidth, Math.round(viewportWidth)));
+    }
+    resetFighters(!fitViewport);
     phase = 'countdown';
     phaseTime = 3;
-    panels.show('');
     canvas.focus({ preventScroll: true });
     panels.showBanner('3');
     panels.setPauseAvailable(true);
     ui['status-text'].textContent = 'CHUẨN BỊ';
+    if (round === 1 && hung.quote) toast(hung.quote, 2);
     audio.cue('countdown');
   }
 
@@ -122,7 +155,7 @@ export function startGame(config) {
     audio.unlock();
     winsHung = winsMai = damageHung = damageMai = 0;
     round = 1;
-    beginRound();
+    beginRound(true);
   }
 
   function openSetup(isPractice, mode = '') {
@@ -152,10 +185,6 @@ export function startGame(config) {
 
   function togglePause() {
     if (phase === 'paused') {
-      if (!byId('guide-panel').hidden) {
-        panels.show('pause');
-        return;
-      }
       phase = pausedPhase;
       panels.show('');
       canvas.focus({ preventScroll: true });
@@ -191,7 +220,9 @@ export function startGame(config) {
     startMatch();
   }
 
-  const panels = createPanels({ characters: config.characters, stages: config.stages, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings, setMusicFile: (id, file) => audio.setMusicFile(id, file) });
+  const panels = createPanels({ characters: config.characters, stages: config.stages, combat: config.combat,
+    settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings,
+    setMusicFile: (id, file) => audio.setMusicFile(id, file) });
 
   const pairing = createControllerPairing({
     byId,
@@ -229,7 +260,7 @@ export function startGame(config) {
 
   const keyboard = createKeyboard({
     canPlay: () => phase === 'fight',
-    canPause: () => ['fight', 'countdown', 'paused'].includes(phase),
+    canPause: () => !byId('utility-dialog').open && ['fight', 'countdown', 'paused'].includes(phase),
     onPause: togglePause,
     onCompositionIssue: showCompositionHint,
     keyFor: event => boundAction(event, 0),
@@ -263,16 +294,35 @@ export function startGame(config) {
   function useAttack(fighter, target, id) {
     const skill = id === 'motionSuper' ? superAttack : fighter.skillFor(id);
     const equipment = equippedAttack(fighter, id);
-    const started = fighter.startAttack(id, equipment ?? skill ?? fighter.attacks[id], target);
+    const main = mainWeaponAttack(fighter, id);
+    const started = fighter.startAttack(id, equipment ?? main ?? skill ?? fighter.attacks[id], target);
     if (started && equipment) {
-      fighter.weaponUses--;
+      fighter.weaponUses = equipment.projectile?.shape === 'slipper' ? 0 : fighter.weaponUses - 1;
       toast(equipment.label.toUpperCase());
     }
-    if (started && skill) toast(skill.label.toLocaleUpperCase('vi'));
+    if (started && !equipment && (main || skill)) toast((main ?? skill).label.toLocaleUpperCase('vi'));
     return started;
   }
 
+  function dropWeapon(fighter) {
+    if (phase !== 'fight' || fighter.disabled || fighter.attacking || fighter.dash) return false;
+    if (!pickups.release(fighter, stageFrame, world)) return false;
+    toast(fighter.name + ' · Thả vũ khí');
+    return true;
+  }
+  dropWeaponButton.addEventListener('click', () => {
+    dropWeapon(hung);
+    canvas.focus({ preventScroll: true });
+  });
+
   function activateAwakening(fighter) {
+    if (fighter.heroForm) {
+      if (!startHeroForm(fighter, lan || localMode === 'versus')) return false;
+      audio.cue('awaken');
+      burst(fighter.x, fighter.y - 34, 44, fighter.heroForm.color);
+      toast(fighter.quote + ' · ' + fighter.heroForm.label.toUpperCase());
+      return true;
+    }
     if (!fighter.awaken()) return false;
     audio.cue('awaken');
     toast(fighter.name + ' · TIẾN HÓA CẤP ' + fighter.awakeningLevel + '!');
@@ -286,12 +336,22 @@ export function startGame(config) {
   function requestAwakening(fighter) {
     if (activateAwakening(fighter)) return true;
     if (practice && fighter === mai) return false;
+    if (fighter.heroForm) {
+      toast(fighter.heroFrames ? fighter.heroForm.label + ' đang hoạt động'
+        : 'Cần đầy năng lượng và đứng vững · ' + fighter.heroEnergy + '/' + heroEnergyMax);
+      return false;
+    }
     if (!fighter.nextAwakening) toast('Đã đạt cấp tiến hóa tối đa', 2);
     else if (!fighter.awakeningUnlocked) toast(fighter.awakening.condition, 2.5);
     else if (fighter.meter < fighter.rules.meterMax) toast('Cần đầy nộ để tiến hóa', 2);
     else toast('Đứng vững và kết thúc đòn đang dùng để tiến hóa', 2);
     return false;
   }
+
+  transformButton.addEventListener('click', () => {
+    if (phase === 'fight') requestAwakening(hung);
+    canvas.focus({ preventScroll: true });
+  });
 
   function update(dt) {
     if (phase === 'paused') return;
@@ -382,6 +442,7 @@ export function startGame(config) {
     }
     const walkingSteps = [hung.x - movementStart[0], mai.x - movementStart[1]];
     stageFrame++;
+    world.stageFrame = stageFrame;
     applyStageEffects(world, hung, movementStart[0], stageFrame, dt);
     applyStageEffects(world, mai, movementStart[1], stageFrame, dt);
     const previousX = [hung.x, mai.x];
@@ -433,9 +494,12 @@ export function startGame(config) {
     ].filter(Boolean);
     const hits = contacts.map(applyHit);
     hits.forEach(hitEffects);
-    const pickup = pickups.update([hung, mai], stageFrame, world);
-    if (pickup) {
-      const { label, color } = gear[pickup.kind];
+    for (const fighter of [hung, mai]) {
+      if (fighter.knockdown || fighter.hp <= 0) pickups.release(fighter, stageFrame, world, true);
+      if (reviveFighter(fighter, revivedSlots)) toast(fighter.name.toUpperCase() + ' · HỒI SINH');
+    }
+    for (const pickup of pickups.update([hung, mai], stageFrame, world)) {
+      const { label, color } = pickup;
       toast(pickup.fighter.name + ' · ' + label.toUpperCase());
       burst(pickup.fighter.x, pickup.fighter.y - 22, 18, color);
     }
@@ -459,6 +523,11 @@ export function startGame(config) {
     if (reserves.cpuOut) cpu = new CpuController(difficulty, config);
     hung.x = fighterX('hung');
     mai.x = fighterX('mai');
+    for (const fighter of [hung, mai]) {
+      fighter.y = groundHeightAt(world, fighter.x);
+      fighter.vy = 0;
+      fighter.onGround = true;
+    }
     clearInputs();
     projectiles.length = 0;
     updateRoster();
@@ -471,6 +540,8 @@ export function startGame(config) {
     if (!practice) {
       if (attacker === hung) damageHung += Math.round(damage * 100);
       if (attacker === mai) damageMai += Math.round(damage * 100);
+      if (attacker === hung) damageMai += Math.round(hit.reflected * 100);
+      if (attacker === mai) damageHung += Math.round(hit.reflected * 100);
     }
     if (hit.inflicted) {
       const effects = { freeze: ['ĐÓNG BĂNG', '#b1eeff'], shatter: ['VỠ BĂNG', '#a9e4ff'], poisonStun: ['CHOÁNG DO ĐỘC', '#b9f28a'] };
@@ -482,7 +553,10 @@ export function startGame(config) {
     audio.cue(blocked ? 'block' : isKick ? 'kick' : hit.attack.id === 'heavy' ? 'heavy' : 'hit');
     hitstop = Math.max(hitstop, hit.hitstop);
     shake = Math.max(shake, hit.hitstop ? .14 : .07);
-    if (broken) toast('VỠ THẾ THỦ!');
+    if (hit.reflected) {
+      toast('PHẢN ĐÒN · ' + damageFormat.format(hit.reflected));
+      burst(attacker.x, attacker.y - attacker.height * .55, 9, '#ffbb78');
+    } else if (broken) toast('VỠ THẾ THỦ!');
     else if (hit.critical && damage) toast('CHÍ MẠNG!');
     else if (combo >= 2) toast(attacker.name.toUpperCase() + ' · COMBO ' + combo + ' HIT');
     else if (blocked) toast('ĐỠ ĐÒN!');
@@ -531,7 +605,7 @@ export function startGame(config) {
     const headToHead = lan || localMode === 'versus';
     let rewardText = '';
     if (!nextRound && isPve()) {
-      const reward = awardEquipment(equipment, winsHung > winsMai);
+      const reward = awardEquipment(equipment, winsHung > winsMai, difficulty);
       const saved = saveEquipment(equipment);
       rewardText = '+' + reward.gold + ' gold · +' + reward.material + ' nguyên liệu';
       if (reward.item) rewardText += ' · Mở ' + reward.item.name + ' (' + rarities[reward.item.tier] + ')';
@@ -557,6 +631,10 @@ export function startGame(config) {
       accumulator -= FRAME_SECONDS;
     }
     if (previousHP[0] !== hung.hp || previousHP[1] !== mai.hp || previousSecond !== Math.ceil(seconds) || previousDamage !== damageHung + damageMai) updateScore();
+    dropWeaponButton.hidden = phase !== 'fight' || !(hung.weapon || hung.weaponUses);
+    dropWeaponButton.disabled = Boolean(hung.disabled || hung.attacking || hung.dash);
+    transformButton.hidden = phase !== 'fight' || !hung.heroForm || hung.heroEnergy < heroEnergyMax || Boolean(hung.heroFrames);
+    transformButton.disabled = !hung.canFocus;
     if (phase === 'fight') {
       const status = hung.hitstun > 0
         ? 'CHOÁNG · GIỮ A/D ĐỂ DI CHUYỂN KHI HẾT CHOÁNG'
@@ -576,7 +654,8 @@ export function startGame(config) {
       if (Math.hypot(dx, dy) > 24) return [0, 0]; // Snap across teleports.
       return [dx * remaining, dy * remaining];
     });
-    render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, animationTime, debug, ball, drop: pickups.drop });
+    render({ stage, stageFrame, width: world.width, fighters, offsets, projectiles, particles, floaters, trails,
+      shake, screenEffect, animationTime, debug, ball, drop: pickups.drop, looseWeapons: pickups.loose });
     if (toastClock <= 0) ui.toast.classList.remove('show');
     keyboardHint.hidden = phase !== 'fight' || now >= keyboardHintUntil;
     requestAnimationFrame(frame);

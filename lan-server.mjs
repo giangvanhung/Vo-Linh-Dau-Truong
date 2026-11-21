@@ -3,7 +3,7 @@ import { networkInterfaces } from 'node:os';
 import QRCode from 'qrcode';
 import { WebSocket, WebSocketServer } from 'ws';
 
-const buttons = new Set(['a','d','w','s','p','j','k','l','q','r','t','u','i','o','f','g','enhanced']);
+const buttons = new Set(['a','d','w','s','p','j','k','l','q','r','t','u','i','o','f','g','b','enhanced']);
 const directionButtons = new Set(['a', 'd', 'w', 's']);
 const send = (socket, message) => {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
@@ -61,7 +61,8 @@ export function attachLan(server) {
         for (const player of room.players) player?.close(4002, 'Room closed');
       });
       const origin = new URL(request.headers.origin);
-      const online = allowedOrigins.has(origin.origin);
+      // Replacing the hostname of an HTTPS URL with a private IP can break TLS.
+      const online = allowedOrigins.has(origin.origin) || origin.protocol === 'https:';
       const addresses = online ? [{ address: origin.hostname, name: '', type: 'online' }]
         : Object.entries(networkInterfaces()).flatMap(([name, entries]) =>
         entries.filter(entry => entry.family === 'IPv4' && !entry.internal && !entry.address.startsWith('169.254.'))
@@ -88,12 +89,13 @@ export function attachLan(server) {
         seen.add(address);
         links.push({ link: controllerLink(address), name, type });
       }
-      Promise.all(links.map(async option => ({
-        ...option,
-        qr: await QRCode.toDataURL(option.link, { scale: 10, margin: 4 }),
-      })))
-        .then(options => send(socket, { type: 'room', options }))
-        .catch(() => send(socket, { type: 'room', options: links }));
+      Promise.all(links.map(async option => {
+        try {
+          return { ...option, qr: await QRCode.toDataURL(option.link, { scale: 10, margin: 4 }) };
+        } catch {
+          return option;
+        }
+      })).then(options => send(socket, { type: 'room', options }));
       status(room);
       return;
     }

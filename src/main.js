@@ -2,7 +2,7 @@ import { startGame } from './game/match.js';
 
 const fullscreenButton = document.querySelector('#game-fullscreen');
 const gameCard = fullscreenButton.closest('.game-card');
-const isTV = /web[o0]s|smart-tv|smarttv|netcast/i.test(navigator.userAgent);
+const isTV = /web[o0]s|smart[ -]?tv|netcast|tizen|android tv|google tv|aft\w+/i.test(navigator.userAgent);
 document.body.classList.toggle('tv-layout', isTV);
 if (isTV) setGameExpanded(true);
 

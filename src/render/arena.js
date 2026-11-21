@@ -1,24 +1,29 @@
-import { activeZone, overlapsSurface, zoneRanges } from '../game/stages.js';
+import { activeZone, groundHeightAt, stageConditionAt, stageFloorAt, zoneRanges, zoneWarning } from '../game/stages.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
 import { createCombatEffects } from './combat-effects.js';
 import { createEvolutionEffects, evolutionFist, advancedAura } from './evolution-effects.js';
 import { drawChargeVariant } from './charge-effects.js';
 import { createStageBackground } from './stage-background.js';
 import { drawStrikeTrail } from './fighter-motion.js';
-import { drawHeldWeapon } from './held-weapon.js';
+import { drawHeldWeapon, drawLooseWeapon } from './held-weapon.js';
 import { ballRadius } from '../game/stage-ball.js';
 import { gear } from '../game/pickups.js';
+import { weaponTypes } from '../game/equipment.js';
+import { drawMorph, drawStageCondition, drawStageLife } from './stage-life.js';
+
+const terrainArt = Object.fromEntries(['crate', 'steel', 'stone', 'timber'].map(kind =>
+  [kind, '/assets/backgrounds/terrain-' + kind + '.png']));
 
 export function createArenaRenderer(canvas, config) {
   const ctx = canvas.getContext('2d');
   const drawBackground = createStageBackground(document.getElementById('arena-background'));
-  const w = canvas.width, h = canvas.height;
+  const h = canvas.height;
   // Leave room for wide attack poses and evolved bodies beyond the arena walls.
-  const wallClearance = 128;
-  const viewScale = w / (w + 2 * wallClearance);
+  const wallClearance = 48;
 
-  const drawSprite = createSpriteRenderer(ctx, config.characters);
   const images = new Map();
+  const drawSprite = createSpriteRenderer(ctx, config.characters,
+    (fighter, hand, drawHand) => drawHeldWeapon(ctx, images, fighter, hand, drawHand));
   const { drawProjectile, drawCombatEffects } = createCombatEffects(ctx, images);
   const sparkSheet = '/assets/effects/combat-sparks.png';
   const { drawEvolutionBody, drawEvolutionFist, drawEvolutionWings } = createEvolutionEffects(ctx, images, drawFighter);
@@ -27,6 +32,8 @@ export function createArenaRenderer(canvas, config) {
   paths.add(evolutionFist);
   paths.add(advancedAura);
   for (const item of Object.values(gear)) if (item.image) paths.add(item.image);
+  for (const weapon of Object.values(weaponTypes)) if (weapon.image) paths.add(weapon.image);
+  for (const asset of Object.values(terrainArt)) paths.add(asset);
   for (const character of Object.values(config.characters)) {
     const { wings, overlay } = character.awakening?.evolution ?? {};
     if (wings) paths.add(wings);
@@ -35,7 +42,8 @@ export function createArenaRenderer(canvas, config) {
   }
   for (const path of paths) loadImage(path).then(image => images.set(path, image)).catch(() => {});
 
-  function render({ stage, stageFrame, fighters, offsets, projectiles, particles, floaters, trails, shake, screenEffect, debug, animationTime, ball, drop }) {
+  function render({ stage, stageFrame, width: w, fighters, offsets, projectiles, particles, floaters, trails,
+    shake, screenEffect, debug, animationTime, ball, drop, looseWeapons }) {
     const ground = h * config.stage.groundRatio;
     const displayHeight = canvas.clientHeight;
     const scale = Math.min(canvas.clientWidth / w, displayHeight / h);
@@ -50,9 +58,12 @@ export function createArenaRenderer(canvas, config) {
     const floor = canvas.parentElement.offsetTop + (displayHeight - h * scale) / 2 + ground * scale;
     drawBackground(stage, floor, center / w);
     ctx.save();
-    applyArenaView(ground, shake, screenEffect);
+    applyArenaView(w, ground, shake, screenEffect);
+    drawStageAmbience(stage, stageFrame, w, ground);
+    drawStageLife(ctx, stage.wildlife, stageFrame, w, ground);
     drawTerrain(stage, stageFrame, w, ground);
     if (ball) drawBall(ball, ground);
+    for (const item of looseWeapons) drawLooseWeapon(ctx, images, item, ground, animationTime);
     if (drop) {
       ctx.fillStyle = '#252420';
       ctx.fillRect(drop.x - 15, ground + drop.y - 15, 30, 29);
@@ -86,9 +97,13 @@ export function createArenaRenderer(canvas, config) {
     for (const [index, f] of fighters.entries()) {
       ctx.save();
       ctx.translate(...offsets[index]);
-      if (f.evolving && f.hp > 0) drawEvolutionWings(f, ground, animationTime);
-      drawEvolutionBody(f, ground, animationTime);
-      drawHeldWeapon(ctx, images, f, ground, animationTime);
+      const morphed = f.hp > 0 && f.stageCondition?.kind === 'morph';
+      if (morphed) drawMorph(ctx, f, ground, animationTime);
+      else {
+        if (f.evolving && f.hp > 0) drawEvolutionWings(f, ground, animationTime);
+        drawEvolutionBody(f, ground, animationTime);
+      }
+      drawStageCondition(ctx, f, ground, animationTime);
       drawStrikeTrail(ctx, f, ground);
       drawCombatEffects(f, ground);
       if (f.attack?.evolvedPunch) drawEvolutionFist(f, ground, animationTime);
@@ -168,19 +183,14 @@ export function createArenaRenderer(canvas, config) {
     }
     if (debug) {
       ctx.save();
-      applyArenaView(ground, shake, screenEffect);
+      applyArenaView(w, ground, shake, screenEffect);
       drawCollisionBoxes(fighters, projectiles, ground);
       ctx.restore();
     }
   }
 
   function drawContactShadow(fighter, stage, width, ground) {
-    let floor = 0;
-    for (const platform of stage.platforms ?? []) {
-      if (fighter.y <= platform.y && overlapsSurface(fighter.x, width, platform.range)) {
-        floor = Math.min(floor, platform.y);
-      }
-    }
+    const floor = stageFloorAt({ width, platforms: stage.platforms, rises: stage.rises }, fighter.x, fighter.y);
     const proximity = 1 / (1 + (floor - fighter.y) / 56);
     const radius = fighter.width * (.55 + .25 * proximity);
     ctx.save();
@@ -198,7 +208,8 @@ export function createArenaRenderer(canvas, config) {
     ctx.restore();
   }
 
-  function applyArenaView(ground, shake, screenEffect) {
+  function applyArenaView(w, ground, shake, screenEffect) {
+    const viewScale = w / (w + 2 * wallClearance);
     ctx.translate((1 - viewScale) * w / 2, (1 - viewScale) * ground);
     ctx.scale(viewScale, viewScale);
     if (shake) ctx.translate(Math.sin(shake * 180) * shake * 25, 0);
@@ -232,9 +243,64 @@ export function createArenaRenderer(canvas, config) {
 
   function drawTerrain(stage, frame, w, ground) {
     ctx.save();
+    const edgeColor = stage.terrainColor ?? '#90a7b8';
+    const world = { width: w, rises: stage.rises };
+    for (const { range, rise } of stage.rises ?? []) {
+      const [left, right] = range.map(value => value * w);
+      const ramp = (right - left) * .35;
+      const points = [left, left + ramp, right - ramp, right];
+      ctx.beginPath();
+      for (const x of points) ctx.lineTo(x, ground + groundHeightAt(world, x));
+      ctx.lineTo(right, ground + 11);
+      ctx.lineTo(left, ground + 11);
+      ctx.closePath();
+      const paint = ctx.createLinearGradient(0, ground - 26, 0, ground + 12);
+      paint.addColorStop(0, edgeColor);
+      paint.addColorStop(1, '#20212c');
+      ctx.fillStyle = paint;
+      ctx.fill();
+      const stone = images.get(terrainArt.stone);
+      if (stone) {
+        ctx.save();
+        ctx.clip();
+        ctx.globalAlpha = .72;
+        ctx.drawImage(stone, stone.width * .08, stone.height * .28, stone.width * .84, stone.height * .62,
+          left, ground - rise, right - left, rise + 11);
+        ctx.restore();
+      }
+      ctx.beginPath();
+      for (const x of points) ctx.lineTo(x, ground + groundHeightAt(world, x));
+      ctx.strokeStyle = edgeColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.strokeStyle = edgeColor;
+    ctx.globalAlpha = .65;
+    ctx.lineWidth = 2;
+    for (const x of [15, w - 15]) {
+      const towardCenter = x < w / 2 ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(x, ground - 13);
+      ctx.lineTo(x, ground + 4);
+      ctx.lineTo(x + towardCenter * 17, ground + 4);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
     for (const platform of stage.platforms ?? []) {
       const [left, right] = platform.range.map(value => Math.round(value * w));
       const y = ground + platform.y;
+      const art = images.get(terrainArt[platform.art]);
+      if (art) {
+        const width = right - left;
+        const available = ground + Math.min(groundHeightAt(world, left), groundHeightAt(world, right)) - y;
+        const thickness = Math.max(17, Math.min(available, width * art.height / art.width, platform.art === 'steel' ? 98 : 63));
+        ctx.drawImage(art, left, y, width, thickness);
+        ctx.globalAlpha = .62;
+        ctx.fillStyle = edgeColor;
+        ctx.fillRect(left + 2, y, width - 4, 2);
+        ctx.globalAlpha = 1;
+        continue;
+      }
       ctx.fillStyle = '#182939';
       ctx.fillRect(left + 5, y + 4, right - left - 10, 13);
       ctx.fillStyle = stage.zone?.color ?? '#92a6b7';
@@ -245,11 +311,24 @@ export function createArenaRenderer(canvas, config) {
     const zone = stage.zone;
     if (zone) {
       const active = activeZone(zone, frame);
-      const warning = zone.cycle && frame % zone.cycle >= zone.cycle - zone.active - 48;
-      ctx.fillStyle = zone.color;
+      const warning = zoneWarning(zone, frame);
+      const condition = stageConditionAt(zone, frame);
+      const zoneColor = condition?.color ?? zone.color;
+      ctx.fillStyle = zoneColor;
       for (const [start, end] of zoneRanges(zone)) {
         const left = start * w, width = (end - start) * w;
         const lava = zone.kind === 'lava';
+        if (condition && warning) {
+          ctx.globalAlpha = active ? .23 : .11;
+          ctx.fillRect(left, ground - 26, width, 28);
+          ctx.globalAlpha = .92;
+          ctx.font = '700 15px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.strokeStyle = '#1a1722';
+          ctx.lineWidth = 3;
+          ctx.strokeText(condition.label, left + width / 2, ground - 124);
+          ctx.fillText(condition.label, left + width / 2, ground - 124);
+        }
         ctx.globalAlpha = active ? .55 : warning ? .35 : .15;
         ctx.fillRect(left, ground + (lava ? -3 : 2), width, lava ? 13 : zone.kind === 'slip' ? 5 : 3);
         if (!active || zone.kind === 'slip') continue;
@@ -259,6 +338,19 @@ export function createArenaRenderer(canvas, config) {
           ctx.fillRect(x, y, zone.kind === 'wind' ? 15 : 3, zone.kind === 'wind' || lava ? 2 : 9);
         }
       }
+    }
+    ctx.restore();
+  }
+
+  function drawStageAmbience(stage, frame, width, ground) {
+    if (!stage.ambient) return;
+    ctx.save();
+    ctx.fillStyle = stage.ambient;
+    for (let index = 0; index < 24; index++) {
+      const x = (index * 167 + frame * (.14 + index % 3 * .08)) % width;
+      const y = ground - 26 - (index * 43 % 238) + Math.sin(index * 2 + frame / 38) * 8;
+      ctx.globalAlpha = .13 + (Math.sin(frame / 22 + index * 1.6) + 1) * .18;
+      ctx.fillRect(Math.round(x), Math.round(y), index % 4 ? 2 : 3, 2);
     }
     ctx.restore();
   }

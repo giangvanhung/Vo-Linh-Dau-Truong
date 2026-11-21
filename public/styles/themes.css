@@ -1,0 +1,171 @@
+:root {
+  --theme-base: #101015;
+}
+
+:root[data-theme="spring"] {
+  --theme-base: #211324;
+  --theme-surface: #39263e;
+  --theme-edge: #946389;
+  --theme-accent: #ffc1dc;
+  --theme-glow: #693f65;
+}
+
+:root[data-theme="summer"] {
+  --theme-base: #0b2229;
+  --theme-surface: #183941;
+  --theme-edge: #4d8587;
+  --theme-accent: #9ff2df;
+  --theme-glow: #246975;
+}
+
+:root[data-theme="autumn"] {
+  --theme-base: #231911;
+  --theme-surface: #3c2a22;
+  --theme-edge: #9c6845;
+  --theme-accent: #ffcb86;
+  --theme-glow: #714129;
+}
+
+:root[data-theme="winter"] {
+  --theme-base: #111b2b;
+  --theme-surface: #21354b;
+  --theme-edge: #62809f;
+  --theme-accent: #bfe8ff;
+  --theme-glow: #38577a;
+}
+
+:root[data-theme="christmas"] {
+  --theme-base: #10231f;
+  --theme-surface: #254139;
+  --theme-edge: #668b72;
+  --theme-accent: #ffe0a0;
+  --theme-glow: #5c273b;
+}
+
+:root[data-theme="blocks"] {
+  --theme-base: #19241c;
+  --theme-surface: #344335;
+  --theme-edge: #718c65;
+  --theme-accent: #dcf0a3;
+  --theme-glow: #445e3b;
+}
+
+#theme-status {
+  color: #ddd8e2;
+  line-height: 1.45;
+  text-align: left;
+}
+
+#theme-status:empty { display: none; }
+
+[data-theme]:not([data-theme="classic"]) body {
+  background: radial-gradient(ellipse at 50% -10%, var(--theme-glow), var(--theme-base) 65%);
+}
+
+[data-theme]:not([data-theme="classic"]) :is(.game-card, .arena-topline, .arena-footer) {
+  background: var(--theme-base);
+  border-color: var(--theme-edge);
+}
+
+[data-theme]:not([data-theme="classic"]) :is(.controls-card, .guide-card, #utility-dialog) {
+  background-color: var(--theme-base);
+  border-color: var(--theme-edge);
+}
+
+[data-theme]:not([data-theme="classic"]) .stage-wrap #menu-panel {
+  background-image: linear-gradient(90deg, transparent, var(--theme-base) 76%),
+    linear-gradient(145deg, var(--theme-glow), transparent 66%),
+    url('/assets/backgrounds/rooftop/preview.jpg');
+  background-color: var(--theme-base);
+}
+
+[data-theme]:not([data-theme="classic"]) :is(.game-panel, .arena-tools) :is(.menu-mode, .menu-utility, .panel-button, select) {
+  background: var(--theme-surface);
+  border-color: var(--theme-edge);
+  color: #fff8ef;
+}
+
+[data-theme]:not([data-theme="classic"]) :is(#menu-title em, .round-label, .callout-kicker) {
+  color: var(--theme-accent);
+}
+
+[data-theme]:not([data-theme="classic"]) .game-panel :is(.primary-button, .equipment-tabs button[aria-pressed="true"]) {
+  background: var(--theme-accent);
+  color: var(--theme-base);
+}
+
+[data-theme]:not([data-theme="classic"]) .game-panel :is(button, select, input, a):focus-visible {
+  outline-color: var(--theme-accent);
+}
+
+[data-theme]:not([data-theme="classic"]) .game-panel input { accent-color: var(--theme-accent); }
+
+:is([data-theme="winter"], [data-theme="christmas"], [data-theme="blocks"]) #menu-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+:is([data-theme="winter"], [data-theme="christmas"], [data-theme="blocks"]) #menu-panel .menu-layout {
+  position: relative;
+}
+
+:is([data-theme="winter"], [data-theme="christmas"]) #menu-panel::before {
+  background-image: radial-gradient(circle at 16px 19px, #e5f3ffb0 1px, transparent 2px),
+    radial-gradient(circle at 40px 62px, #e5f3ff72 1px, transparent 2px);
+  background-size: 73px 83px, 113px 97px;
+  opacity: .65;
+}
+
+[data-theme="christmas"] .stage-wrap #menu-panel {
+  background-image: linear-gradient(90deg, transparent, var(--theme-base) 80%),
+    radial-gradient(ellipse at 12% 84%, #782a39, transparent 62%),
+    url('/assets/backgrounds/rooftop/preview.jpg');
+}
+
+[data-theme="christmas"] #menu-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 8px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8px 2px, #ffe3aa 2px, transparent 4px) 0 0 / 60px 8px repeat-x,
+    radial-gradient(circle at 28px 4px, #ff8c98 2px, transparent 4px) 0 0 / 60px 8px repeat-x,
+    radial-gradient(circle at 48px 2px, #a5edbb 2px, transparent 4px) 0 0 / 60px 8px repeat-x;
+}
+
+[data-theme="blocks"] .stage-wrap #menu-panel {
+  background: linear-gradient(90deg, transparent, var(--theme-base) 88%),
+    linear-gradient(180deg, #274549, #39564b 65%, #303a2e);
+}
+
+[data-theme="blocks"] #menu-panel::before {
+  background: repeating-conic-gradient(#759156 0% 25%, #536c47 0% 50%) 0 0 / 32px 32px, #536c47;
+  clip-path: polygon(0 72%, 11% 72%, 11% 64%, 23% 64%, 23% 76%, 35% 76%, 35% 85%, 45% 85%, 45% 91%, 62% 91%, 62% 100%, 0 100%);
+  opacity: .6;
+}
+
+[data-theme="blocks"] #menu-panel::after {
+  content: "";
+  position: absolute;
+  inset: auto auto 33% 15%;
+  width: clamp(36px, 8vw, 80px);
+  height: clamp(56px, 12vw, 118px);
+  background: linear-gradient(#62864e 76%, #715744 76%);
+  clip-path: polygon(28% 0, 72% 0, 72% 24%, 88% 24%, 88% 47%, 100% 47%, 100% 76%, 60% 76%, 60% 100%, 40% 100%, 40% 76%, 0 76%, 0 47%, 12% 47%, 12% 24%, 28% 24%);
+  opacity: .5;
+  pointer-events: none;
+}
+
+[data-theme="blocks"] #menu-panel .menu-layout { z-index: 1; }
+
+[data-theme="blocks"] #menu-panel :is(.menu-mode, .menu-utility) {
+  border-radius: 2px;
+  box-shadow: inset 0 -3px #141c15;
+}
+
+[data-theme]:not([data-theme="classic"]) .game-panel :is(.menu-mode, .menu-utility, .panel-button):hover {
+  border-color: var(--theme-accent);
+}

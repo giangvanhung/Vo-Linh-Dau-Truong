@@ -1,10 +1,10 @@
 export const defaultBindings = [
-  {a:'KeyA', d:'KeyD', w:'KeyW', s:'KeyS', j:'KeyJ', k:'KeyK', l:'KeyL', p:'KeyP', q:'KeyQ', r:'KeyR', f:'KeyF', g:'KeyG', u:'KeyU', i:'KeyI', o:'KeyO', t:'KeyT'},
-  {a:'ArrowLeft', d:'ArrowRight', w:'ArrowUp', s:'ArrowDown', j:'Numpad1', k:'Numpad2', l:'Numpad3', p:'Numpad4', q:'Numpad5', r:'Numpad6', f:'Numpad0', g:'NumpadAdd', u:'Numpad7', i:'Numpad8', o:'Numpad9', t:'NumpadDecimal'},
+  {a:'KeyA', d:'KeyD', w:'KeyW', s:'KeyS', j:'KeyJ', k:'KeyK', l:'KeyL', p:'KeyP', q:'KeyQ', r:'KeyR', f:'KeyF', g:'KeyG', u:'KeyU', i:'KeyI', o:'KeyO', t:'KeyT', b:'KeyB'},
+  {a:'ArrowLeft', d:'ArrowRight', w:'ArrowUp', s:'ArrowDown', j:'Numpad1', k:'Numpad2', l:'Numpad3', p:'Numpad4', q:'Numpad5', r:'Numpad6', f:'Numpad0', g:'NumpadAdd', u:'Numpad7', i:'Numpad8', o:'Numpad9', t:'NumpadDecimal', b:'NumpadEnter'},
 ];
 export const bindingLabels = {
   a:'Trái', d:'Phải', w:'Nhảy', s:'Cúi', j:'Đòn nhẹ', k:'Đòn nặng', l:'Đá', p:'Đỡ',
-  q:'Lướt', r:'Lộn né', f:'Tụ khí', g:'Tiến hóa', u:'Chiêu gần', i:'Chiêu xa', o:'Tuyệt kỹ', t:'Thoát combo',
+  q:'Lướt', r:'Lộn né', f:'Tụ khí', g:'Tiến hóa', u:'Chiêu gần', i:'Chiêu xa', o:'Tuyệt kỹ', t:'Thoát combo', b:'Thả vũ khí',
 };
 const legacyArrows = { 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown' };
 const compositionKey = event => event.isComposing || event.keyCode === 229 || event.key === 'Process';
@@ -28,7 +28,7 @@ export function keyLabel(code) {
 
 const attackKeys = { j: 'light', k: 'heavy', l: 'kick', u: 'closeSkill', i: 'rangedSkill', o: 'ultimate' };
 const movementAliases = { ArrowLeft: 'a', ArrowRight: 'd', ArrowUp: 'w', ArrowDown: 's' };
-const gameKeys = new Set(['a', 'd', 'w', 's', 'p', 'q', 'r', 't', 'f', 'g', ...Object.keys(attackKeys)]);
+const gameKeys = new Set(Object.keys(bindingLabels));
 const continuousKeys = new Set(['a', 'd', 's', 'p', 'f']);
 
 export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, onCompositionIssue, keyFor, allowArrows = () => true }) {
@@ -84,6 +84,7 @@ export function createKeyboard({ canPlay, canPause, onPause, onClear, onInput, o
     if (key === 'r') queuedAction = 'roll';
     if (key === 'g') queuedAction = 'awaken';
     if (key === 't') queuedAction = 'escape';
+    if (key === 'b') queuedAction = 'dropWeapon';
   });
   window.addEventListener('keyup', event => {
     if (heldInputs.delete(keyCode(event))) return;

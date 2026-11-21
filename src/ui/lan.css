@@ -1,36 +1,95 @@
-#lan-pairing { font-size: 12px; line-height: 1.45; }
+﻿#lan-pairing { font-size: clamp(14px, 1.45vw, 19px); line-height: 1.45; }
 #lan-pairing [hidden], .lan-details[hidden] { display: none; }
-#lan-link-box { display: grid; justify-items: center; gap: 6px; }
-#lan-address-label { display: grid; gap: 4px; min-width: 0; max-width: 100%; }
-#lan-address { max-width: 100%; }
-#lan-link-box p { margin: 0; max-width: 50ch; }
-#lan-address-hint { font-weight: 600; }
-#lan-link { color: #a1cef4; overflow-wrap: anywhere; }
-#lan-qr { display: block; width: 160px; width: clamp(112px, 28dvh, 160px); height: auto; background: white; border-radius: 4px; }
-.game-panel #lan-status { margin: 0 0 6px; }
 .stage-wrap #lan-panel {
-  top: 8px;
+  top: 12px;
   transform: translateX(-50%);
-  width: calc(100% - 24px);
-  max-width: 540px;
-  max-height: calc(100% - 16px);
-  padding: 12px;
+  width: calc(100% - 28px);
+  max-width: 880px;
+  max-height: calc(100% - 24px);
+  padding: clamp(14px, 2.3vw, 28px);
+  text-align: left;
+  border: 1px solid #71594c;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #302431, #181923 65%);
 }
-#lan-panel h2 { margin-bottom: 6px; }
-#lan-panel .panel-actions { margin-top: 8px; }
-#lan-panel #lan-keyboard-help { margin-top: 4px; }
-.lan-link-info { min-width: 0; display: grid; gap: 4px; }
-.lan-link-info summary, #lan-keyboard-help summary { cursor: pointer; }
-@media (min-width: 420px) {
-  #lan-panel #lan-link-box:has(#lan-qr:not([hidden])) {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    justify-items: stretch;
-    gap: 12px;
-    text-align: left;
-  }
+#lan-panel h2 { font-size: clamp(24px, 3.2vw, 42px); color: #fff1dc; }
+#lan-pairing p { margin: 0; font-size: inherit; }
+#lan-pairing #lan-status {
+  margin-bottom: 14px;
+  padding: 9px 12px;
+  border-left: 3px solid #edba80;
+  background: #161722;
+  color: #ffe4c4;
+  font-weight: 700;
+}
+#lan-link-box { display: grid; gap: 12px; }
+.lan-network, .lan-scan {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: clamp(10px, 1.5vw, 18px);
+  border: 1px solid #514654;
+  border-radius: 12px;
+  background: #1b1c27;
+}
+.lan-network h3, .lan-scan h3 { margin: 0; color: #fff1dc; font-size: 1.12em; }
+#lan-addresses { display: grid; gap: 8px; }
+.lan-network-option {
+  width: 100%;
+  min-height: 52px;
+  padding: 9px 13px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  line-height: 1.25;
+  color: #faf1e9;
+  background: #303342;
+  border: 1px solid #646977;
+  border-radius: 8px;
+}
+.lan-network-option strong, .lan-network-option small { display: block; overflow-wrap: anywhere; }
+.stage-wrap .lan-network-option strong { font: inherit; font-weight: 800; }
+.lan-network-option small { margin-top: 4px; font-size: .78em; }
+.lan-network-option:hover { border-color: #ffbb7f; }
+.lan-network-option[aria-pressed="true"] {
+  background: #4b322b;
+  border-color: #ffbb7f;
+  box-shadow: inset 4px 0 #ffbb7f;
+}
+.lan-network-option[aria-pressed="true"] strong::after { content: " ✓"; color: #ffd4aa; }
+#lan-pairing :is(button, summary):focus {
+  outline: 3px solid #fff0ba;
+  outline-offset: 2px;
+}
+#lan-pairing :is(#lan-address-hint, #lan-scan-help) { color: #e5dbe6; font-size: .92em; }
+.lan-scan { justify-items: center; text-align: center; }
+#lan-qr {
+  display: block;
+  width: clamp(132px, 34vh, 248px);
+  width: clamp(132px, 34dvh, 248px);
+  max-width: 100%;
+  height: auto;
+  padding: 6px;
+  background: #fff;
+  border-radius: 8px;
+}
+#lan-link { overflow-wrap: anywhere; user-select: all; color: #b7dbff; }
+#lan-pairing summary { cursor: pointer; padding: 8px 4px; color: #e8c8a9; }
+#lan-panel .panel-actions { margin-top: 14px; justify-content: flex-end; }
+#lan-panel .panel-actions button { min-height: 44px; font-size: 14px; }
+#lan-panel .lan-remote-help { margin: 10px 0 0; color: #dfcbbd; font-size: 13px; text-align: right; }
+@media (min-width: 560px) {
+  #lan-panel #lan-link-box { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+}
+@media (min-width: 1000px) {
+  .tv-layout .stage-wrap #lan-panel { max-width: 1040px; }
+  .tv-layout .lan-network-option { min-height: 66px; }
+  .tv-layout #lan-qr { width: clamp(180px, 34vh, 308px); width: clamp(180px, 34dvh, 308px); }
+  .tv-layout #lan-panel .panel-actions button { min-height: 52px; font-size: 18px; }
+  .tv-layout #lan-panel .lan-remote-help { font-size: 16px; }
 }
 .lan-details { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
 .lan-details summary { cursor: pointer; }
-.lan-details #lan-pairing { text-align: center; }
+.lan-details #lan-pairing { max-height: 55vh; overflow: auto; padding: 6px; }
 .stage-wrap canvas:focus { outline: none; }
