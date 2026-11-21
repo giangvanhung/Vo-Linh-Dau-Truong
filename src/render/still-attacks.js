@@ -1,3 +1,4 @@
+import { weaponMotion } from './weapon-motion.js';
 import { strikePose } from './fighter-motion.js';
 
 // Each outline uses the original artwork scaled to 96 px wide.
@@ -83,15 +84,16 @@ export function drawHungRearPunch(ctx, sheet, attack, scale, drawWeapon) {
 
 export function drawStillAttack(ctx, image, width, height, fighter, drawWeapon, cell = 0) {
   const attack = fighter.attack;
-  if (!attack || attack.pickupWeapon || !['light', 'heavy', 'kick'].includes(attack.id)) return false;
+  const motion = weaponMotion(attack);
+  if (!attack || (!motion && (attack.pickupWeapon || !['light', 'heavy', 'kick'].includes(attack.id)))) return false;
   const kick = attack.id === 'kick';
   const heavy = attack.id === 'heavy';
-  const rear = attack.limbSide === 'right';
+  const rear = Boolean(motion) || attack.limbSide === 'right';
   const points = (cell ? guardLimbs : rear ? rearLimbs : limbs)[fighter.characterId]?.[kick ? 'leg' : 'arm'];
   if (!points) return false;
   const outline = rear ? points.slice(0, -1) : points;
 
-  const extension = strikePose(attack);
+  const extension = motion?.amount ?? strikePose(attack);
   if (Math.abs(extension) < .02) return false;
 
   const imageHeight = cell ? 96 : height * 96 / width;
@@ -116,9 +118,11 @@ export function drawStillAttack(ctx, image, width, height, fighter, drawWeapon, 
   const restAngle = Math.atan2(tipY - pivotY, tipX - pivotX);
   const angle = rear ? (kick ? -.16 : heavy ? .12 : -.08) - restAngle : kick ? -.94 : heavy ? .42 : .23;
   const reach = kick ? .13 : heavy ? .48 : .32;
-  ctx.rotate(angle * extension);
+  const turn = motion ? (motion.kind === 'aim' ? (motion.angle - restAngle) * motion.amount : motion.angle) : angle * extension;
+  const stretch = motion?.reach ?? 1 + reach * extension;
+  ctx.rotate(turn);
   if (rear) ctx.rotate(restAngle);
-  ctx.scale(1 + reach * extension, 1);
+  ctx.scale(stretch, 1);
   if (rear) ctx.rotate(-restAngle);
   ctx.translate(-pivotX, -pivotY);
   ctx.beginPath();
@@ -127,8 +131,8 @@ export function drawStillAttack(ctx, image, width, height, fighter, drawWeapon, 
   drawImage();
   ctx.restore();
   if (drawWeapon) {
-    const distance = Math.hypot(tipX - pivotX, tipY - pivotY) * (1 + reach * extension);
-    const direction = restAngle + angle * extension;
+    const distance = Math.hypot(tipX - pivotX, tipY - pivotY) * stretch;
+    const direction = restAngle + turn;
     const hand = rear && !kick ? [
       -width / 2 + (pivotX + Math.cos(direction) * distance) * width / 96,
       -height + (pivotY + Math.sin(direction) * distance) * width / 96,

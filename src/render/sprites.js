@@ -1,3 +1,4 @@
+import { weaponMotion } from './weapon-motion.js';
 import { drawHungRearPunch, drawStillAttack, hasPaintedWeapon } from './still-attacks.js';
 import { applyFighterMotion, drawLowStride } from './fighter-motion.js';
 import { drawPoseSheet } from './pose-sheet.js';
@@ -160,7 +161,10 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}) {
         if (grip && !paintedWeapon) drawWeapon(grip, redraw);
       };
       let articulated = false;
-      if (useRearLimb && paintedWeapon && poses) {
+      const weaponStrike = weaponMotion(attack) && !['hit', 'ko', 'knockdown'].includes(name);
+      if (weaponStrike && !paintedWeapon && image) {
+        articulated = drawStillAttack(ctx, image, width, height, fighter, drawAtHand);
+      } else if ((useRearLimb || weaponStrike) && paintedWeapon && poses) {
         const size = height * 256 / 210;
         const [handX, handY] = poseGrip(fighter.characterId, 0, false);
         articulated = drawStillAttack(ctx, poses, size, size * 244 / 256, fighter,
@@ -188,7 +192,8 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}) {
     const clips = sheet?.clips;
     const fallback = name === 'roll' ? 'dash' : name === 'charge' ? 'block' : attackClips[fighter.attack?.id]?.[0];
     const walk = name === 'crouchWalk' ? 'run' : name === 'knockdown' ? 'hit' : name;
-    const clip = clips?.get(walk) ?? clips?.get(fallback) ?? clips?.get('idle');
+    const motion = !['hit', 'ko', 'knockdown'].includes(name) && weaponMotion(fighter.attack);
+    const clip = (motion && clips?.get('idle')) || clips?.get(walk) || clips?.get(fallback) || clips?.get('idle');
     if (!clip) return false;
     const elapsed = walk === 'run' ? fighter.walkDistance * (name === 'crouchWalk' ? 16 : 1000 / fighter.moveSpeed)
       : animationTime - clock.start;
@@ -216,10 +221,55 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}) {
       return true;
     }
     const drawImage = () => ctx.drawImage(sheet.image, x, y, w, h, left, top, w * scale, h * scale);
-    drawImage();
     const hand = atlasGrip(fighter.characterId, entry.frame);
-    if (hand) drawWeapon([left + hand[0] * scale, top + hand[1] * scale], drawImage);
+    const grip = hand && [left + hand[0] * scale, top + hand[1] * scale];
+    if (grip && motion?.amount > .02) {
+      drawAtlasWeaponArm(ctx, drawImage, drawWeapon, grip, scale, motion);
+    } else {
+      drawImage();
+      if (grip) drawWeapon(grip, drawImage);
+    }
     ctx.restore();
     return true;
   };
+}
+
+function drawAtlasWeaponArm(ctx, drawImage, drawWeapon, [x, y], scale, motion) {
+  // The forward arm in the atlas guard frame ends at the measured weapon grip.
+  const dx = 19 * scale;
+  const dy = -6 * scale;
+  const shoulderX = x - dx;
+  const shoulderY = y - dy;
+  function outline() {
+    ctx.moveTo(shoulderX, shoulderY - 5 * scale);
+    ctx.lineTo(x + 7 * scale, y - 7 * scale);
+    ctx.lineTo(x + 9 * scale, y + 5 * scale);
+    ctx.lineTo(shoulderX - 2 * scale, shoulderY + 7 * scale);
+    ctx.closePath();
+  }
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-250 * scale, -250 * scale, 500 * scale, 500 * scale);
+  outline();
+  ctx.clip('evenodd');
+  drawImage();
+  ctx.restore();
+  const rest = Math.atan2(dy, dx);
+  const angle = rest + (motion.kind === 'aim' ? (motion.angle - rest) * motion.amount : motion.angle);
+  const reach = Math.hypot(dx, dy) * motion.reach;
+  function drawArm() {
+    ctx.save();
+    ctx.translate(shoulderX, shoulderY);
+    ctx.rotate(angle);
+    ctx.scale(motion.reach, 1);
+    ctx.rotate(-rest);
+    ctx.translate(-shoulderX, -shoulderY);
+    ctx.beginPath();
+    outline();
+    ctx.clip();
+    drawImage();
+    ctx.restore();
+  }
+  drawArm();
+  drawWeapon([shoulderX + Math.cos(angle) * reach, shoulderY + Math.sin(angle) * reach], drawArm);
 }

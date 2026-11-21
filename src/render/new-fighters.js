@@ -1,3 +1,4 @@
+import { weaponMotion } from './weapon-motion.js';
 import { strikePose } from './fighter-motion.js';
 import { drawLamKinh } from './lam-kinh.js';
 
@@ -10,6 +11,7 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   const swing = attack ? Math.max(0, strikePose(attack)) : 0;
   const heelDash = rider && fighter.heroStage === 1 && attack?.id === 'closeSkill' && !attack.pickupWeapon;
   const kicking = attack?.id === 'kick' || heelDash;
+  const motion = weaponMotion(attack);
   const rear = attack?.limbSide === 'right';
   const walk = fighter.moving ? Math.sin(fighter.walkDistance / 10) : 0;
   const idle = name === 'idle' ? Math.sin(time / 175) * 1.2 : 0;
@@ -80,9 +82,15 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   if (index === 2 || index === 5) line([[-9, -96], [10, -95]], trim, 3);
   if (index === 1 || index === 3) line([[-10, -74], [-22, -71 + walk * 8], [-30, -73]], trim, 4);
   for (const side of [0, 1]) {
-    const strength = !kicking && Boolean(side) === rear ? swing : 0;
-    const fist = [(side ? -8 : hand[0]) + strength * (side ? 60 : 37), hand[1] + (side ? 8 : 0) - strength * 5];
-    line([[side ? -10 : 10, -69 + idle], [fist[0] * .62, -57 - strength * 9], fist], side ? dark : fabric, 8);
+    const strength = !motion && !kicking && Boolean(side) === rear ? swing : 0;
+    const shoulder = [side ? -10 : 10, -69 + idle];
+    const angle = motion?.kind === 'aim' ? .64 * (1 - motion.amount) + motion.angle * motion.amount : .64 + (motion?.angle ?? 0);
+    const reach = motion ? 11 + 19 * motion.amount + 16 * (motion.reach - 1) : 0;
+    const fist = motion && !side ? [shoulder[0] + Math.cos(angle) * reach, shoulder[1] + Math.sin(angle) * reach]
+      : [(side ? -8 : hand[0]) + strength * (side ? 60 : 37), hand[1] + (side ? 8 : 0) - strength * 5];
+    const elbow = motion && !side ? [(shoulder[0] + fist[0]) / 2, (shoulder[1] + fist[1]) / 2 + 7 * (1 - motion.amount)]
+      : [fist[0] * .62, -57 - strength * 9];
+    line([shoulder, elbow, fist], side ? dark : fabric, 8);
     line([[fist[0] - 2, fist[1]], fist], skin, 6);
     if (!side || strength > .3) hand.splice(0, 2, ...fist);
   }

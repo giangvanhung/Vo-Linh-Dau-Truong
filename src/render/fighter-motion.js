@@ -81,8 +81,9 @@ export function drawStrikeTrail(ctx, fighter, ground) {
   const attack = fighter.attack;
   if (!attack || attack.projectile || attack.pickupWeapon || fighter.disabled || !fighter.attackActive) return;
   const kick = attack.id === 'kick';
-  const punch = attack.id === 'light' || attack.id === 'heavy';
-  const slash = !punch && !kick && fighter.weapon && ['closeSkill', 'ultimate'].includes(attack.id);
+  const armedStrike = attack.swing && attack.mainWeapon !== 'gauntlet';
+  const punch = !armedStrike && (attack.id === 'light' || attack.id === 'heavy');
+  const slash = !punch && !kick && fighter.weapon && (armedStrike || ['closeSkill', 'ultimate'].includes(attack.id));
   if (!punch && !kick && !slash) return;
   const box = fighter.attackBoxes[0];
   if (!box) return;
@@ -102,8 +103,11 @@ export function drawStrikeTrail(ctx, fighter, ground) {
     const sweep = rear ? -1 : 1;
     ctx.moveTo(-box.width * .68, 15 * sweep);
     ctx.bezierCurveTo(-box.width * .31, 19 * sweep, box.width * .23, 5 * sweep, -2, -11 * sweep);
+  } else if (attack.swing === 'thrust') {
+    ctx.moveTo(-box.width * .76, 3);
+    ctx.quadraticCurveTo(-box.width * .32, -4, 4, 0);
   } else if (slash) {
-    const height = 25;
+    const height = attack.swing === 'lift' || attack.swing === 'reverse' ? -25 : 25;
     ctx.moveTo(-box.width * .6, height);
     ctx.quadraticCurveTo(box.width * .18, 0, -box.width * .18, -height);
   } else if (rear) {

@@ -43,7 +43,7 @@ export function mainWeaponAttack(fighter, id) {
     recovery: launcher ? 24 : light ? 12 : 20, hitstun: light ? 25 : 23,
     knockback: light ? 72 : 145, hitstop: light ? 2 : 4, guardDamage: light ? 13 : 25,
     animation: light && !chain ? 'light_punch' : 'heavy_punch',
-    swing: launcher ? 'lift' : type === 'spear' && !light ? 'thrust' : chain ? 'reverse' : 'slash',
+    swing: launcher ? 'lift' : type === 'spear' && (!light || chain) ? 'thrust' : chain ? 'reverse' : 'slash',
     cancelInto: light ? [...(chain ? [] : ['light']), 'heavy', ...(type === 'spear' ? ['closeSkill'] : type === 'staff' ? ['rangedSkill'] : [])]
       : type === 'spear' && !launcher ? ['closeSkill'] : [],
     limbBoxes: [{ near: 0, far, top: launcher ? 106 : 82, height: launcher ? 81 : 44 }],

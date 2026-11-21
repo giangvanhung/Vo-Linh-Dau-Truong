@@ -88,6 +88,7 @@ export function createEquipmentPanel(characters, state, combat) {
   let skinMode = false;
   let compatibleOnly = true;
   let previewWeaponId;
+  const previewMode = byId('preview-mode');
   const entryFor = id => gearItem(state, id);
   const currentLoadout = () => validLoadout(state.inventory, state.loadouts[fighter.value], fighter.value, state);
   const itemLabel = id => entryFor(id).name + ' · ' + rarities[entryFor(id).tier] + ' · +' + (state.inventory[id] - 1);
@@ -235,9 +236,7 @@ export function createEquipmentPanel(characters, state, combat) {
     const eligible = canEquip(fighter.value, candidate);
     const next = skinMode || (shop && !eligible) ? loadout : { ...loadout, [candidate?.slot ?? slot]: selected };
     previewWeaponId = next.weapon;
-    preview.show(fighter.value, previewWeaponId, skinMode ? selected : state.activeSkins[fighter.value]);
-    byId('preview-label').textContent = entryFor(previewWeaponId)?.name ?? 'Tay không · Có thể thử vũ khí mẫu';
-    byId('preview').setAttribute('aria-label', [characters[fighter.value].name, skin?.name ?? entryFor(next.weapon)?.name].filter(Boolean).join(' · '));
+    showPreview();
     const current = equipmentStats(state, loadout);
     const after = equipmentStats(previewState, next);
     const level = state.inventory[selected] ?? 0;
@@ -328,16 +327,19 @@ export function createEquipmentPanel(characters, state, combat) {
     render();
   }
   fighter.addEventListener('change', () => refresh());
-  byId('preview-strike').addEventListener('click', () => {
-    const sample = !previewWeaponId && sampleWeaponFor(fighter.value);
-    if (sample) {
-      const canvas = byId('preview');
-      preview.show(fighter.value, sample.id, skinMode ? selected : state.activeSkins[fighter.value]);
-      byId('preview-label').textContent = 'Vũ khí mẫu · ' + sample.name;
-      canvas.setAttribute('aria-label', characters[fighter.value].name + ' · ' + sample.name);
-    }
-    preview.strike();
-  });
+  function showPreview() {
+    const mode = previewMode.value;
+    const sample = mode === 'equipment' && !previewWeaponId ? sampleWeaponFor(fighter.value) : null;
+    const itemId = mode === 'equipment' ? previewWeaponId ?? sample?.id : undefined;
+    const pickup = mode === 'blaster' ? mode : undefined;
+    preview.show(fighter.value, itemId, skinMode ? selected : state.activeSkins[fighter.value], pickup);
+    const label = pickup ? 'Súng linh lực · Vật phẩm trong trận'
+      : sample ? 'Vũ khí mẫu · ' + sample.name : entryFor(itemId)?.name ?? 'Tay không';
+    byId('preview-label').textContent = label;
+    byId('preview').setAttribute('aria-label', characters[fighter.value].name + ' · ' + label);
+  }
+  previewMode.addEventListener('change', showPreview);
+  byId('preview-strike').addEventListener('click', () => preview.strike());
   byId('inventory-tab').addEventListener('click', () => { shop = skinMode = false; selectView('fighter'); refresh(); });
   byId('shop-tab').addEventListener('click', () => { shop = true; skinMode = false; selectView('list'); refresh(); });
   byId('skins-tab').addEventListener('click', () => { shop = false; skinMode = true; selectView('list'); refresh(); });

@@ -1,3 +1,4 @@
+import { weaponMotion } from './weapon-motion.js';
 import { gear } from '../game/pickups.js';
 import { strikePose } from './fighter-motion.js';
 
@@ -35,8 +36,8 @@ function pickupAngle(weapon, attack, frame = attack?.elapsed ?? 0) {
   const wind = Math.max(0, -extension);
   const reach = Math.max(0, extension);
   if (weapon.kind === 'blaster') {
-    const recoil = frame < attack.startup ? 0 : Math.max(0, 1 - (frame - attack.startup) / 8);
-    return weapon.tilt * (1 - reach) - .25 * recoil;
+    const motion = weaponMotion({ ...attack, elapsed: frame });
+    return weapon.tilt * (1 - motion.amount) + (motion.angle - weapon.axis) * motion.amount;
   }
   return weapon.tilt + (weapon.follow - weapon.tilt) * reach + weapon.windup * wind * 4;
 }
@@ -102,7 +103,10 @@ export function drawHeldWeapon(ctx, images, fighter, [x, y], drawHand) {
     ctx.rotate(pickupAngle(weapon, weaponAttack));
   } else {
     const sweep = { slash: 1.05, reverse: -1.4, thrust: .55, lift: -1.15 };
-    ctx.rotate((weapon.tilt ?? -.45) + extension * (sweep[attack?.swing] ?? weapon.arc ?? .85));
+    const motion = swinging && weaponMotion(attack);
+    const tilt = motion?.kind === 'thrust' ? -weapon.tilt * motion.amount
+      : motion?.kind === 'cast' ? .84 * motion.amount : (motion?.angle ?? extension * (sweep[attack?.swing] ?? weapon.arc ?? .85));
+    ctx.rotate((weapon.tilt ?? -.45) + tilt);
   }
   ctx.scale(scale, scale);
   if (image) {

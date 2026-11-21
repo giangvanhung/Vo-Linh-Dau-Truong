@@ -16,7 +16,7 @@
   </head>
   <body>
     <main class="page-shell">
-      <section class="game-card" aria-label="Sân đấu">
+      <section class="game-card lobby-open menu-open" aria-label="Sân đấu">
         <div class="arena-topline">
           <span><span class="live-dot"></span> ĐẤU TRƯỜNG LINH GIỚI</span>
           <span class="round-label" id="round-label">HIỆP 01</span>
@@ -227,7 +227,14 @@
                 <p id="equipment-perk"></p>
                 <div class="equipment-preview">
                   <canvas id="equipment-preview" width="260" height="166" role="img" aria-label="Võ sĩ cầm vũ khí"></canvas>
-                  <button type="button" class="panel-button" id="equipment-preview-strike">Thử động tác</button>
+                  <div class="equipment-preview-actions">
+                    <select id="equipment-preview-mode" aria-label="Vũ khí thử">
+                      <option value="equipment">Vũ khí đang xem</option>
+                      <option value="unarmed">Tay không</option>
+                      <option value="blaster">Súng linh lực</option>
+                    </select>
+                    <button type="button" class="panel-button" id="equipment-preview-strike">Thử động tác</button>
+                  </div>
                 </div>
                 <p id="equipment-preview-label" aria-live="polite"></p>
                 <details id="equipment-stat-details" class="equipment-stat-details">

@@ -172,6 +172,8 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     for (const panel of panels) panel.hidden = panel.id !== name + '-panel';
     stageWrap.classList.toggle('panel-open', Boolean(name));
     gameCard.classList.toggle('setup-open', name === 'setup');
+    gameCard.classList.toggle('lobby-open', ['menu', 'setup', 'lan', 'equipment'].includes(name));
+    gameCard.classList.toggle('menu-open', name === 'menu');
     if (name) {
       const selector = name === 'setup' ? 'input[name="player-fighter"]:checked' : 'button, select';
       byId(name + '-panel').querySelector(selector)?.focus({ preventScroll: true });

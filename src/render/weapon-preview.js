@@ -1,5 +1,7 @@
 import { Fighter } from '../combat/fighter.js';
 import { modelForWeapon, skins } from '../game/equipment.js';
+import { equippedAttack, gear } from '../game/pickups.js';
+import { createCombatEffects } from './combat-effects.js';
 import { mainWeaponAttack } from '../game/weapon-attacks.js';
 import { drawHeldWeapon } from './held-weapon.js';
 import { createSpriteRenderer, loadImage } from './sprites.js';
@@ -8,6 +10,7 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
   const ctx = canvas.getContext('2d');
   const renderers = new Map();
   const images = new Map();
+  const { drawProjectile } = createCombatEffects(ctx, images);
   let current;
   let request = 0;
   let animationStart = null;
@@ -17,7 +20,8 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
 
   function startStrike(fighter, id) {
     delete fighter.cooldowns[id];
-    return fighter.startAttack(id, mainWeaponAttack(fighter, id) ?? fighter.attacks[id] ?? fighter.skillFor(id), target);
+    fighter.meter = rules.meterMax;
+    return fighter.startAttack(id, equippedAttack(fighter, id) ?? mainWeaponAttack(fighter, id) ?? fighter.attacks[id] ?? fighter.skillFor(id), target);
   }
 
   function draw(time) {
@@ -38,20 +42,31 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.translate(canvas.width / 2 - 19, canvas.height - 17);
+    ctx.translate(canvas.width * .32, canvas.height - 17);
     ctx.scale(.86, .86);
     render(fighter, 0, time);
+    const attack = fighter.attack;
+    if (attack?.projectile && attack.elapsed >= attack.startup) {
+      const age = attack.elapsed - attack.startup;
+      const { speed, yOffset } = attack.projectile;
+      drawProjectile({ x: fighter.width * .65 + age * speed / 60, y: -yOffset, age,
+        facing: 1, attack, attacker: fighter }, 0);
+    }
     ctx.restore();
     request = requestAnimationFrame(draw);
   }
 
   return {
-    show(id, itemId, skin) {
-      if (current?.id !== id || current?.itemId !== itemId) {
+    show(id, itemId, skin, pickup) {
+      if (current?.id !== id || current?.itemId !== itemId || current?.pickup !== pickup) {
         const fighter = new Fighter(characters[id], 0, 1, rules);
         fighter.characterId = id;
         fighter.weapon = modelForWeapon(id, itemId, state.inventory[itemId], state);
-        const path = fighter.weapon?.image;
+        if (pickup) {
+          fighter.pickupWeapon = pickup;
+          fighter.weaponUses = 1;
+        }
+        const path = pickup ? gear[pickup].image : fighter.weapon?.image;
         if (path && !images.has(path)) {
           images.set(path, null);
           loadImage(path).then(image => images.set(path, image)).catch(() => {});
@@ -60,7 +75,7 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
           renderers.set(id, createSpriteRenderer(ctx, { [id]: characters[id] },
             (subject, hand, redraw) => drawHeldWeapon(ctx, images, subject, hand, redraw)));
         }
-        current = { id, itemId, fighter, render: renderers.get(id) };
+        current = { id, itemId, pickup, fighter, render: renderers.get(id) };
         nextStrike = 0;
         chain = 0;
       }
@@ -72,10 +87,12 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
       const { fighter } = current;
       const type = fighter.weapon?.weaponType;
       const strikes = type === 'staff' ? ['light', 'heavy', 'rangedSkill']
-        : type === 'spear' ? ['light', 'heavy', 'closeSkill'] : ['light', 'heavy', 'kick'];
-      const id = fighter.characterId === 'hung' ? 'light' : strikes[nextStrike++ % strikes.length];
+        : type === 'spear' ? ['light', 'heavy', 'closeSkill']
+          : type ? ['light', 'heavy'] : ['light', 'heavy', 'kick'];
+      const hungCombo = fighter.characterId === 'hung' && !fighter.weapon && !fighter.weaponUses;
+      const id = hungCombo || fighter.weaponUses ? 'light' : strikes[nextStrike++ % strikes.length];
       fighter.attack = null;
-      chain = fighter.characterId === 'hung' ? 2 : 0;
+      chain = hungCombo ? 2 : 0;
       startStrike(fighter, id);
       animationStart = null;
     },

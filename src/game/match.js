@@ -665,7 +665,7 @@ export function startGame(config) {
       if (Math.hypot(dx, dy) > 24) return [0, 0]; // Snap across teleports.
       return [dx * remaining, dy * remaining];
     });
-    render({ stage, stageFrame, width: world.width, fighters, offsets, projectiles, particles, floaters, trails,
+    if (!['menu', 'setup', 'lan'].includes(phase)) render({ stage, stageFrame, width: world.width, fighters, offsets, projectiles, particles, floaters, trails,
       shake, screenEffect, animationTime, debug, ball, drop: pickups.drop, looseWeapons: pickups.loose,
       seasonActive: phase === 'fight' || phase === 'countdown' || phase === 'paused' });
     if (toastClock <= 0) ui.toast.classList.remove('show');
