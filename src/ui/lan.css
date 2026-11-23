@@ -12,6 +12,17 @@
   border-radius: 16px;
   background: linear-gradient(145deg, #302431, #181923 65%);
 }
+body:not(.game-expanded) .game-card .stage-wrap:has(#lan-panel:not([hidden])) { height: auto; min-height: 0; }
+.stage-wrap #lan-panel:not([hidden]) {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  margin-inline: auto;
+  max-height: none;
+  padding: clamp(8px, 2vw, 18px);
+}
+.game-expanded .stage-wrap #lan-panel:not([hidden]) { max-height: 100%; }
 #lan-panel h2 { font-size: clamp(24px, 3.2vw, 42px); color: #fff1dc; }
 #lan-pairing p { margin: 0; font-size: inherit; }
 #lan-pairing #lan-status {
@@ -66,8 +77,8 @@
 .lan-scan { justify-items: center; text-align: center; }
 #lan-qr {
   display: block;
-  width: clamp(132px, 34vh, 248px);
-  width: clamp(132px, 34dvh, 248px);
+  width: clamp(120px, 27vh, 230px);
+  width: clamp(120px, 27dvh, 230px);
   max-width: 100%;
   height: auto;
   padding: 6px;
@@ -79,9 +90,8 @@
 #lan-panel .panel-actions { margin-top: 14px; justify-content: flex-end; }
 #lan-panel .panel-actions button { min-height: 44px; font-size: 14px; }
 #lan-panel .lan-remote-help { margin: 10px 0 0; color: #dfcbbd; font-size: 13px; text-align: right; }
-@media (min-width: 560px) {
-  #lan-panel #lan-link-box { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
-}
+#lan-link-box > * { width: 100%; }
+.lan-network #lan-address-pages:empty { display: none; }
 @media (min-width: 1000px) {
   .tv-layout .stage-wrap #lan-panel { max-width: 1040px; }
   .tv-layout .lan-network-option { min-height: 66px; }
@@ -92,4 +102,15 @@
 .lan-details { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
 .lan-details summary { cursor: pointer; }
 .lan-details #lan-pairing { max-height: 55vh; overflow: auto; padding: 6px; }
+.lan-details #lan-qr { width: clamp(100px, 22dvh, 180px); }
+@media (max-height: 480px) {
+  #lan-pairing #lan-status { margin-bottom: 5px; padding-block: 4px; }
+  #lan-link-box { gap: 5px; }
+  :is(.lan-network, .lan-scan) { padding: 5px 8px; gap: 5px; }
+  .lan-scan { grid-template-columns: auto 1fr; align-items: center; text-align: left; }
+  .lan-scan #lan-qr { grid-column: 1; grid-row: 1 / 3; }
+  .lan-scan :is(h3, p) { grid-column: 2; justify-self: start; }
+  #lan-panel .panel-actions { margin-top: 5px; }
+  #lan-panel .lan-remote-help { margin-top: 4px; }
+}
 .stage-wrap canvas:focus { outline: none; }

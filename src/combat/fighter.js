@@ -15,6 +15,7 @@ function isHungStandingNormal(id, definition) {
 export class Fighter {
   constructor(config, x, facing, rules) {
     Object.assign(this, config);
+    this.nativeWeaponArt = config.weapon;
     this.weapon = null;
     this.maxHp = config.hp;
     this.baseHp = config.hp;
@@ -366,7 +367,7 @@ export class Fighter {
     if (previous && this.onGround && target.onGround && !definition.projectile
       && !definition.travel && !definition.pickupWeapon) this.attack.followThrough = true;
     if (!definition.projectile && !definition.pickupWeapon) {
-      if (id === 'kick' || (definition.hungKick && id === 'heavy')) {
+      if (id === 'kick' || ((definition.hungKick || definition.kickStyle) && id === 'heavy')) {
         this.attack.limbSide = this.nextKickSide;
         this.nextKickSide = this.nextKickSide === 'left' ? 'right' : 'left';
       } else if (id === 'light' || id === 'heavy') {

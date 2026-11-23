@@ -3,6 +3,8 @@ import { buyMarketItem, buySkin, canEquip, canSellItem, dailyRefreshLimit, equip
   skins, slots, statNames, stockSize, upgradeCost, upgradeEquipment, validLoadout, weaponPerks, weaponPrice,
   weaponTypeFor, weaponTypes } from '../game/equipment.js';
 import { createWeaponPreview } from '../render/weapon-preview.js';
+import { gear } from '../game/pickups.js';
+import { addPagination } from './pagination.js';
 
 const byId = id => document.getElementById('equipment-' + id);
 const pageSize = 4;
@@ -53,10 +55,21 @@ export function createEquipmentPanel(characters, state, combat) {
   const previousPage = byId('page-prev');
   const nextPage = byId('page-next');
   const viewButtons = [...panel.querySelectorAll('[data-equipment-view]')];
+  const statsDetails = byId('stat-details');
+  const statsTable = byId('stats');
+  const statsPerPage = 4;
+  let statsPage = 0;
+  const statsLabels = Array.from({ length: Math.ceil(Object.keys(statNames).length / statsPerPage) }, () => '');
+  addPagination(byId('stat-pages'), statsLabels, index => {
+    statsPage = index;
+    [...statsTable.rows].forEach((row, position) => { row.hidden = Math.floor(position / statsPerPage) !== index; });
+  }, statsTable.id);
   let page = 0;
 
   function selectView(view) {
     panel.dataset.view = view;
+    if (view === 'stats') statsDetails.open = true;
+    if (view === 'filters') byId('filters').open = true;
     for (const button of viewButtons) {
       button.setAttribute('aria-pressed', String(button.dataset.equipmentView === view));
     }
@@ -248,6 +261,8 @@ export function createEquipmentPanel(characters, state, combat) {
     byId('shop-tab').setAttribute('aria-pressed', String(shop));
     byId('skins-tab').setAttribute('aria-pressed', String(skinMode));
     byId('filters').hidden = !shop;
+    viewButtons.find(button => button.dataset.equipmentView === 'filters').hidden = !shop;
+    viewButtons.find(button => button.dataset.equipmentView === 'stats').hidden = skinMode;
     byId('filter').setAttribute('aria-pressed', String(compatibleOnly));
     byId('refresh').textContent = 'Đổi hàng · ' + refreshPrice + ' vàng';
     byId('refresh').disabled = state.gold < refreshPrice || state.market.refreshes >= dailyRefreshLimit;
@@ -265,7 +280,7 @@ export function createEquipmentPanel(characters, state, combat) {
       weapon ? 'Chí mạng gốc ' + weapon.critChance + '%' : '',
       perk ? perk.name + ' · ' + perk.description : '',
     ].filter(Boolean).join(' · ');
-    byId('stat-details').hidden = skinMode;
+    statsDetails.hidden = skinMode;
     const setLabel = counts => Object.entries(sets).map(([id, set]) => {
       const count = counts[id];
       return set.name + ' ' + count + '/4' + (count >= 4 ? ' (mốc 2 + 4)' : count >= 2 ? ' (mốc 2)' : '');
@@ -273,10 +288,10 @@ export function createEquipmentPanel(characters, state, combat) {
     const setBefore = setLabel(current.counts);
     const setAfter = setLabel(after.counts);
     byId('sets').textContent = setBefore === setAfter ? setBefore : setBefore + ' → ' + setAfter;
-    const table = byId('stats');
-    table.textContent = '';
+    statsTable.replaceChildren();
     for (const [stat, label] of Object.entries(statNames)) {
       const row = document.createElement('tr');
+      row.hidden = Math.floor(statsTable.rows.length / statsPerPage) !== statsPage;
       const heading = document.createElement('th');
       heading.scope = 'row';
       heading.textContent = label;
@@ -292,7 +307,7 @@ export function createEquipmentPanel(characters, state, combat) {
         }
         row.append(cell);
       }
-      table.append(row);
+      statsTable.append(row);
     }
     equip.disabled = skinMode ? (state.activeSkins[fighter.value] ?? 'original') === selected : (loadout[slot] ?? '') === selected;
     equip.hidden = shop || (skinMode && !skinOwned(selected));
@@ -342,15 +357,18 @@ export function createEquipmentPanel(characters, state, combat) {
     const mode = previewMode.value;
     const sample = mode === 'equipment' && !previewWeaponId ? sampleWeaponFor(fighter.value) : null;
     const itemId = mode === 'equipment' ? previewWeaponId ?? sample?.id : undefined;
-    const pickup = mode === 'blaster' ? mode : undefined;
+    const pickup = Object.hasOwn(gear, mode) ? mode : undefined;
     preview.show(fighter.value, itemId, skinMode ? selected : state.activeSkins[fighter.value], pickup);
-    const label = pickup ? 'Súng linh lực · Vật phẩm trong trận'
+    const label = pickup ? gear[pickup].label + ' · Vật phẩm trong trận'
       : sample ? 'Vũ khí mẫu · ' + sample.name : entryFor(itemId)?.name ?? 'Tay không';
     byId('preview-label').textContent = label;
     byId('preview').setAttribute('aria-label', characters[fighter.value].name + ' · ' + label);
   }
   previewMode.addEventListener('change', showPreview);
-  byId('preview-strike').addEventListener('click', () => preview.strike());
+  byId('preview-strike').addEventListener('click', () => {
+    const move = preview.strike();
+    if (move) byId('preview-label').textContent = move;
+  });
   byId('inventory-tab').addEventListener('click', () => { shop = skinMode = false; selectView('fighter'); refresh(); });
   byId('shop-tab').addEventListener('click', () => { shop = true; skinMode = false; selectView('list'); refresh(); });
   byId('skins-tab').addEventListener('click', () => { shop = false; skinMode = true; selectView('list'); refresh(); });

@@ -1,5 +1,5 @@
 import { weaponMotion } from './weapon-motion.js';
-import { overheadChopPose, strikePose } from './fighter-motion.js';
+import { groundedStrikePose, overheadChopPose, strikePose } from './fighter-motion.js';
 
 // Each outline uses the original artwork scaled to 96 px wide.
 // The first point is the shoulder or hip and serves as the rotation pivot.
@@ -290,14 +290,14 @@ export function drawStillAttack(ctx, image, width, height, fighter, drawWeapon, 
   const attack = fighter.attack;
   const motion = weaponMotion(attack);
   if (!attack || (!motion && (attack.pickupWeapon || !['light', 'heavy', 'kick'].includes(attack.id)))) return false;
-  const kick = attack.id === 'kick';
+  const kick = attack.id === 'kick' || attack.kickStyle;
   const heavy = attack.id === 'heavy';
   const rear = Boolean(motion) || attack.limbSide === 'right';
   const points = (cell ? guardLimbs : rear ? rearLimbs : limbs)[fighter.characterId]?.[kick ? 'leg' : 'arm'];
   if (!points) return false;
   const outline = rear ? points.slice(0, -1) : points;
 
-  const extension = motion?.amount ?? strikePose(attack);
+  const extension = motion?.amount ?? groundedStrikePose(fighter);
   if (Math.abs(extension) < .02) return false;
 
   const imageHeight = cell ? 96 : height * 96 / width;
@@ -320,7 +320,9 @@ export function drawStillAttack(ctx, image, width, height, fighter, drawWeapon, 
   ctx.translate(pivotX, pivotY);
   const [tipX, tipY] = points[points.length - 1];
   const restAngle = Math.atan2(tipY - pivotY, tipX - pivotX);
-  const angle = rear ? (kick ? -.16 : heavy ? .12 : -.08) - restAngle : kick ? -.94 : heavy ? .42 : .23;
+  const kickAngle = attack.kickStyle === 'rise' ? -.94 : attack.lowStance ? .08 : -.16;
+  const angle = rear ? (kick ? kickAngle : heavy ? .12 : -.08) - restAngle
+    : kick ? (attack.kickStyle === 'rise' ? -1.55 : attack.lowStance ? -.45 : -.94) : heavy ? .42 : .23;
   const reach = kick ? .13 : heavy ? .48 : .32;
   const turn = motion ? (motion.kind === 'aim' ? (motion.angle - restAngle) * motion.amount : motion.angle) : angle * extension;
   const stretch = motion?.reach ?? 1 + reach * extension;

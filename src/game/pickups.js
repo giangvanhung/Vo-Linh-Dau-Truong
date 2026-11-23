@@ -23,6 +23,12 @@ export const gear = {
 const crateDrops = Object.keys(gear);
 const boosts = new Set(['heal', 'shield', 'power']);
 const pickupRadius = 36;
+const heavySwings = {
+  sword: { label: 'Kiếm bổ', swing: 'chop', damage: 19, startup: 19, recovery: 29, far: 100 },
+  broom: { label: 'Chổi đẩy thẳng', swing: 'thrust', damage: 16, startup: 18, recovery: 27, far: 116, low: false },
+  rattan: { label: 'Roi quất ngược', swing: 'reverse', damage: 17, startup: 17, recovery: 27, far: 130 },
+  dogStaff: { label: 'Gậy bổ', swing: 'chop', damage: 21, startup: 19, recovery: 30, far: 96, launch: 0 },
+};
 
 function take(fighter, kind, uses = gear[kind].uses ?? 3, frames = 900) {
   if (kind === 'heal') fighter.hp = Math.min(fighter.maxHp, fighter.hp + 21);
@@ -141,7 +147,8 @@ export function equippedAttack(fighter, action) {
       recovery: 17, active: 1, animation: 'skill_2', level: 'mid',
       projectile: { ...projectile, color, yOffset: 64, lifetimeFrames: 56 } };
   }
-  const { low, near = 5, far = 108, ...stats } = swing ?? {};
+  const heavy = action === 'heavy' ? heavySwings[kind] : undefined;
+  const { low, near = 5, far = 108, ...stats } = { ...swing, ...heavy };
   return { ...common, ...stats, animation: 'heavy_punch', active: 6, level: low ? 'low' : 'mid',
     limbBoxes: [{ near, far, top: low ? 40 : 90, height: low ? 33 : 53 }] };
 }

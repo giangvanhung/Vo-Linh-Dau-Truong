@@ -1,10 +1,12 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
 import { mainWeaponAttack } from '../game/weapon-attacks.js';
+import { connectSectionButtons } from './pagination.js';
 
 export function createTrainingPanel(training, controls) {
   const byId = id => document.getElementById(id);
   const panel = byId('training-panel');
   const tools = byId('training-tools');
+  connectSectionButtons(panel.querySelector('.section-navigation'));
   const record = byId('record-input');
   const play = byId('play-input');
   const followHint = byId('hung-follow-hint');

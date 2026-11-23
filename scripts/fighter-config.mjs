@@ -6,6 +6,29 @@ async function readConfig(path) {
   return JSON.parse(await readFile(file, 'utf8'));
 }
 
+function standardNormals(character, hung) {
+  const { hungKick: horizontal, forwardStepFrames, ...sideKick } = hung.attacks.heavy;
+  const { hungKick: rising, ...launcher } = hung.attacks.kick;
+  const { hungKick: low, ...lowKick } = hung.crouchAttacks.heavy;
+  const { hungKick: sweep, ...lowSweep } = hung.crouchAttacks.kick;
+  const { light } = character.attacks;
+  return {
+    ...character,
+    aerialNormals: character.attacks,
+    attacks: {
+      ...character.attacks,
+      light: { ...(light.label === hung.attacks.light.label ? light : hung.attacks.light), unarmed: true },
+      heavy: { ...sideKick, kickStyle: 'side' },
+      kick: { ...launcher, animation: 'kick', kickStyle: 'rise' },
+    },
+    crouchAttacks: {
+      light: { ...hung.crouchAttacks.light, ...character.crouchAttacks?.light },
+      heavy: { ...lowKick, animation: 'sweep', kickStyle: 'low' },
+      kick: { ...lowSweep, ...character.crouchAttacks?.kick, kickStyle: 'sweep' },
+    },
+  };
+}
+
 export async function loadFighterConfig() {
   const [roster, { stage, stages }, combat, campaign] = await Promise.all([
     readConfig('roster.json'),
@@ -28,5 +51,9 @@ export async function loadFighterConfig() {
     }
     ids.add(id);
   }
-  return { stage, characters: Object.fromEntries(entries), combat, stages, campaign };
+  const characters = Object.fromEntries(entries);
+  for (const id of roster) {
+    if (id !== 'hung') characters[id] = standardNormals(characters[id], characters.hung);
+  }
+  return { stage, characters, combat, stages, campaign };
 }

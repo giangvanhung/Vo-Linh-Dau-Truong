@@ -698,6 +698,22 @@
       ],
       "strikeFrame": 2
     },
+    "rising_kick": {
+      "frames": ["crouch_00", "kick_01", "kick_02", "kick_03", "idle_00"],
+      "strikeFrame": 2
+    },
+    "low_kick": {
+      "frames": ["crouch_00", "kick_02", "crouch_01"],
+      "strikeFrame": 1
+    },
+    "low_sweep": {
+      "frames": ["crouch_00", "crouch_01", "kick_02", "kick_01", "crouch_01"],
+      "strikeFrame": 2
+    },
+    "crouchPunch": {
+      "frames": ["crouch_00", "light_punch_01", "crouch_01"],
+      "strikeFrame": 1
+    },
     "jump": {
       "frames": [
         "jump_00",

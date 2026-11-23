@@ -1,5 +1,5 @@
 import { weaponMotion } from './weapon-motion.js';
-import { strikePose } from './fighter-motion.js';
+import { applyKickBalance, strikePose } from './fighter-motion.js';
 import { drawLamKinh } from './lam-kinh.js';
 
 export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
@@ -10,7 +10,7 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   const attack = fighter.attack;
   const swing = attack ? Math.max(0, strikePose(attack)) : 0;
   const heelDash = rider && fighter.heroStage === 1 && attack?.id === 'closeSkill' && !attack.pickupWeapon;
-  const kicking = attack?.id === 'kick' || heelDash;
+  const kicking = attack?.id === 'kick' || attack?.kickStyle || heelDash;
   const motion = weaponMotion(attack);
   const rear = attack?.limbSide === 'right';
   const walk = fighter.moving ? Math.sin(fighter.walkDistance / 10) : 0;
@@ -23,6 +23,8 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   ctx.save();
   ctx.translate(fighter.x, ground + fighter.y);
   ctx.scale(attack?.facing ?? fighter.facing, 1);
+  if (attack?.lowStance) ctx.scale(1, .76);
+  applyKickBalance(ctx, attack);
   if (name === 'ko' || name === 'knockdown') ctx.rotate(-1.4);
   if (name === 'crouch' || name === 'crouchWalk' || (name === 'block' && fighter.crouching)) ctx.scale(1, .76);
   if (name === 'hit') ctx.transform(1, 0, .12, 1, 0, 0);
@@ -45,7 +47,8 @@ export function drawNewFighter(ctx, fighter, name, ground, time, drawWeapon) {
   };
   for (const side of [0, 1]) {
     const strike = kicking && Boolean(side) === rear ? swing : 0;
-    const landing = [9 * (side ? 1 : -1) + 10 * walk * (side ? 1 : -1) + strike * (side ? 57 : 49), -4 - (heelDash ? 55 : 41) * strike];
+    const lift = attack?.kickStyle === 'rise' ? 76 : attack?.lowStance ? 19 : heelDash ? 55 : 41;
+    const landing = [9 * (side ? 1 : -1) + 10 * walk * (side ? 1 : -1) + strike * (side ? 57 : 49), -4 - lift * strike];
     line([[side ? 6 : -6, -39], [landing[0] * .52, -24 - strike * 14], landing], side ? fabric : dark, 10);
     line([landing, [landing[0] + 6, landing[1]]], dark, 6);
   }

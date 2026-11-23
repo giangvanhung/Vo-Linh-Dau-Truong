@@ -16,6 +16,8 @@ const pickupStrokes = { dogStaff: 'staffSweep', rattan: 'rattanSnap', broom: 'br
 
 const ease = x => x * x * (3 - 2 * x);
 
+export const loweredBlaster = { amount: 0, angle: -.10, reach: .85, kind: 'aim' };
+
 export function weaponMotion(attack) {
   if (!attack) return null;
   const type = attack.mainWeapon;
@@ -24,8 +26,8 @@ export function weaponMotion(attack) {
   if (pickup === 'blaster') {
     const aim = age < 0 ? ease(Math.max(0, attack.elapsed / attack.startup))
       : 1 - ease(Math.max(0, Math.min(1, (age - 8) / Math.max(1, attack.recovery - 8))));
-    const recoil = age < 0 ? 0 : Math.max(0, 1 - age / 8) ** 2;
-    return { amount: aim, angle: -.10 - .26 * recoil, reach: 1 + .58 * aim - .32 * recoil, kind: 'aim' };
+    const recoil = Math.max(0, Math.min(age / 2, (9 - age) / 7, 1));
+    return { amount: aim, angle: -.10 - .26 * recoil, reach: .85 + .68 * aim - .27 * recoil, kind: 'aim' };
   }
   const style = type === 'staff' && attack.projectile ? 'cast'
     : type === 'staff' && attack.swing === 'slash' ? 'staffSweep'

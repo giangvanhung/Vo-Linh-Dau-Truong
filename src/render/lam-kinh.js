@@ -1,14 +1,15 @@
-import { strikePose } from './fighter-motion.js';
+import { applyKickBalance, strikePose } from './fighter-motion.js';
 
 export function drawLamKinh(ctx, fighter, pose, ground, time, drawWeapon) {
   const attack = fighter.attack;
   const motion = attack ? Math.max(0, strikePose(attack)) : 0;
   const stomping = attack?.id === 'closeSkill' && attack.radial;
-  const kicking = attack?.id === 'kick';
+  const kicking = attack?.id === 'kick' || attack?.kickStyle;
   const stride = fighter.moving ? Math.sin(fighter.walkDistance / 12) : 0;
   const preparing = stomping && attack.elapsed < attack.startup;
   const crouch = pose === 'crouch' || pose === 'crouchWalk' || (pose === 'block' && fighter.crouching);
-  const lift = preparing ? Math.min(17, attack.elapsed) : 20 * motion * Number(kicking);
+  const kickHeight = attack?.kickStyle === 'rise' ? 43 : attack?.lowStance ? 9 : 20;
+  const lift = preparing ? Math.min(17, attack.elapsed) : kickHeight * motion * Number(kicking);
   const steel = '#305676';
   const shade = '#11283e';
   const light = '#9befff';
@@ -26,7 +27,8 @@ export function drawLamKinh(ctx, fighter, pose, ground, time, drawWeapon) {
 
   ctx.save();
   ctx.translate(fighter.x, ground + fighter.y);
-  ctx.scale(attack?.facing ?? fighter.facing, crouch ? .66 : 1);
+  ctx.scale(attack?.facing ?? fighter.facing, crouch || attack?.lowStance ? .66 : 1);
+  applyKickBalance(ctx, attack);
   if (pose === 'ko' || pose === 'knockdown') ctx.rotate(-1.4);
 
   if (stomping) {

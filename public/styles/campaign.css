@@ -117,9 +117,10 @@ body:not(.game-expanded) .game-card .stage-wrap:has(:is(#campaign-panel, #equipm
 }
 #campaign-title, #equipment-panel .equipment-header h2 { margin: 0; font-size: clamp(24px, 4vw, 38px); }
 .campaign-heading #campaign-progress, #equipment-wallet { color: var(--pve-muted); }
-.campaign-body { grid-template-columns: minmax(220px, .8fr) minmax(0, 1.4fr); gap: clamp(12px, 2.4vw, 26px); }
+.campaign-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
+#campaign-panel [hidden] { display: none; }
 #campaign-stages, .campaign-setup { overflow: visible; scrollbar-gutter: auto; }
-#campaign-stages { gap: 7px; padding: 0; }
+#campaign-stages { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 0; }
 .campaign-stage {
   grid-template-columns: 29px minmax(0, 1fr) auto;
   align-items: center;
@@ -242,8 +243,23 @@ body:not(.game-expanded) .game-card .stage-wrap:has(:is(#campaign-panel, #equipm
 #campaign-payout-gear { grid-column: 1 / -1; border-top: 1px solid var(--pve-line); padding-top: 7px; }
 #campaign-result-actions .primary-button { order: 1; }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-height: 480px) {
   #equipment-panel .equipment-layout { grid-template-columns: minmax(0, 1fr); }
+  #equipment-panel .equipment-loadout { grid-template-columns: minmax(38px, .2fr) minmax(0, 1fr); }
+  #equipment-panel .equipment-slots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #equipment-panel .equipment-slots .equipment-tile { min-height: 54px; padding: 4px 2px; gap: 2px; }
+  #equipment-panel .equipment-slots .equipment-icon { width: 23px; height: 20px; }
+  #equipment-panel .equipment-card { padding: 7px; }
+  #equipment-panel .equipment-fighter-label { display: flex; align-items: center; gap: 6px; }
+  #equipment-panel .equipment-fighter-label select { flex: 1; min-width: 0; }
+  #equipment-panel:is([data-view="fighter"], [data-view="filters"]) .equipment-action-bar { display: none; }
+  #equipment-panel:is([data-view="details"], [data-view="stats"]) #equipment-action-item,
+  #equipment-notice:empty { display: none; }
+  #equipment-panel .equipment-preview canvas { max-height: 90px; }
+  #equipment-panel .equipment-preview-actions { flex-wrap: nowrap; }
+  #equipment-panel .equipment-preview-actions select { flex: 1 1 0; width: 0; }
+  #equipment-panel .equipment-preview-actions button { padding-inline: 6px; }
+  #equipment-panel .equipment-stats :is(th, td) { padding-block: 3px; }
 }
 @media (max-width: 640px) {
   .campaign-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
@@ -265,4 +281,36 @@ body:not(.game-expanded) .game-card .stage-wrap:has(:is(#campaign-panel, #equipm
       url('/assets/menu/linh-gioi.jpg');
   }
   #menu-panel #campaign-button { min-height: 57px; }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .page-shell:has(:is(#campaign-panel, #equipment-panel, #lan-panel):not([hidden])) { width: 100%; padding: 0; }
+  .page-shell:has(:is(#campaign-panel, #equipment-panel, #lan-panel):not([hidden])) > :is(.topbar, .page-footer) { display: none; }
+  .stage-wrap :is(#campaign-panel, #equipment-panel):not([hidden]) { padding: 6px 12px; gap: 5px; }
+  :is(.campaign-heading, #equipment-panel .equipment-header) { padding-block: 0 4px; }
+  #campaign-stages { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .campaign-roster .roster-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .campaign-setup { gap: 5px; }
+  #campaign-roster-page { grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); align-items: start; }
+  #campaign-stage-details { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  #equipment-panel .equipment-layout { gap: 5px; }
+  #equipment-panel .equipment-preview { grid-template-columns: 140px minmax(0, 1fr); margin: 4px 0; }
+  #equipment-panel .equipment-preview canvas { max-height: 74px; }
+}
+@media (max-height: 480px) and (min-width: 580px) {
+  .stage-wrap #equipment-panel:not([hidden]) { grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); }
+  #equipment-panel .equipment-header { gap: 4px; border-bottom: 0; }
+  #equipment-panel .equipment-tabs { align-self: center; }
+  #equipment-panel .equipment-tabs button { flex: 1 0 auto; }
+  #equipment-panel .equipment-utility-label { display: none; }
+  #equipment-panel .equipment-utility-icon { display: inline; }
+  #equipment-panel :is(.equipment-views, .equipment-layout, .equipment-action-bar) { grid-column: 1 / -1; }
+  #equipment-panel .equipment-loadout { grid-template-columns: 44px minmax(0, 1fr); }
+  #equipment-panel .equipment-slots { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  #equipment-panel .equipment-stat-pages {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(175px, .55fr);
+    align-items: start;
+    gap: 8px;
+  }
+  #equipment-panel .equipment-stat-pages .page-navigation { margin-top: 0; }
 }

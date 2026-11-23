@@ -32,6 +32,7 @@ export function startGame(config) {
   const byId = id => document.getElementById(id);
   const ui = { toast: byId('toast'), 'status-text': byId('status-text') };
   const keyboardHint = byId('keyboard-hint');
+  const campaignControlsHint = byId('campaign-controls-hint');
   const windowsKeyboard = /Windows/i.test(navigator.userAgent);
   byId('pause-keyboard-hint').hidden = !windowsKeyboard;
   const hud = createHud();
@@ -141,7 +142,7 @@ export function startGame(config) {
   }
 
   function beginRound(fitViewport = false) {
-    panels.show('');
+    panels.show('', Boolean(campaignRun));
     if (fitViewport) {
       // Keep a fixed physics size during the match, including when the TV enters fullscreen.
       const viewportWidth = canvas.clientWidth * world.height / Math.max(1, canvas.clientHeight);
@@ -198,7 +199,7 @@ export function startGame(config) {
   function togglePause() {
     if (phase === 'paused') {
       phase = pausedPhase;
-      panels.show('');
+      panels.show('', Boolean(campaignRun));
       canvas.focus({ preventScroll: true });
       panels.restoreBanner();
       panels.setPauseAvailable(true);
@@ -209,7 +210,7 @@ export function startGame(config) {
       clearInputs();
       panels.hideBanner();
       panels.setPauseAvailable(false);
-      panels.show('pause');
+      panels.show('pause', Boolean(campaignRun));
     }
   }
 
@@ -234,8 +235,7 @@ export function startGame(config) {
   const panels = createPanels({ characters: config.characters, stages: config.stages, combat: config.combat,
     preloadFighter: render.preloadFighter,
     settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, saveSettings,
-    setMusicFile: (id, file) => audio.setMusicFile(id, file),
-    setMusicPreview: active => audio.setMusicPreview(active) });
+    setMusicFile: (id, file) => audio.setMusicFile(id, file) });
 
   const showCampaign = createCampaignPanel(config, equipment, {
     show: panels.show,
@@ -390,7 +390,7 @@ export function startGame(config) {
     const crouchAttack = crouch && fighter.onGround ? fighter.crouchAttacks?.[id] : undefined;
     const airAttack = hungAirAttack(fighter, target, id);
     if (fighter.hungAirChain && (id === 'light' || id === 'heavy') && !airAttack) return false;
-    const normal = fighter.attacks[id];
+    const normal = (!fighter.onGround && fighter.aerialNormals?.[id]) || fighter.attacks[id];
     const equipment = crouchAttack || airAttack ? undefined : equippedAttack(fighter, id);
     const main = crouchAttack || airAttack || normal?.hungKick ? undefined : mainWeaponAttack(fighter, id);
     const started = fighter.startAttack(id, airAttack ?? crouchAttack ?? equipment ?? main ?? skill ?? normal, target);
@@ -463,7 +463,7 @@ export function startGame(config) {
       const count = Math.ceil(phaseTime - 1e-8);
       if (count <= 0) {
         phase = 'fight';
-        if (round === 1 && windowsKeyboard) showCompositionHint();
+        if (round === 1 && windowsKeyboard && campaignRun?.index !== 0) showCompositionHint();
         phaseTime = .6;
         panels.showBanner('FIGHT');
         audio.cue('fight');
@@ -496,7 +496,7 @@ export function startGame(config) {
         else {
           phase = 'over';
           panels.showBanner('');
-          panels.show('result');
+          panels.show('result', Boolean(campaignRun));
         }
       }
       return;
@@ -801,11 +801,13 @@ export function startGame(config) {
         ? fighter.walkDistance + (previous.stride - fighter.walkDistance) * remaining : fighter.walkDistance;
       return { stride, jumpFrames: Math.max(0, (fighter.runJump?.frames ?? 0) - remaining) };
     });
+    const renderTime = phase === 'fight' && !hitstop && !debug ? animationTime + accumulator * 1000 : animationTime;
     if (!['menu', 'setup', 'lan', 'campaign'].includes(phase)) render({ stage, stageFrame, width: world.width, fighters, offsets, movementPoses, projectiles, particles, floaters, trails,
-      shake, screenEffect, animationTime, debug, ball, drop: pickups.drop, looseWeapons: pickups.loose,
+      shake, screenEffect, animationTime: renderTime, debug, ball, drop: pickups.drop, looseWeapons: pickups.loose,
       seasonActive: phase === 'fight' || phase === 'countdown' || phase === 'paused' });
     if (toastClock <= 0) ui.toast.classList.remove('show');
     keyboardHint.hidden = phase !== 'fight' || now >= keyboardHintUntil;
+    campaignControlsHint.hidden = phase !== 'countdown' || campaignRun?.index !== 0;
     requestAnimationFrame(frame);
   }
   setStage('rooftop', true);

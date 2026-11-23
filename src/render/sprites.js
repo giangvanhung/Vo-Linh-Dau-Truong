@@ -1,4 +1,4 @@
-import { weaponMotion } from './weapon-motion.js';
+import { loweredBlaster, weaponMotion } from './weapon-motion.js';
 import { drawHungAlternateStrike, drawHungOverheadChop, drawHungStride, drawStillAttack, hasPaintedWeapon } from './still-attacks.js';
 import { applyFighterMotion, drawLowStride } from './fighter-motion.js';
 import { drawPoseSheet } from './pose-sheet.js';
@@ -67,13 +67,13 @@ function selectFrame({ frames, strikeFrame }, fighter, name, elapsed) {
   }
   if (attack && (attack.animation ?? attackClips[attack.id]?.[0]) === name) {
     const strike = Math.min(attack.strikeFrame ?? strikeFrame ?? attackClips[attack.id]?.[1] ?? 0, frames.length - 1);
-    if (fighter.attackActive) return frames[strike];
     if (attack.elapsed < attack.startup) {
       return frames[Math.floor(attack.elapsed * strike / attack.startup)];
     }
     const recovery = attack.elapsed - attack.startup - attack.active;
+    if (recovery < 0) return frames[strike];
     const remaining = frames.length - strike - 1;
-    return frames[strike + Math.min(remaining, 1 + Math.floor(recovery * remaining / attack.recovery))];
+    return frames[strike + Math.min(remaining, 1 + Math.floor(recovery * remaining / Math.max(1, attack.recovery)))];
   }
   if (fighter.dash && (name === 'dash' || name === 'roll')) {
     return frames[Math.min(frames.length - 1, Math.floor(fighter.dash.elapsed * frames.length / fighter.dash.frames))];
@@ -230,14 +230,15 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
       };
       let articulated = false;
       const weaponStrike = weaponMotion(attack) && !['hit', 'ko', 'knockdown'].includes(name);
+      const standardKick = attack?.kickStyle && !['hit', 'ko', 'knockdown'].includes(name);
       if (weaponStrike && !paintedWeapon && image) {
         articulated = drawStillAttack(ctx, image, width, height, fighter, drawAtHand);
-      } else if ((useRearLimb || weaponStrike) && paintedWeapon && poses) {
+      } else if ((useRearLimb || weaponStrike || standardKick) && paintedWeapon && poses) {
         const size = height * 256 / 210;
         const [handX, handY] = poseGrip(fighter.characterId, 0, false);
         articulated = drawStillAttack(ctx, poses, size, size * 244 / 256, fighter,
           grip => drawWeapon(grip ?? [size * (handX / 256 - .5), size * (handY - 244) / 256]), poses.width / 4);
-      } else if (useRearLimb && image) {
+      } else if ((useRearLimb || standardKick) && image) {
         articulated = drawStillAttack(ctx, image, width, height, fighter, drawAtHand);
       }
       if (!articulated && poses) drawPoseSheet(ctx, poses, evolved ? null : sheet.extras, fighter, name, height, drawWeapon);
@@ -281,7 +282,8 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
     const hungEffects = isHung ? getHungEffects() : null;
     const bodyImage = hungEffects && sheet?.withoutScarf ? sheet.withoutScarf : sheet?.image;
     const actionPoses = hungEffects ? maskedHungPoses : hungPoses;
-    const fallback = name === 'roll' ? 'dash' : name === 'charge' ? (isHung ? 'idle' : 'block') : attackClips[fighter.attack?.id]?.[0];
+    const fallback = name === 'roll' ? 'dash' : name === 'charge' ? (isHung ? 'idle' : 'block')
+      : fighter.attack?.kickStyle ? 'kick' : attackClips[fighter.attack?.id]?.[0];
     const hungDown = isHung && name === 'knockdown';
     const hungRise = hungDown && fighter.knockdown <= 5 && hungPoses.rollRecovery;
     const techniqueFrame = isHung && hungPoses.technique ? hungTechniqueFrame(fighter, name) : -1;
@@ -297,7 +299,10 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
     const heavyWindup = heavyStanding && hungPoses.heavyWindup
       && attack.elapsed >= Math.floor(attack.startup / 3) && attack.elapsed < attack.startup;
     const heavyRecovery = heavyStanding && attack.elapsed >= attack.startup + attack.active;
-    const clip = (motion && clips?.get('idle')) || clips?.get(walk) || clips?.get(fallback) || clips?.get('idle');
+    const kickStyle = attack?.kickStyle;
+    const kickClip = (walk === 'kick' && kickStyle === 'rise') ? clips?.get('rising_kick')
+      : walk === 'sweep' && (kickStyle === 'low' || kickStyle === 'sweep') ? (kickStyle === 'sweep' && clips?.get('low_sweep')) || clips?.get('low_kick') : null;
+    const clip = (motion && clips?.get('idle')) || kickClip || clips?.get(walk) || clips?.get(fallback) || clips?.get('idle');
     if (!clip) return false;
     const elapsed = walk === 'run' ? fighter.walkDistance * (name === 'crouchWalk' ? 16 : 1000 / fighter.moveSpeed)
       : animationTime - clock.start;
@@ -367,6 +372,8 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
       const swap = crouchPunch && (crouchFrame === 3) !== (fighter.attack.limbSide === 'right');
       const hands = swap ? [pose.front, pose.rear] : [pose.rear, pose.front];
       const [rear, front] = hands.map(([u, v]) => [u * scale, v * scale]);
+      if (fighter.pickupWeapon === 'blaster' && fighter.weaponUses > 0
+        && (standingWalkFrame >= 0 || crouchWalkFrame >= 0 || name === 'crouch')) drawWeapon(front);
       const paintedComboScarf = comboPose && ['comboKick', 'landing', 'airborne'].includes(comboKick[0]);
       drawHungEvolution(ctx, hungEffects, fighter, animationTime, 0, 0, 0, scale,
         front, rear, [pose.rear, pose.chest], Boolean(paintedComboScarf || heavyWindup || hungLanding || hungRollRecovery || kickSettle) || techniqueFrame >= 0 || airborneFrame >= 0 || dodgeFrame >= 0);
@@ -411,8 +418,10 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
     const drawImage = () => ctx.drawImage(bodyImage, x, y, w, h, left, top, w * scale, h * scale);
     const hand = atlasGrip(fighter.characterId, entry.frame);
     const grip = !hungDown && hand && [left + hand[0] * scale, top + hand[1] * scale];
-    if (grip && motion?.amount > .02) {
-      drawAtlasWeaponArm(ctx, drawImage, drawWeapon, grip, scale, motion);
+    const hungBlaster = isHung && (attack?.pickupWeapon === 'blaster'
+      || (name === 'idle' && fighter.pickupWeapon === 'blaster' && fighter.weaponUses > 0));
+    if (grip && (hungBlaster || motion?.amount > .02)) {
+      drawAtlasWeaponArm(ctx, drawImage, drawWeapon, grip, scale, motion || loweredBlaster, hungBlaster);
     } else {
       drawImage();
       if (grip) drawWeapon(grip, drawImage);
@@ -423,7 +432,7 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
   };
 }
 
-function drawAtlasWeaponArm(ctx, drawImage, drawWeapon, [x, y], scale, motion) {
+function drawAtlasWeaponArm(ctx, drawImage, drawWeapon, [x, y], scale, motion, lowered) {
   // The forward arm in the atlas guard frame ends at the measured weapon grip.
   const dx = 19 * scale;
   const dy = -6 * scale;
@@ -444,7 +453,9 @@ function drawAtlasWeaponArm(ctx, drawImage, drawWeapon, [x, y], scale, motion) {
   drawImage();
   ctx.restore();
   const rest = Math.atan2(dy, dx);
-  const angle = rest + (motion.kind === 'aim' ? (motion.angle - rest) * motion.amount : motion.angle);
+  const restingAngle = lowered ? rest + .85 : rest;
+  const angle = motion.kind === 'aim'
+    ? restingAngle + (motion.angle - restingAngle) * motion.amount : rest + motion.angle;
   const reach = Math.hypot(dx, dy) * motion.reach;
   function drawArm() {
     ctx.save();

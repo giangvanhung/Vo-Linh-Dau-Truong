@@ -20,6 +20,47 @@ export function overheadChopPose({ elapsed, startup, active, recovery }) {
   return { lift, drive };
 }
 
+const kickBalance = {
+  side: [-.09, .05, 1.06, 1],
+  rise: [-.32, .02, .94, 1.06],
+  low: [-.06, .07, 1.10, .88],
+  sweep: [-.17, .11, 1.17, .78],
+};
+
+export function groundedStrikePose(fighter) {
+  const { attack, characterId } = fighter;
+  const phase = strikePose(attack);
+  if (!fighter.onGround || attack.pickupWeapon || attack.mainWeapon || attack.hungKick
+    || !['light', 'heavy', 'kick'].includes(attack.id)) return phase;
+  if (characterId === 'robot') {
+    return phase < 0 ? phase * .4 : ease(phase);
+  }
+  if (characterId === 'golem') {
+    return phase < 0 ? phase * 1.35 : Math.sqrt(phase);
+  }
+  if (characterId === 'corgi') {
+    return phase < 0 ? phase * 1.15 : phase ** 1.35;
+  }
+  if (characterId === 'fox') {
+    return attack.elapsed < attack.startup && phase > 0 ? Math.sqrt(phase) : phase > 0 ? phase ** 1.4 : phase;
+  }
+  if (characterId === 'goblin' && attack.kickStyle) {
+    return phase < 0 ? phase * 1.2 : phase ** 1.25;
+  }
+  return phase;
+}
+
+// The renderer is already anchored at the fighter's feet.
+export function applyKickBalance(ctx, attack) {
+  const profile = kickBalance[attack?.kickStyle];
+  if (!profile) return;
+  const [turn, lean, width, height] = profile;
+  const phase = strikePose(attack);
+  const reach = Math.max(0, phase);
+  ctx.rotate(turn * phase);
+  ctx.transform(1 + (width - 1) * reach, 0, lean * phase, 1 + (height - 1) * reach, 0, 0);
+}
+
 export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
   if (name === 'knockdown') {
     const fall = ease(clamp((KNOCKDOWN_FRAMES - fighter.knockdown) / 7));
@@ -67,8 +108,10 @@ export function applyFighterMotion(ctx, fighter, name, height, crouch, still) {
     const motion = fighter.attack ? strikePose(fighter.attack) : 0;
     const rear = fighter.attack?.limbSide === 'right';
     const twist = rear ? (still ? .22 : .11) : (still ? .15 : .045);
+    const lowAttack = fighter.attack?.lowStance && fighter.characterId !== 'hung';
     ctx.transform(1 + motion * (rear ? .065 : .035), 0, -motion * twist,
-      1 - crouch * (still ? .28 : .06), 0, 0);
+      lowAttack ? .73 : 1 - crouch * (still ? .28 : .06), 0, 0);
+    applyKickBalance(ctx, fighter.attack);
   }
 }
 
@@ -91,7 +134,7 @@ export function drawLowStride(ctx, image, sx, sy, sw, sh, x, y, width, height, d
 export function drawStrikeTrail(ctx, fighter, ground) {
   const attack = fighter.attack;
   if (!attack || attack.projectile || attack.pickupWeapon || fighter.disabled || !fighter.attackActive) return;
-  const kick = attack.id === 'kick' || (attack.hungKick && attack.hungKick !== 'airJ');
+  const kick = attack.id === 'kick' || attack.kickStyle || (attack.hungKick && attack.hungKick !== 'airJ');
   const armedStrike = attack.swing && attack.mainWeapon !== 'gauntlet';
   const punch = !kick && !armedStrike && (attack.id === 'light' || attack.id === 'heavy');
   const slash = !punch && !kick && fighter.weapon && (armedStrike || ['closeSkill', 'ultimate'].includes(attack.id));

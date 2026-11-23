@@ -1,18 +1,22 @@
 import { createLanHost } from '../platform/lan.js';
 import { relayUrl } from '../platform/relay-url.js';
+import { addPagination, connectSectionButtons } from './pagination.js';
 
 export function createControllerPairing({ byId, canPlay, onContinue, showLobby }) {
   const pairing = byId('lan-pairing');
   const addressList = byId('lan-addresses');
+  const addressPages = byId('lan-address-pages');
+  const showPairingPage = connectSectionButtons(pairing.querySelector('.section-navigation'));
   const lobby = byId('lan-lobby');
   const startButton = byId('lan-start');
-  const manual = byId('lan-manual');
   const qr = byId('lan-qr');
   const scanHelp = byId('lan-scan-help');
+  const scanButton = pairing.querySelector('[aria-controls="lan-scan-page"]');
   qr.addEventListener('error', () => {
     qr.hidden = true;
     scanHelp.hidden = true;
-    manual.open = true;
+    if (scanButton.getAttribute('aria-pressed') === 'true') showPairingPage('lan-manual-page');
+    scanButton.disabled = true;
   });
   const networkLabels = { wifi: 'Wi‑Fi', ethernet: 'Ethernet (cắm dây)', virtual: 'VPN / mạng ảo', other: 'Mạng khác', online: 'Internet' };
   const networkHints = {
@@ -42,14 +46,14 @@ export function createControllerPairing({ byId, canPlay, onContinue, showLobby }
     byId('lan-address-hint').textContent = networkHints[option.type] ?? networkHints.other;
     qr.hidden = !option.qr;
     scanHelp.hidden = !option.qr;
+    scanButton.disabled = !option.qr;
     if (option.qr) qr.src = option.qr;
-    if (!option.qr) manual.open = true;
   }
   const lanHost = createLanHost({
     canPlay: () => canPlay(soloLan),
     onRoom(options) {
       addresses = options;
-      addressList.replaceChildren(...options.map(({ link, name, type }, index) => {
+      const addressButtons = options.map(({ link, name, type }, index) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'lan-network-option';
@@ -59,9 +63,22 @@ export function createControllerPairing({ byId, canPlay, onContinue, showLobby }
         const adapter = name && name.toLowerCase() !== type ? `${name} · ` : '';
         detail.textContent = adapter + new URL(link).host;
         button.append(label, detail);
-        button.addEventListener('click', () => selectAddress(index));
+        button.addEventListener('click', () => {
+          selectAddress(index);
+          showPairingPage(qr.hidden ? 'lan-manual-page' : 'lan-scan-page');
+        });
         return button;
-      }));
+      });
+      addressList.replaceChildren(...addressButtons);
+      addressPages.replaceChildren();
+      const addressesPerPage = 2;
+      if (options.length > addressesPerPage) {
+        const pages = Array.from({ length: Math.ceil(options.length / addressesPerPage) }, () => '');
+        addPagination(addressPages, pages, page => addressButtons.forEach((button, index) => {
+          button.hidden = Math.floor(index / addressesPerPage) !== page;
+        }), addressList.id);
+      }
+      showPairingPage('lan-network-page');
       byId('lan-link-box').hidden = !options.length;
       if (options.length) {
         selectAddress(0);
@@ -113,15 +130,14 @@ export function createControllerPairing({ byId, canPlay, onContinue, showLobby }
   function showControllerRoom() {
     byId('lan-title').textContent = soloLan ? 'Kết nối tay cầm P1' : 'Đấu 2 người qua LAN';
     lobby.append(pairing);
-    pairing.querySelectorAll('details').forEach(details => { details.open = false; });
-    if (roomReady && addresses.length && qr.hidden) manual.open = true;
     showLobby();
     byId('lan-panel').scrollTop = 0;
-    const selected = addressList.querySelector('[aria-pressed="true"]');
-    (roomReady && selected ? selected : startButton).focus();
+    const currentPage = pairing.querySelector('.section-navigation [aria-pressed="true"]');
+    (roomReady && addresses.length ? currentPage : startButton).focus();
   }
 
   function moveToDetails() {
+    if (addresses.length) showPairingPage(qr.hidden ? 'lan-manual-page' : 'lan-scan-page');
     byId('lan-details').append(pairing);
     byId('lan-details').hidden = false;
   }

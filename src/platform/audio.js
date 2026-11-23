@@ -1,6 +1,7 @@
 import { musicChoices } from './settings.js';
 
 const assetRoot = '/assets/audio/';
+const musicOrder = Object.keys(musicChoices);
 const samples = {
   hit: ['punch', .8], heavy: ['heavy', .95], kick: ['kick', .95],
   block: ['block', .65], dash: ['cast', .25, 1.65], skill: ['cast', .68],
@@ -19,13 +20,12 @@ export class GameAudio {
   }
 
   configure(settings) {
+    if (this.selectedMusic !== settings.musicTrack || settings.musicMode !== 'cycle') {
+      this.selectedMusic = settings.musicTrack;
+      this.currentMusic = settings.musicTrack;
+    }
     this.settings = settings;
     if (this.effects) this.effects.gain.value = settings.sound ? settings.effects / 100 : 0;
-    this.syncMusic();
-  }
-
-  setMusicPreview(active) {
-    this.musicPreview = active;
     this.syncMusic();
   }
 
@@ -52,7 +52,7 @@ export class GameAudio {
 
   async loadSample(name) {
     try {
-      const response = await fetch(assetRoot + name + '.ogg');
+      const response = await fetch(assetRoot + 'sfx/' + name + '.ogg');
       if (!response.ok) return;
       this.buffers.set(name, await this.context.decodeAudioData(await response.arrayBuffer()));
     } catch {
@@ -60,23 +60,39 @@ export class GameAudio {
     }
   }
 
+  musicSource(id) {
+    const choice = musicChoices[id];
+    return choice.file ? assetRoot + 'music/' + choice.file : this.musicFiles.get(id);
+  }
+
+  advanceMusic() {
+    const start = musicOrder.indexOf(this.currentMusic) + 1;
+    const next = musicOrder.slice(start).concat(musicOrder.slice(0, start))
+      .find(id => this.musicSource(id));
+    if (!next) return;
+    this.currentMusic = next;
+    this.syncMusic();
+  }
+
   syncMusic() {
     if (!this.musicUnlocked) return;
-    if (this.musicPreview) {
+    if (this.settings.musicSource === 'youtube') {
       this.track?.pause();
       return;
     }
-    const id = this.settings.musicTrack;
-    const choice = musicChoices[id];
-    const src = choice.file ? assetRoot + choice.file : this.musicFiles.get(id);
+    const src = this.musicSource(this.currentMusic);
     const volume = this.settings.sound ? this.settings.music / 100 : 0;
     if (src && volume > 0) {
       if (this.trackSource !== src) {
         this.track?.pause();
-        this.track = new Audio(src);
-        this.track.loop = true;
+        const track = new Audio(src);
+        track.addEventListener('ended', () => {
+          if (this.track === track && this.settings.musicMode === 'cycle') this.advanceMusic();
+        });
+        this.track = track;
         this.trackSource = src;
       }
+      this.track.loop = this.settings.musicMode !== 'cycle';
       this.track.volume = volume * .65;
       if (this.track.paused) this.track.play().catch(() => {});
     } else {

@@ -14,8 +14,9 @@ export function youtubeVideoId(value) {
   }
 }
 
-export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
+export function createYouTubeMusic(settings, saveSettings) {
   const byId = id => document.getElementById('youtube-music-' + id);
+  const section = document.getElementById('youtube-music');
   const form = byId('form');
   const field = byId('link');
   const error = byId('error');
@@ -44,18 +45,19 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
     setExpanded(!inMatch);
   }
 
-  function stop() {
+  function unload() {
     player.replaceChildren();
     dock.classList.remove('is-playing');
-    setMusicPreview(false);
+  }
+
+  function stop() {
+    unload();
     delete settings.youtubeMusic;
     saveSettings();
     field.value = '';
   }
 
   function play(id) {
-    settings.youtubeMusic = id;
-    saveSettings();
     const iframe = document.createElement('iframe');
     iframe.title = 'Trình phát nhạc nền YouTube';
     iframe.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
@@ -67,8 +69,15 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
     open.href = 'https://www.youtube.com/watch?v=' + id;
   }
 
+  function setEnabled(enabled) {
+    section.hidden = !enabled;
+    if (!enabled) unload();
+    else if (settings.youtubeMusic) play(settings.youtubeMusic);
+  }
+
   form.addEventListener('submit', event => {
     event.preventDefault();
+    if (section.hidden) return;
     const id = youtubeVideoId(field.value);
     if (!id) {
       field.setAttribute('aria-invalid', 'true');
@@ -80,7 +89,8 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
 
     field.removeAttribute('aria-invalid');
     error.hidden = true;
-    setMusicPreview(true);
+    settings.youtubeMusic = id;
+    saveSettings();
     play(id);
   });
   field.addEventListener('input', () => {
@@ -93,9 +103,5 @@ export function createYouTubeMusic(settings, saveSettings, setMusicPreview) {
     stop();
     if (field.closest('dialog')?.open) field.focus();
   });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) setMusicPreview(false);
-  });
-  if (settings.youtubeMusic) play(settings.youtubeMusic);
-  return { setInMatch };
+  return { setEnabled, setInMatch };
 }

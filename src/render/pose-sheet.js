@@ -1,4 +1,4 @@
-import { drawLowStride, strikePose } from './fighter-motion.js';
+import { drawLowStride, groundedStrikePose } from './fighter-motion.js';
 import { poseGrip } from './weapon-grips.js';
 
 const basePoses = {
@@ -16,9 +16,11 @@ export function poseName(fighter, name, extras) {
     const action = name === 'ultimate' ? 'ultimate'
       : attack.pickupWeapon === 'blaster' || attack.projectile || name === 'skill_2' ? 'cast'
       : attack.pickupWeapon || (fighter.weapon && name === 'skill_1') ? 'slash'
-      : name === 'sweep' ? 'kick' : name;
-    if (strikePose(attack) < .35) {
+      : name === 'sweep' ? 'kick' : name === 'crouchPunch' ? 'light_punch' : name;
+    if (groundedStrikePose(fighter) < .35) {
       if (!fighter.onGround) return 'jump';
+      if (attack.lowStance) return 'crouch';
+      if (['golem', 'fox', 'goblin'].includes(fighter.characterId) && attack.kickStyle === 'rise' && attack.elapsed < attack.startup) return 'crouch';
       if (extras && ['cast', 'ultimate'].includes(action) && attack.elapsed < attack.startup) return 'charge';
       return 'idle';
     }

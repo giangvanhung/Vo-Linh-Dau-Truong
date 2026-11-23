@@ -53,7 +53,7 @@ export function findContact(attacker, defender, attack, box, sourceX, direction)
 export function applyHit(contact) {
   const { attacker, defender, attack, blocked } = contact;
   const rules = attacker.rules;
-  const basicKick = attack.id === 'kick' && !attack.hungKick && !attack.pickupWeapon && !contact.projectile;
+  const basicKick = attack.id === 'kick' && !attack.hungKick && !attack.kickStyle && !attack.pickupWeapon && !contact.projectile;
   contact.onContact?.();
   attack.hit = true;
   attack.confirmed = !blocked;

@@ -2,6 +2,7 @@ import { enableMenuNavigation } from './menu-navigation.js';
 import { createEquipmentPanel } from './equipment-panel.js';
 import { choiceCard } from './roster-card.js';
 import { createYouTubeMusic } from './youtube-music.js';
+import { addPagination, connectSectionButtons } from './pagination.js';
 
 import { ambiguousCompositionKey, assignable, bindingLabels, defaultBindings, keyCode, keyLabel } from '../platform/keyboard.js';
 import { musicChoices, roundFormats } from '../platform/settings.js';
@@ -13,7 +14,7 @@ function resolveChoice(id, options) {
   return id === 'random' ? options[Math.floor(Math.random() * options.length)] : id;
 }
 
-export function createPanels({ characters, stages, combat, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, preloadFighter, saveSettings, setMusicFile, setMusicPreview }) {
+export function createPanels({ characters, stages, combat, settings, equipment, openSetup, openLan, returnToMenu, togglePause, startMatch, selectMatch, preloadFighter, saveSettings, setMusicFile }) {
   connectThemeSettings(settings, saveSettings);
   const stageWrap = byId('menu-panel').closest('.stage-wrap');
   const panels = [...stageWrap.querySelectorAll(':scope > .game-panel')];
@@ -23,7 +24,21 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   const utilityPanels = [...utilityDialog.querySelectorAll('.utility-content')];
   const utilityTitles = { settings: 'Cài đặt', bindings: 'Phím bàn phím', guide: 'Hướng dẫn' };
   let popupTrigger;
-  const youtubeMusic = createYouTubeMusic(settings, saveSettings, setMusicPreview);
+  let pendingBinding = null;
+  const utilityPages = {};
+  const youtubeMusic = createYouTubeMusic(settings, saveSettings);
+
+  function paginateUtility(name, pages, onChange) {
+    const content = byId(name + '-pages');
+    utilityPages[name] = addPagination(byId(name + '-panel'), pages.map(page =>
+      page.dataset.pageLabel ?? page.querySelector('h3').textContent), index => {
+      pages.forEach((page, position) => { page.hidden = index !== position; });
+      content.scrollTop = 0;
+      onChange?.();
+    }, content.id);
+  }
+  paginateUtility('settings', [...byId('settings-pages').children]);
+  paginateUtility('guide', [...byId('guide-pages').children]);
 
   function showUtility(name, trigger) {
     if (trigger) popupTrigger = trigger;
@@ -32,7 +47,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     if (!utilityDialog.open) utilityDialog.showModal();
     pendingBinding = null;
     dialogClose.focus({ preventScroll: true });
-    byId(name + '-panel').scrollTop = 0;
+    utilityPages[name](0);
   }
 
   utilityDialog.addEventListener('close', () => {
@@ -76,30 +91,21 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   const hazards = byId('stage-hazards');
   const setupPanel = byId('setup-panel');
   const setupContent = setupPanel.querySelector('.setup-content');
-  const setupSections = [...setupPanel.querySelectorAll('.setup-switcher button')];
-  function showSetupSection(id) {
-    const previousFocus = document.activeElement;
-    for (const button of setupSections) {
-      const section = button.getAttribute('aria-controls');
-      button.setAttribute('aria-pressed', String(section === id));
-      byId(section).hidden = section !== id;
-    }
-    setupContent.scrollTop = 0;
-    if (setupContent.contains(previousFocus) && previousFocus.closest('[hidden]')) {
-      setupSections.find(button => button.getAttribute('aria-controls') === id)?.focus({ preventScroll: true });
-    }
-  }
-  for (const button of setupSections) {
-    button.addEventListener('click', () => showSetupSection(button.getAttribute('aria-controls')));
-  }
   function selectStage(id) {
     selectedStage = id;
     byId('setup-stage-title').textContent = stages[id]?.name ?? 'Ngẫu nhiên';
     byId('stage-description').textContent = stages[id]?.description ?? 'Sân đấu sẽ được chọn khi vào trận.';
   }
-  for (const [id, stage] of [...Object.entries(stages), ['random', { name: 'Ngẫu nhiên' }]]) {
-    stageCards.append(choiceCard('stage', id, stage.name, stage.background, id === selectedStage, selectStage));
-  }
+  const stageChoices = [...Object.entries(stages), ['random', { name: 'Ngẫu nhiên' }]];
+  const stageTiles = stageChoices.map(([id, stage]) =>
+    choiceCard('stage', id, stage.name, stage.background, id === selectedStage, selectStage));
+  stageCards.append(...stageTiles);
+  const stagesPerPage = 6;
+  const stagePageLabels = Array.from({ length: Math.ceil(stageTiles.length / stagesPerPage) }, () => '');
+  const showStagePage = addPagination(byId('setup-stage'), stagePageLabels, page => {
+    stageTiles.forEach((tile, index) => { tile.hidden = Math.floor(index / stagesPerPage) !== page; });
+    setupContent.scrollTop = 0;
+  }, stageCards.id);
   selectStage(selectedStage);
   const pauseButton = byId('pause-button');
   const toggleSound = byId('toggle-sound');
@@ -115,6 +121,8 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   const sideLabels = {};
   for (const side of Object.keys(selections)) {
     const group = document.createElement('fieldset');
+    group.id = 'setup-' + side;
+    group.hidden = side !== 'player';
     const legend = sideLabels[side] = document.createElement('legend');
     const cards = document.createElement('div');
     cards.className = 'roster-cards';
@@ -177,8 +185,11 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     group.append(legend, name, cards, pager, detail, condition);
     roster.append(group);
   }
+  const setupNavigation = setupPanel.querySelector('.setup-switcher');
+  const showSetupSection = connectSectionButtons(setupNavigation);
+  setupNavigation.addEventListener('click', () => { setupContent.scrollTop = 0; });
 
-  function show(name) {
+  function show(name, campaignFight = false) {
     const pveLobbyWasOpen = !byId('campaign-panel').hidden || !byId('equipment-panel').hidden;
     youtubeMusic.setInMatch(!name || name === 'pause');
     if (name !== 'bindings') pendingBinding = null;
@@ -188,6 +199,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     document.body.classList.toggle('setup-expanded', name === 'setup');
     gameCard.classList.toggle('lobby-open', ['menu', 'setup', 'lan', 'equipment', 'campaign'].includes(name));
     gameCard.classList.toggle('menu-open', name === 'menu');
+    gameCard.classList.toggle('campaign-fight', campaignFight);
     if ((pveLobbyWasOpen || ['campaign', 'equipment'].includes(name)) && gameCard.getBoundingClientRect().top < 0) {
       gameCard.scrollIntoView({ block: 'start' });
     }
@@ -216,9 +228,16 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     byId('team-rules').hidden = localMode !== 'team';
     sideLabels.player.textContent = lan || localMode ? 'Người chơi 1' : 'Võ sĩ của bạn';
     sideLabels.opponent.textContent = lan || localMode ? 'Người chơi 2' : practice ? 'Bạn tập' : 'Đối thủ CPU';
+    const playerTab = setupNavigation.querySelector('[aria-controls="setup-player"]');
+    const opponentTab = setupNavigation.querySelector('[aria-controls="setup-opponent"]');
+    playerTab.textContent = lan || localMode ? 'P1' : 'Võ sĩ';
+    opponentTab.textContent = lan || localMode ? 'P2' : practice ? 'Bạn tập' : 'Đối thủ';
+    playerTab.setAttribute('aria-label', sideLabels.player.textContent);
+    opponentTab.setAttribute('aria-label', sideLabels.opponent.textContent);
     byId('difficulty-picker').hidden = practice || lan || localMode === 'versus';
     byId('setup-title').textContent = practice ? 'Chọn nhân vật luyện tập' : lan || localMode ? 'Chọn nhân vật P1 và P2' : 'Chọn nhân vật';
-    showSetupSection('setup-roster');
+    showSetupSection('setup-player');
+    showStagePage(Math.floor(stageChoices.findIndex(([id]) => id === selectedStage) / stagesPerPage));
     show('setup');
   }
 
@@ -228,7 +247,6 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   }
 
   byId('versus-button').addEventListener('click', () => openSetup(false));
-  let pendingBinding = null;
   const bindingButtons = [];
   const bindingStatus = byId('binding-status');
   function renderBindings() {
@@ -239,12 +257,16 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
       button.textContent = bindingLabels[action] + ' · ' + keyLabel(settings.bindings[side][action]);
     }
   }
-  for (const side of [0, 1]) {
+  const bindingPages = [];
+  const bindingActions = Object.keys(bindingLabels);
+  const bindingTopics = ['Di chuyển và đánh', 'Phòng thủ và nộ', 'Kỹ năng'];
+  for (const side of [0, 1]) for (const [page, topic] of bindingTopics.entries()) {
     const group = document.createElement('fieldset');
     const legend = document.createElement('legend');
-    legend.textContent = 'Người chơi ' + (side + 1);
+    group.dataset.pageLabel = 'P' + (side + 1) + ' · ' + topic;
+    legend.textContent = group.dataset.pageLabel;
     group.append(legend);
-    for (const action of Object.keys(bindingLabels)) {
+    for (const action of bindingActions.slice(page * 6, page * 6 + 6)) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'panel-button';
@@ -257,7 +279,13 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
       group.append(button);
     }
     byId('binding-fields').append(group);
+    bindingPages.push(group);
   }
+  paginateUtility('bindings', bindingPages, () => {
+    if (!pendingBinding) return;
+    pendingBinding = null;
+    bindingStatus.textContent = 'Đã hủy đổi phím.';
+  });
   window.addEventListener('keydown', event => {
     if (!pendingBinding) return;
     event.preventDefault();
@@ -287,7 +315,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     bindingStatus.textContent = 'Đã lưu phím ' + keyLabel(code) + '.';
   }, true);
   byId('bindings-button').addEventListener('click', () => {
-    bindingStatus.textContent = 'Chọn thao tác cần đổi. Giữ Shift với phím Lướt để lướt mạnh. Phím Num nằm ở cụm số bên phải.';
+    bindingStatus.textContent = 'Chọn thao tác cần đổi.';
     renderBindings();
     showUtility('bindings');
   });
@@ -317,6 +345,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     difficultySelect.value, resolveChoice(selectedStage, stageIds), hazards.checked, byId('party-items').checked, Number(format.value),
   ));
 
+  const musicSource = byId('music-source');
   const musicTrack = byId('music-track');
   const musicFile = byId('music-file');
   const musicStatus = byId('music-file-status');
@@ -326,16 +355,34 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   }
   function updateMusicSelection() {
     const { link } = musicChoices[musicTrack.value];
-    byId('music-file-controls').hidden = !link;
+    byId('music-file-controls').hidden = settings.musicSource === 'youtube' || !link;
     if (link) byId('music-listen-link').href = link;
     musicFile.value = '';
     musicStatus.textContent = fileNames.get(musicTrack.value) || 'Tệp chỉ dùng trong phiên này.';
   }
+  function updateMusicSource() {
+    const useYouTube = settings.musicSource === 'youtube';
+    for (const field of document.querySelectorAll('[data-game-music]')) field.hidden = useYouTube;
+    youtubeMusic.setEnabled(useYouTube);
+    updateMusicSelection();
+  }
+  musicSource.value = settings.musicSource;
   musicTrack.value = settings.musicTrack;
-  updateMusicSelection();
+  updateMusicSource();
+  musicSource.addEventListener('change', () => {
+    settings.musicSource = musicSource.value;
+    updateMusicSource();
+    saveSettings();
+  });
   musicTrack.addEventListener('change', () => {
     settings.musicTrack = musicTrack.value;
     updateMusicSelection();
+    saveSettings();
+  });
+  const musicMode = byId('music-mode');
+  musicMode.value = settings.musicMode;
+  musicMode.addEventListener('change', () => {
+    settings.musicMode = musicMode.value;
     saveSettings();
   });
   musicFile.addEventListener('change', () => {

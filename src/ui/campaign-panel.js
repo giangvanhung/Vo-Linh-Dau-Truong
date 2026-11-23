@@ -3,6 +3,7 @@ import { availableStage, campaignProgress, claimReserved } from '../game/campaig
 import { catalog, equipFighter, gearItem, slots, statNames } from '../game/equipment.js';
 import { difficultyLabels } from '../platform/settings.js';
 import { choiceCard } from './roster-card.js';
+import { connectSectionButtons } from './pagination.js';
 
 const byId = id => document.getElementById(id);
 const resourceText = reward => reward.gold + ' vàng · ' + reward.material + ' nguyên liệu';
@@ -12,6 +13,7 @@ export function createCampaignPanel(config, equipment, { show, openEquipment, st
   const roster = byId('campaign-fighters');
   const pagination = byId('campaign-fighter-pages');
   const cards = byId('campaign-stages');
+  const showSection = connectSectionButtons(byId('campaign-panel').querySelector('.section-navigation'));
   const entries = Object.entries(config.characters);
   const pageSize = 6;
   let selected = null;
@@ -128,6 +130,7 @@ export function createCampaignPanel(config, equipment, { show, openEquipment, st
   return (index, message) => {
     if (index !== undefined && availableStage(route, campaignProgress(equipment, route), index)) selected = index;
     render(message);
+    showSection('campaign-stages');
     show('campaign');
   };
 }

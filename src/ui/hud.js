@@ -5,7 +5,7 @@ import { gear } from '../game/pickups.js';
 import { mainWeaponAttack } from '../game/weapon-attacks.js';
 import { heroEnergyMax, nextHeroForm } from '../game/hero-form.js';
 
-export const damageFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
+export const damageFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 });
 const cooldownFormat = new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const skillBindings = { closeSkill: 'u', rangedSkill: 'i', ultimate: 'o' };
 
@@ -49,7 +49,9 @@ export function createHud() {
     }
     document.querySelector('.player-hung .player-side').textContent = team ? 'P' + (activePlayer + 1) + (activePlayer ? ' · Cuối' : ' · Còn P2') : 'P1';
     document.querySelector('.player-mai .player-side').textContent = team ? 'CPU ' + (activeCpu + 1) + (activeCpu ? ' · Cuối' : ' · Còn CPU 2') : practice ? 'BÙ NHÌN' : lan ? 'P2' : 'CPU · ' + difficultyLabels[difficulty].toUpperCase();
-    document.querySelector('.controls-card .heading-note').textContent = hung.name.toUpperCase() + ' · NGƯỜI CHƠI';
+    for (const heading of document.querySelectorAll('.controls-card .heading-note')) {
+      heading.textContent = hung.name.toUpperCase() + ' · NGƯỜI CHƠI';
+    }
     byId('heavy-control').textContent = hung.characterId === 'hung' ? hung.attacks.heavy.label : 'Đấm nặng';
     byId('kick-control').textContent = hung.attacks.kick.label;
     byId('close-control').textContent = hung.skills.closeSkill.label;

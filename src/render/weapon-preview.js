@@ -1,4 +1,4 @@
-import { Fighter } from '../combat/fighter.js';
+import { Fighter, FRAME_SECONDS } from '../combat/fighter.js';
 import { modelForWeapon, skins } from '../game/equipment.js';
 import { equippedAttack, gear } from '../game/pickups.js';
 import { createCombatEffects } from './combat-effects.js';
@@ -31,7 +31,7 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
     if (fighter.attack) {
       animationStart ??= time;
       const { startup, active, recovery } = fighter.attack;
-      fighter.attack.elapsed = Math.floor((time - animationStart) * .055);
+      fighter.attack.elapsed = Math.floor((time - animationStart) / (1000 * FRAME_SECONDS));
       if (chain && fighter.attack.elapsed >= startup + active + 1) {
         fighter.attack.confirmed = true;
         chain--;
@@ -48,9 +48,14 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
     const attack = fighter.attack;
     if (attack?.projectile && attack.elapsed >= attack.startup) {
       const age = attack.elapsed - attack.startup;
-      const { speed, yOffset } = attack.projectile;
-      drawProjectile({ x: fighter.width * .65 + age * speed / 60, y: -yOffset, age,
-        facing: 1, attack, attacker: fighter }, 0);
+      const { speed, width, height, yOffset, gravity, launchY = 0,
+        spawnOffset = fighter.width / 2, lifetimeFrames } = attack.projectile;
+      const flightTime = age * FRAME_SECONDS;
+      const y = -yOffset + launchY * flightTime + (gravity ?? 0) * flightTime * (flightTime + FRAME_SECONDS) / 2;
+      if (age < lifetimeFrames && (!gravity || y + height / 2 < 0)) {
+        drawProjectile({ x: spawnOffset + width / 2 + flightTime * speed, y, age,
+          facing: 1, attack, attacker: fighter }, 0);
+      }
     }
     ctx.restore();
     request = requestAnimationFrame(draw);
@@ -61,6 +66,7 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
       if (current?.id !== id || current?.itemId !== itemId || current?.pickup !== pickup) {
         const fighter = new Fighter(characters[id], 0, 1, rules);
         fighter.characterId = id;
+        fighter.nativeWeaponArt = null;
         fighter.weapon = modelForWeapon(id, itemId, state.inventory[itemId], state);
         if (pickup) {
           fighter.pickupWeapon = pickup;
@@ -90,11 +96,12 @@ export function createWeaponPreview(canvas, panel, characters, rules, state) {
         : type === 'spear' ? ['light', 'heavy', 'closeSkill']
           : type ? ['light', 'heavy'] : ['light', 'heavy', 'kick'];
       const hungCombo = fighter.characterId === 'hung' && !fighter.weapon && !fighter.weaponUses;
-      const id = hungCombo || fighter.weaponUses ? 'light' : strikes[nextStrike++ % strikes.length];
+      const actions = fighter.weaponUses ? ['light', 'heavy'] : strikes;
+      const id = hungCombo ? 'light' : actions[nextStrike++ % actions.length];
       fighter.attack = null;
       chain = hungCombo ? 2 : 0;
-      startStrike(fighter, id);
       animationStart = null;
+      if (startStrike(fighter, id)) return fighter.attack.label;
     },
   };
 }

@@ -11,6 +11,7 @@ const root = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp' };
 mime['.mp3'] = 'audio/mpeg';
 mime['.ogg'] = 'audio/ogg';
+mime['.wav'] = 'audio/wav';
 mime['.jpg'] = 'image/jpeg';
 const server = createServer(async (req, res) => {
   try {

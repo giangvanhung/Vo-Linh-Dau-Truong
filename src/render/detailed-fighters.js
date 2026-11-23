@@ -81,7 +81,7 @@ export function drawDetailedFighter(ctx, sheet, fighter, name, ground, time, dra
   const swinging = attack && !['hit', 'knockdown', 'ko'].includes(name);
   let index = moving && Math.abs(stride) > .43 ? 1 : 0;
   if (name === 'jump' && fighter.airDirection) index = 1;
-  if (swinging && (extension > .55 || motion?.amount > .55)) index = attack.id === 'kick' ? 3 : 2;
+  if (swinging && (extension > .55 || motion?.amount > .55)) index = attack.id === 'kick' || attack.kickStyle ? 3 : 2;
   const support = sheet.support;
   const supported = !support ? -1
     : name === 'block' && fighter.crouching ? 0
