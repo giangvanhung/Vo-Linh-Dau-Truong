@@ -49,16 +49,27 @@ export function createCampaignPanel(config, equipment, { show, openEquipment, st
     preview.characterId = fighterId;
     equipFighter(preview, equipment, fighterId, true);
     const worn = Object.entries(preview.equipmentBase.loadout).map(([slot, id]) =>
-      slots[slot] + ' · ' + gearItem(equipment, id).name + ' +' + equipment.inventory[id]);
+      slots[slot] + ' · ' + gearItem(equipment, id).name + ' +' + (equipment.inventory[id] - 1));
     if (!preview.equipmentBase.loadout.weapon && preview.weapon) worn.unshift('Vũ khí khởi đầu · ' + preview.weapon.label);
+    byId('campaign-portrait').src = '/assets/characters/' + fighterId + '/avatar.png';
     byId('campaign-fighter-name').textContent = character.name;
     byId('campaign-stage-name').textContent = stage.name;
     byId('campaign-rules').textContent = config.characters[stage.opponent].name + ' · ' + config.stages[stage.stage].name
       + ' · ' + difficultyLabels[stage.difficulty] + ' · Thắng ' + Math.ceil(stage.bestOf / 2)
-      + ' hiệp · ' + stage.seconds + ' giây/hiệp. Hết giờ xét tỷ lệ máu. '
+      + ' hiệp · ' + stage.seconds + ' giây/hiệp';
+    byId('campaign-extra-rules').textContent = 'Hết giờ xét tỷ lệ máu. '
       + (stage.hazards ? 'Bật luật sân. ' + config.stages[stage.stage].description : 'Tắt cạm bẫy sân.')
       + ' Hộp mù tắt.';
-    byId('campaign-loadout').textContent = worn.length ? worn.join(' • ') : 'Chưa mặc trang bị.';
+    byId('campaign-first-reward').textContent = resourceText(stage.first);
+    byId('campaign-first-item').textContent = equipment.inventory[stage.first.item]
+      ? '+' + stage.first.duplicateGold + ' vàng thay cho ' + catalog[stage.first.item].name
+      : catalog[stage.first.item].name;
+    byId('campaign-replay-reward').textContent = resourceText(stage.replay);
+    byId('campaign-loadout').replaceChildren(...(worn.length ? worn : ['Chưa mặc trang bị']).map(label => {
+      const item = document.createElement('li');
+      item.textContent = label;
+      return item;
+    }));
     const stats = Object.entries(preview.equipmentStats).filter(([, value]) => value);
     byId('campaign-stats').textContent = 'Máu tối đa ' + preview.maxHp + (stats.length
       ? ' • ' + stats.map(([id, value]) => statNames[id] + ' +' + value
@@ -85,23 +96,22 @@ export function createCampaignPanel(config, equipment, { show, openEquipment, st
       card.type = 'button';
       card.disabled = !available;
       card.dataset.stage = stage.id;
+      card.dataset.state = !available ? 'locked' : record?.wins ? 'cleared' : 'open';
       card.setAttribute('aria-pressed', String(selected === index));
+      const number = document.createElement('span');
+      number.className = 'campaign-stage-number';
+      number.textContent = String(index + 1).padStart(2, '0');
+      number.setAttribute('aria-hidden', 'true');
       const title = document.createElement('strong');
-      title.textContent = (index + 1) + ' · ' + stage.name;
-      const detail = document.createElement('span');
-      detail.textContent = config.characters[stage.opponent].name + ' · ' + config.stages[stage.stage].name + ' · ' + difficultyLabels[stage.difficulty];
+      title.textContent = stage.name;
       const status = document.createElement('span');
-      status.textContent = !available ? 'Khóa · cần vượt ' + route[index - 1].name : record?.wins
-        ? 'Đã vượt · Thắng ' + record.wins + ' / Thua ' + record.losses
-        : record?.losses ? 'Đã mở · Thua ' + record.losses : 'Đã mở';
-      const reward = document.createElement('small');
-      reward.textContent = 'Lần đầu: ' + resourceText(stage.first) + ' · ' + catalog[stage.first.item].name
-        + ' (đã có: +' + stage.first.duplicateGold + ' vàng). Chơi lại: ' + resourceText(stage.replay) + '.';
-      card.append(title, detail, status, reward);
+      status.className = 'campaign-stage-status';
+      status.textContent = !available ? 'Khóa · qua ải ' + index : record?.wins ? 'Đã vượt' : 'Đã mở';
+      card.append(number, title, status);
       card.addEventListener('click', () => {
         selected = index;
         render();
-        cards.querySelector('[aria-pressed="true"]').focus();
+        cards.querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
       });
       cards.append(card);
     });

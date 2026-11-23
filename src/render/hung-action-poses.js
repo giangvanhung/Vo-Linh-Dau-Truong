@@ -11,6 +11,7 @@ export const hungPosePaths = {
   crouchWalk: '/assets/characters/hung/crouch-walk-poses.png',
   walk: '/assets/characters/hung/walk-poses.png',
   kick: '/assets/characters/hung/kick-poses.png',
+  comboKick: '/assets/characters/hung/air-kick-combo-poses.png',
 };
 
 // Atlas rectangles, floor pivots, and fist/chest landmarks in source pixels.
@@ -62,6 +63,11 @@ const kicks = [
   { rect: [512, 512, 512, 512], pivot: [653, 966], rear: [549, 847], front: [810, 752], chest: [723, 775] },
   { rect: [1024, 512, 512, 512], pivot: [1228, 966], rear: [1101, 892], front: [1326, 744], chest: [1257, 774] },
 ];
+const comboKicks = [
+  { rect: [0, 0, 512, 1024], pivot: [145, 816], rear: [145, 483], front: [262, 366], chest: [171, 412], toe: [464, 322], ratio: .192 },
+  { rect: [512, 0, 512, 1024], pivot: [639, 798], rear: [682, 571], front: [797, 504], chest: [692, 524], toe: [949, 685], ratio: .153 },
+  { rect: [1024, 0, 512, 1024], pivot: [1156, 708], rear: [1054, 435], front: [1320, 425], chest: [1221, 433], toe: [1507, 737], ratio: .204 },
+];
 // Both boot soles share y=1311. Hips and hand points use the same sprite coordinates.
 const landing = [
   { rect: [0, 0, 1076, 1462], pivot: [525, 1311], rear: [500, 583], front: [790, 449], chest: [579, 500] },
@@ -91,7 +97,7 @@ const techniques = [
   { rect: [1448, 0, 724, 724], pivot: [1794, 667], rear: [1769, 358], front: [1875, 356], chest: [1805, 271] },
 ];
 const techniqueScale = .159;
-const atlases = { technique: techniques, heavyWindup, rollRecovery, dodge: dodges, airborne, landing, turn: turns, fall: falls, crouch: crouches, crouchWalk: crouchSteps, walk: standingSteps, kick: kicks };
+const atlases = { technique: techniques, heavyWindup, rollRecovery, dodge: dodges, airborne, landing, turn: turns, fall: falls, crouch: crouches, crouchWalk: crouchSteps, walk: standingSteps, kick: kicks, comboKick: comboKicks };
 
 // Keep the collar on the sprite and mask only the trailing cloth behind the shoulder.
 const scarfTails = {
@@ -161,6 +167,7 @@ export function hungFallFrame(remaining, duration) {
 }
 
 export function hungCrouchFrame(fighter, name, transition) {
+  if (name === 'crouch' && fighter.guardBreak && fighter.crouchGuardFatigue) return 1;
   const attack = fighter.attack;
   if (attack?.lowStance && (name === 'crouchPunch' || name === 'sweep')) {
     if (attack.elapsed < attack.startup) return name === 'sweep' ? 5 : 1;
@@ -192,13 +199,28 @@ export function hungKickFrame(fighter, name) {
     const age = attack.elapsed - attack.startup;
     return age === from ? 0 : age >= to - 2 ? 2 : 1;
   }
-  if (!fighter.onGround || attack?.id !== 'kick' || attack.pickupWeapon || (name !== 'kick' && name !== 'sweep')) return -1;
+  if (!fighter.onGround || !attack || (attack.id !== 'kick' && attack.hungKick !== 'heavy')
+    || attack.pickupWeapon || (name !== 'kick' && name !== 'sweep')) return -1;
   const { elapsed, startup, active, recovery } = attack;
   const base = name === 'sweep' ? 3 : 0;
   if (elapsed < startup) return elapsed >= startup * .25 ? base : -1;
   if (elapsed < startup + active) return base + 1;
   if (elapsed < startup + active + Math.ceil(recovery * .40)) return base + 2;
   return -1;
+}
+
+const comboKickFrames = { launch: 0, low: 1, slam: 2 };
+
+export function hungComboKickPose(fighter) {
+  const attack = fighter.attack;
+  const index = comboKickFrames[attack?.hungKick];
+  if (index === undefined) return null;
+  const age = attack.elapsed - attack.startup;
+  if (age >= 0 && age < attack.active && (index !== 2 || !fighter.onGround)) return ['comboKick', index];
+  if (index === 2) return fighter.onGround ? ['landing', 0] : ['airborne', 1];
+  if (index === 1) return ['crouch', 1];
+  if (age < 0) return ['kick', 0];
+  return age < attack.active + 10 ? ['kick', 2] : ['landing', 0];
 }
 export function hungAirborneFrame(fighter) {
   // Leave a longer extension on a running takeoff. Both variants retain the original apex.
@@ -239,7 +261,9 @@ export function hungTechniqueHand(index) {
   return [(u - x) * techniqueScale, (v - y) * techniqueScale];
 }
 
-export function hungKickTip(name) {
+export function hungKickTip(name, move) {
+  const frame = comboKicks[comboKickFrames[move]];
+  if (frame) return frame.toe.map((value, index) => (value - frame.pivot[index]) * frame.ratio);
   const [x, y] = kicks[name === 'sweep' ? 4 : 1].pivot;
   const [toe, height] = name === 'sweep' ? [981, 917] : [976, 204];
   return [(toe - x) * .235, (height - y) * .235];
@@ -250,7 +274,7 @@ export function drawHungPose(ctx, image, kind, index, scale) {
   if (!image || !frame) return null;
   const [x, y, width, height] = frame.rect;
   const [px, py] = frame.pivot;
-  const ratio = { technique: techniqueScale, heavyWindup: .089, rollRecovery: .093, dodge: .134, airborne: .124, landing: .078, fall: .365, crouchWalk: .224, walk: .246, kick: .235 }[kind] ?? .257;
+  const ratio = frame.ratio ?? ({ technique: techniqueScale, heavyWindup: .089, rollRecovery: .093, dodge: .134, airborne: .124, landing: .078, fall: .365, crouchWalk: .224, walk: .246, kick: .235 }[kind] ?? .257);
   const size = scale * ratio;
   const lying = kind === 'fall' && (index === 2 || index === 3);
   const heightScale = size * (lying ? .88 : 1);

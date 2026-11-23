@@ -1,4 +1,5 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
+import { mainWeaponAttack } from '../game/weapon-attacks.js';
 
 export function createTrainingPanel(training, controls) {
   const byId = id => document.getElementById(id);
@@ -6,6 +7,11 @@ export function createTrainingPanel(training, controls) {
   const tools = byId('training-tools');
   const record = byId('record-input');
   const play = byId('play-input');
+  const followHint = byId('hung-follow-hint');
+  const followKey = followHint.querySelector('kbd');
+  const moveLabels = [...panel.querySelectorAll('[data-training-move]')];
+  const fighterName = byId('training-fighter-name');
+  const combo = byId('training-hung-combo');
   const format = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
 
   byId('dummy-mode').addEventListener('change', event => { training.mode = event.target.value; });
@@ -20,12 +26,25 @@ export function createTrainingPanel(training, controls) {
   record.addEventListener('click', () => { if (controls.canUse()) training.toggleRecord(); });
   play.addEventListener('click', () => { if (controls.canUse()) training.togglePlayback(); });
 
-  function update(visible, dummy) {
+  function update(visible, player, dummy, follow) {
+    followHint.hidden = !visible || !follow;
+    if (follow && followKey.textContent !== follow) followKey.textContent = follow;
     tools.hidden = !visible;
     panel.hidden = !visible;
     if (!visible) {
       tools.open = false;
       return;
+    }
+    const isHung = player.characterId === 'hung';
+    combo.hidden = !isHung;
+    if (fighterName.textContent !== player.name) fighterName.textContent = player.name;
+    for (const label of moveLabels) {
+      const id = label.dataset.trainingMove;
+      const crouch = id === 'lowHeavy' || id === 'lowKick';
+      if (crouch) label.parentElement.hidden = !isHung;
+      const move = crouch ? player.crouchAttacks?.[id === 'lowHeavy' ? 'heavy' : 'kick']
+        : player.attacks[id] ?? mainWeaponAttack(player, id) ?? player.skillFor(id);
+      if (move && label.textContent !== move.label) label.textContent = move.label;
     }
     const { hits, advantage, inputs, recording, recordState } = training;
     const active = controls.canUse();

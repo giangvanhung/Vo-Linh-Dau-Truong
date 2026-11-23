@@ -91,7 +91,7 @@ export function drawLowStride(ctx, image, sx, sy, sw, sh, x, y, width, height, d
 export function drawStrikeTrail(ctx, fighter, ground) {
   const attack = fighter.attack;
   if (!attack || attack.projectile || attack.pickupWeapon || fighter.disabled || !fighter.attackActive) return;
-  const kick = attack.id === 'kick';
+  const kick = attack.id === 'kick' || (attack.hungKick && attack.hungKick !== 'airJ');
   const armedStrike = attack.swing && attack.mainWeapon !== 'gauntlet';
   const punch = !kick && !armedStrike && (attack.id === 'light' || attack.id === 'heavy');
   const slash = !punch && !kick && fighter.weapon && (armedStrike || ['closeSkill', 'ultimate'].includes(attack.id));
@@ -103,8 +103,8 @@ export function drawStrikeTrail(ctx, fighter, ground) {
   const tip = attack.facing > 0 ? box.x + box.width : box.x;
   const color = fighter.evolving ? fighter.evolution.color : fighter.glow;
   ctx.save();
-  if (kick && fighter.characterId === 'hung' && fighter.onGround) {
-    const [toeX, toeY] = hungKickTip(attack.lowStance ? 'sweep' : 'kick');
+  if (kick && fighter.characterId === 'hung' && (fighter.onGround || attack.hungKick === 'slam')) {
+    const [toeX, toeY] = hungKickTip(attack.lowStance ? 'sweep' : 'kick', attack.hungKick);
     const scale = (fighter.sprite?.displaySize ?? 128) / 128;
     ctx.translate(fighter.x + attack.facing * toeX * scale, ground + fighter.y + toeY * scale);
   } else ctx.translate(tip, ground + box.y + box.height * (attack.limbSide ? (rear ? .62 : .42) : .5));
@@ -114,7 +114,14 @@ export function drawStrikeTrail(ctx, fighter, ground) {
   ctx.lineWidth = slash ? 4 : kick || attack.id === 'heavy' ? 4.5 : 3;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  if (kick && attack.lowStance) {
+  if (attack.hungKick === 'launch' || attack.hungKick === 'slam') {
+    const rise = attack.hungKick === 'launch' ? 1 : -1;
+    ctx.moveTo(-box.width * .64, 40 * rise);
+    ctx.quadraticCurveTo(-14, 19 * rise, 3, -3 * rise);
+  } else if (attack.hungKick === 'heavy' || attack.hungKick === 'low') {
+    ctx.moveTo(-box.width * .57, 6);
+    ctx.quadraticCurveTo(-12, 7, 3, -1);
+  } else if (kick && attack.lowStance) {
     ctx.moveTo(-box.width * .8, 7);
     ctx.bezierCurveTo(-box.width * .47, 13, -box.width * .12, 9, 3, 1);
   } else if (punch && attack.lowStance) {

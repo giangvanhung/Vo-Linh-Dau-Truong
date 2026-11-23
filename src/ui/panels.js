@@ -179,6 +179,7 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
   }
 
   function show(name) {
+    const pveLobbyWasOpen = !byId('campaign-panel').hidden || !byId('equipment-panel').hidden;
     youtubeMusic.setInMatch(!name || name === 'pause');
     if (name !== 'bindings') pendingBinding = null;
     for (const panel of panels) panel.hidden = panel.id !== name + '-panel';
@@ -187,8 +188,15 @@ export function createPanels({ characters, stages, combat, settings, equipment, 
     document.body.classList.toggle('setup-expanded', name === 'setup');
     gameCard.classList.toggle('lobby-open', ['menu', 'setup', 'lan', 'equipment', 'campaign'].includes(name));
     gameCard.classList.toggle('menu-open', name === 'menu');
+    if ((pveLobbyWasOpen || ['campaign', 'equipment'].includes(name)) && gameCard.getBoundingClientRect().top < 0) {
+      gameCard.scrollIntoView({ block: 'start' });
+    }
     if (name) {
-      const selector = name === 'setup' ? 'input[name="player-fighter"]:checked' : 'button, select';
+      const selector = name === 'setup' ? 'input[name="player-fighter"]:checked'
+        : name === 'campaign' ? '.campaign-stage[aria-pressed="true"]'
+        : name === 'result' && !byId('campaign-result-actions').hidden
+          ? '#campaign-result-actions .primary-button:not([hidden])'
+          : 'button, select';
       byId(name + '-panel').querySelector(selector)?.focus({ preventScroll: true });
     }
   }

@@ -1,0 +1,268 @@
+:is(#menu-panel, #campaign-panel, #equipment-panel, #result-panel:has(#campaign-result-actions:not([hidden]))) {
+  --pve-base: #0c131e;
+  --pve-surface: #141f2d;
+  --pve-control: #192637;
+  --pve-line: #39475a;
+  --pve-muted: #b8c3d2;
+  --pve-text: #fff3df;
+  --pve-amber: #ffc56e;
+  --pve-selected: #3e2d21;
+  color: var(--pve-text);
+}
+
+.stage-wrap #menu-panel {
+  background-image: linear-gradient(90deg, #0c131e 0%, #0c131eef 32%, #0c131e36 68%, transparent),
+    url('/assets/menu/linh-gioi.jpg');
+}
+#menu-panel #menu-title em { color: var(--pve-amber); }
+#menu-panel #campaign-button {
+  grid-column: 1 / -1;
+  min-height: 70px;
+  position: relative;
+  padding-right: 48px;
+}
+#campaign-button::after {
+  content: "";
+  position: absolute;
+  right: 21px;
+  top: calc(50% - 6px);
+  width: 11px;
+  height: 11px;
+  border: solid currentColor;
+  border-width: 2px 2px 0 0;
+  transform: rotate(45deg);
+}
+#menu-panel #campaign-button span { font-size: 1.15rem; }
+#menu-panel #campaign-button small { color: #43301d; }
+
+.stage-wrap :is(#campaign-panel, #equipment-panel) {
+  padding: clamp(12px, 2.4vw, 27px);
+  gap: 12px;
+  background: linear-gradient(105deg, #0c131ef8 25%, #0c131ee3 100%),
+    var(--pve-base) url('/assets/menu/linh-gioi.jpg') center / cover no-repeat;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  max-height: none;
+}
+.stage-wrap #campaign-panel:not([hidden]),
+.stage-wrap #equipment-panel:not([hidden]) {
+  position: relative;
+  inset: auto;
+  transform: none;
+  width: 100%;
+  height: auto;
+  grid-template-rows: none;
+  max-height: none;
+  padding: clamp(12px, 2.4vw, 27px);
+  overflow: visible;
+}
+body:not(.game-expanded) .game-card:has(:is(#campaign-panel, #equipment-panel):not([hidden])) { overflow: clip; }
+body:not(.game-expanded) .game-card .stage-wrap:has(:is(#campaign-panel, #equipment-panel):not([hidden])) {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+.game-expanded .game-card .stage-wrap:has(:is(#campaign-panel, #equipment-panel):not([hidden])) { overflow: auto; }
+
+.stage-wrap :is(#menu-panel, #campaign-panel, #equipment-panel, #result-panel:has(#campaign-result-actions:not([hidden])))
+  :is(.panel-button, .menu-mode, .menu-utility, select) {
+  background: var(--pve-control);
+  color: var(--pve-text);
+  border: 1px solid var(--pve-line);
+}
+.stage-wrap :is(#menu-panel, #campaign-panel, #equipment-panel, #result-panel:has(#campaign-result-actions:not([hidden])))
+  :is(.panel-button, .menu-mode, .menu-utility):hover:not(:disabled) {
+  background: #243449;
+  border-color: #7e91a7;
+}
+.stage-wrap #menu-panel #campaign-button,
+.stage-wrap :is(#campaign-panel, #equipment-panel, #result-panel:has(#campaign-result-actions:not([hidden]))) .primary-button {
+  background: var(--pve-amber);
+  color: #241707;
+  border: 1px solid var(--pve-amber);
+}
+.stage-wrap #menu-panel #campaign-button:hover,
+.stage-wrap :is(#campaign-panel, #equipment-panel, #result-panel:has(#campaign-result-actions:not([hidden]))) .primary-button:hover:not(:disabled) {
+  background: #ffdc9e;
+  border-color: #ffdc9e;
+}
+.stage-wrap :is(#campaign-panel, #equipment-panel) :is(button[aria-pressed="true"], button[aria-current="page"], .roster-card.is-selected) {
+  background: var(--pve-selected);
+  border-color: var(--pve-amber);
+  box-shadow: inset 0 0 0 1px var(--pve-amber);
+  color: var(--pve-text);
+}
+.stage-wrap :is(#campaign-panel, #equipment-panel, #result-panel:has(#campaign-result-actions:not([hidden]))) button:disabled {
+  background: #17202d;
+  color: #aab7c7;
+  border-color: #343f4e;
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
+}
+.stage-wrap :is(#campaign-panel, #equipment-panel) :is(button, summary, select):focus-visible {
+  outline: 2px solid #fff0cb;
+  outline-offset: 2px;
+}
+
+.campaign-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 20px;
+  padding-block: 2px 12px;
+  border-bottom: 1px solid var(--pve-line);
+}
+#campaign-title, #equipment-panel .equipment-header h2 { margin: 0; font-size: clamp(24px, 4vw, 38px); }
+.campaign-heading #campaign-progress, #equipment-wallet { color: var(--pve-muted); }
+.campaign-body { grid-template-columns: minmax(220px, .8fr) minmax(0, 1.4fr); gap: clamp(12px, 2.4vw, 26px); }
+#campaign-stages, .campaign-setup { overflow: visible; scrollbar-gutter: auto; }
+#campaign-stages { gap: 7px; padding: 0; }
+.campaign-stage {
+  grid-template-columns: 29px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 56px;
+  padding: 8px 11px;
+  background: var(--pve-surface);
+  border-color: var(--pve-line);
+  color: var(--pve-text);
+}
+.campaign-stage:not(:disabled):hover { border-color: var(--pve-amber); }
+.campaign-stage strong { font-size: .88rem; line-height: 1.3; }
+.campaign-stage .campaign-stage-number {
+  display: grid;
+  place-items: center;
+  height: 29px;
+  border-radius: 5px;
+  background: #0d1520;
+  color: var(--pve-muted);
+  font-variant-numeric: tabular-nums;
+}
+.campaign-stage .campaign-stage-status { color: #a9cae2; font-size: .73rem; }
+.campaign-stage[data-state="cleared"] .campaign-stage-status { color: #9fe1ba; }
+.campaign-stage[data-state="locked"] .campaign-stage-status { color: #aab7c7; }
+.campaign-stage[aria-pressed="true"] :is(.campaign-stage-status, .campaign-stage-number) { color: var(--pve-amber); }
+.campaign-setup { gap: 13px; padding: 0; }
+.campaign-brief, .campaign-ready, .campaign-rewards > div {
+  border: 1px solid var(--pve-line);
+  border-radius: 9px;
+  background: var(--pve-surface);
+}
+.campaign-brief, .campaign-ready { padding: 11px 13px; }
+.campaign-brief h3 { margin-bottom: 4px; font-size: clamp(17px, 2.5vw, 24px); }
+.campaign-setup p { color: var(--pve-muted); }
+.campaign-brief summary { padding: 7px 0 0; color: #d6e1f0; font-size: .8rem; cursor: pointer; }
+.campaign-brief details > p { margin-top: 5px; }
+.campaign-rewards, #campaign-payout dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+.campaign-rewards > div { padding: 9px 11px; }
+.campaign-rewards dt, #campaign-payout dt { color: var(--pve-muted); font-size: .77rem; }
+.campaign-rewards dd, #campaign-payout dd { margin: 4px 0 0; color: var(--pve-amber); font-size: .88rem; font-weight: 700; }
+#campaign-first-item { color: var(--pve-text); font-size: .78rem; font-weight: 500; }
+.campaign-ready { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 11px; align-items: center; }
+#campaign-portrait { width: 62px; height: 62px; object-fit: contain; background: #0a111b; border-radius: 6px; }
+#campaign-fighter-name { margin: 0 0 3px; font-size: 1rem; }
+#campaign-loadout { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 5px 0 0; padding: 0; list-style: none; }
+#campaign-loadout li { padding: 3px 6px; background: #202f42; border-radius: 4px; font-size: .74rem; }
+.campaign-roster .roster-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+.campaign-roster .roster-card {
+  min-height: 58px;
+  padding: 4px 2px;
+  gap: 3px;
+  background: var(--pve-surface);
+  border-color: var(--pve-line);
+  font-size: .72rem;
+}
+.campaign-roster .roster-portrait { width: 34px; height: 34px; }
+.campaign-roster .roster-pagination { margin-top: 6px; justify-content: flex-start; }
+
+.pve-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 9px 0 2px;
+  background: var(--pve-base);
+  border-top: 1px solid var(--pve-line);
+}
+#campaign-panel .pve-actions { justify-content: flex-end; }
+#campaign-panel .pve-actions button { min-height: 44px; }
+#campaign-panel .pve-actions [data-menu] { margin-inline-end: auto; }
+#campaign-start { min-width: min(120px, 100%); }
+
+#equipment-panel .equipment-header { border-color: var(--pve-line); padding-bottom: 9px; margin: 0; }
+#equipment-panel :is(.equipment-tabs, .equipment-views) { margin: 0; }
+#equipment-panel .equipment-layout { grid-area: auto; align-items: start; gap: 10px; }
+#equipment-panel .equipment-card { padding: 11px; background: var(--pve-surface); border-color: var(--pve-line); }
+#equipment-panel :is(.equipment-fighter-card, .equipment-details, .equipment-list-body) { overflow: visible; }
+#equipment-panel .equipment-tile { background: var(--pve-control); border-color: var(--pve-line); min-height: 64px; }
+#equipment-panel .equipment-tile:hover { border-color: var(--pve-amber); }
+#equipment-panel .equipment-stat-details { border-top: 1px solid var(--pve-line); }
+#equipment-panel .equipment-stats th, #equipment-panel .equipment-stats td { border-color: var(--pve-line); }
+.equipment-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+}
+.equipment-action-context { flex: 1 1 180px; min-width: 0; }
+.equipment-action-bar .equipment-action-context strong { font-family: inherit; font-size: .9rem; line-height: 1.3; }
+.equipment-action-context p { margin: 3px 0 0; font-size: .77rem; }
+#equipment-action-hint { color: #f5c9a0; }
+#equipment-action-hint:empty { display: none; }
+.equipment-action-bar .panel-actions { margin: 0; justify-content: flex-end; }
+
+.stage-wrap #result-panel:has(#campaign-result-actions:not([hidden])) {
+  background: var(--pve-base);
+  border: 1px solid #8e6a43;
+  border-radius: 12px;
+  width: min(540px, calc(100% - 22px));
+  padding: clamp(13px, 3vw, 25px);
+}
+.stage-wrap:has(#result-panel:not([hidden]) #campaign-result-actions:not([hidden])) .stage-bottom { display: none; }
+#result-panel :is(#campaign-result-actions, #quick-result-actions)[hidden],
+#result-panel:has(#campaign-result-actions[hidden]) :is(#campaign-result-stage, #campaign-payout) { display: none; }
+#result-panel:has(#campaign-result-actions:not([hidden])) :is(#result-score, #result-reward, #campaign-result-stage) {
+  margin: 6px 0 10px;
+  font-size: .86rem;
+  color: var(--pve-muted);
+}
+#result-panel:has(#campaign-result-actions:not([hidden])) #campaign-result-stage { color: var(--pve-amber); }
+#result-panel:has(#campaign-result-actions:not([hidden])) #result-title { margin: 0 0 5px; font-size: clamp(22px, 4.6vw, 35px); }
+#campaign-payout { margin: 13px 0; padding: 11px; background: var(--pve-surface); border: 1px solid var(--pve-line); border-radius: 9px; }
+#campaign-payout h3 { margin: 0 0 8px; font-size: .95rem; }
+#campaign-payout dd { font-size: 1.1rem; }
+#campaign-payout-gear { grid-column: 1 / -1; border-top: 1px solid var(--pve-line); padding-top: 7px; }
+#campaign-result-actions .primary-button { order: 1; }
+
+@media (max-width: 760px) {
+  #equipment-panel .equipment-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .campaign-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
+  #campaign-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .campaign-stage { grid-template-columns: 23px minmax(0, 1fr); gap: 2px 6px; padding: 6px; min-height: 61px; }
+  .campaign-stage .campaign-stage-number { grid-row: span 2; height: 24px; }
+  .campaign-stage .campaign-stage-status { grid-column: 2; }
+  .campaign-stage strong { font-size: .76rem; }
+  .campaign-roster .roster-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #campaign-panel .pve-actions button { padding-inline: 8px; }
+  #campaign-start { min-width: 80px; }
+  .equipment-action-bar .panel-actions { flex: 1 1 auto; }
+  body:not(.game-expanded) .stage-wrap:has(#result-panel:not([hidden]) #campaign-result-actions:not([hidden])) { min-height: 445px; }
+  #campaign-result-actions button { padding-inline: 8px; }
+}
+@media (max-width: 620px) {
+  .stage-wrap #menu-panel {
+    background-image: linear-gradient(180deg, transparent 5%, #0c131e32 24%, #0c131eed 52%, #0c131e 76%),
+      url('/assets/menu/linh-gioi.jpg');
+  }
+  #menu-panel #campaign-button { min-height: 57px; }
+}

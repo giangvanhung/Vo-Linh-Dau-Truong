@@ -52,7 +52,6 @@ export function createEquipmentPanel(characters, state, combat) {
   const pagePicker = byId('page');
   const previousPage = byId('page-prev');
   const nextPage = byId('page-next');
-  const listBody = item.parentElement;
   const viewButtons = [...panel.querySelectorAll('[data-equipment-view]')];
   let page = 0;
 
@@ -70,7 +69,6 @@ export function createEquipmentPanel(characters, state, combat) {
     const active = document.activeElement;
     page = index;
     render();
-    listBody.scrollTop = item.offsetTop - 5;
     if ((active === previousPage && previousPage.disabled) || (active === nextPage && nextPage.disabled)) {
       pagePicker.focus({ preventScroll: true });
     }
@@ -122,7 +120,6 @@ export function createEquipmentPanel(characters, state, combat) {
     notice.textContent = '';
     if (viewButtons[0].getClientRects().length) {
       selectView('details');
-      panel.querySelector('.equipment-details').scrollTop = 0;
       viewButtons.find(button => button.dataset.equipmentView === 'details').focus({ preventScroll: true });
     }
     render();
@@ -313,6 +310,21 @@ export function createEquipmentPanel(characters, state, combat) {
     upgrade.disabled = !cost || cost.gold > state.gold || cost.material > state.material;
     upgrade.textContent = cost ? 'Nâng cấp · ' + cost.gold + ' vàng, ' + cost.material + ' NL'
       : candidate ? 'Đã tối đa +4' : 'Nâng cấp';
+    byId('action-item').textContent = byId('selection').textContent;
+    let hint = '';
+    if (!buy.hidden && buy.disabled) {
+      if (!skinMode && !eligible) hint = 'Võ sĩ hiện tại không dùng được món này.';
+      else if (!skinMode && count >= inventoryLimit) hint = 'Kho đầy. Hãy bán bớt vật phẩm.';
+      else if (skinMode ? skin : price) hint = 'Thiếu vàng để mua.';
+    } else if (!upgrade.hidden && cost && upgrade.disabled) {
+      const missing = [];
+      if (cost.gold > state.gold) missing.push((cost.gold - state.gold) + ' vàng');
+      if (cost.material > state.material) missing.push((cost.material - state.material) + ' nguyên liệu');
+      hint = 'Cần thêm ' + missing.join(' và ') + ' để nâng cấp.';
+    } else if (!shop && !skinMode && !candidate) {
+      hint = 'Chọn ô và vật phẩm trong kho.';
+    }
+    byId('action-hint').textContent = hint;
   }
 
   function refresh() {
@@ -323,7 +335,6 @@ export function createEquipmentPanel(characters, state, combat) {
     const selectedIndex = skinMode ? Object.keys(skins).indexOf(selected) : !shop && selected
       ? choices().findIndex(entry => entry.id === selected) + 1 : 0;
     page = Math.floor(Math.max(0, selectedIndex) / pageSize);
-    listBody.scrollTop = 0;
     render();
   }
   fighter.addEventListener('change', () => refresh());

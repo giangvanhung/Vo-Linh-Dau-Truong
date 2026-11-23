@@ -1,9 +1,11 @@
 import { KNOCKDOWN_FRAMES } from './fighter.js';
 import { gainHeroEnergy } from '../game/hero-form.js';
+import { hungFollowFrames } from '../game/hung-air-combo.js';
 
 export function findHit(attacker, defender) {
   const attack = attacker.attack;
   if (!attacker.attackActive || attack.projectile) return null;
+  if (defender.onGround && (attack.hungKick === 'airJ' || attack.hungKick === 'slam')) return null;
   let hit = attack;
   const contactFor = () => {
     for (const box of attacker.attackBoxes) {
@@ -51,7 +53,7 @@ export function findContact(attacker, defender, attack, box, sourceX, direction)
 export function applyHit(contact) {
   const { attacker, defender, attack, blocked } = contact;
   const rules = attacker.rules;
-  const basicKick = attack.id === 'kick' && !attack.pickupWeapon && !contact.projectile;
+  const basicKick = attack.id === 'kick' && !attack.hungKick && !attack.pickupWeapon && !contact.projectile;
   contact.onContact?.();
   attack.hit = true;
   attack.confirmed = !blocked;
@@ -60,7 +62,7 @@ export function applyHit(contact) {
   if (!contact.projectile || !attacker.attacking) attacker.combo = combo;
   const scale = rules.comboScaling[Math.min(combo - 1, rules.comboScaling.length - 1)];
   // Apply chip separately from the damage that passes through guard.
-  const evolution = attack.evolvedPunch && !contact.projectile ? attacker.evolution : null;
+  const evolution = (attack.evolvedPunch || attack.evolvedKick) && !contact.projectile ? attacker.evolution : null;
   const multiplier = blocked ? 1 - rules.blockReduction + rules.chipRate : scale * (evolution?.punchMultiplier ?? 1);
   const previousHP = defender.hp;
   const attackBonus = attack.equipmentAttack ?? 1;
@@ -76,6 +78,7 @@ export function applyHit(contact) {
   defender.shieldHp = Math.round((defender.shieldHp - shield) * 100) / 100;
   const absorbed = barrier + shield;
   defender.hp = Math.max(0, Math.round((previousHP - incoming + absorbed) * 100) / 100);
+  if (defender.kickWallBounce !== 'legacy') defender.kickWallBounce = null;
   defender.knockVelocity = contact.direction * attack.knockback * (blocked ? .16 : 1);
   const damage = Math.round((previousHP - defender.hp) * 100) / 100;
   if (blocked) gainHeroEnergy(defender, 8);
@@ -132,6 +135,7 @@ export function applyHit(contact) {
     defender.stopFlight();
     defender.attack = null;
     defender.dash = null;
+    defender.hungFollow = defender.hungAirChain = null;
     defender.chargeFrames = 0;
     const kickFinisher = basicKick && combo >= 3 && !inflicted && attacker.onGround && defender.onGround;
     const standingKick = kickFinisher && !attack.lowStance;
@@ -141,12 +145,27 @@ export function applyHit(contact) {
       defender.vy = -lift;
       defender.onGround = false;
     }
+    if (attack.hungKick === 'launch' && !inflicted && defender.hp > 0 && attacker.attack === attack && !attacker.disabled) {
+      attacker.hungFollow = { target: defender, attack, frames: hungFollowFrames };
+    }
+    if (attack.hungKick === 'airJ' && attacker.hungAirChain?.target === defender) {
+      attacker.hungAirChain.punched = true;
+      // A single lift gives the finisher room before the next landing.
+      defender.vy = Math.min(defender.vy, -135);
+    }
+    if (attack.hungKick === 'slam' && !defender.onGround && defender.hp > 0) {
+      defender.vy = 850;
+      defender.knockdownOnLanding = true;
+      defender.kickWallBounce = 'slam';
+    }
     if (standingKick) {
       defender.knockVelocity = contact.direction * Math.max(660, attack.knockback);
-      defender.kickWallBounce = true;
+      defender.kickWallBounce = 'legacy';
     }
+    if (attack.hungKick === 'heavy' && defender.hp > 0 && !inflicted) defender.kickWallBounce = 'heavy';
     if ((standingKick || (!basicKick && attack.knockdownOnLanding)) && !defender.onGround) defender.knockdownOnLanding = true;
-    if ((attacker.characterId === 'hung' && attacker.awakeningWindow && attack.id === 'heavy')
+    if ((attacker.characterId === 'hung' && attacker.awakeningWindow && attack.id === 'heavy'
+      && (!attack.hungKick || attack.hungKick === 'heavy'))
       || (attacker.characterId === 'mai' && attacker.awakeningWindow)
       || (attacker.characterId === 'linh' && combo >= 2 && attacker.lastConfirmedAttack === 'kick' && attack.id === 'closeSkill')
       || attacker.awakening?.unlockAttack === attack.id) {
@@ -159,7 +178,7 @@ export function applyHit(contact) {
     attacker.lastConfirmedAttack = attack.id;
     const normal = !contact.projectile && !attack.pickupWeapon && ['light', 'heavy', 'kick'].includes(attack.id);
     const grounded = attacker.onGround && defender.onGround && !lift;
-    const finisher = normal && combo >= 3 && attack.id === 'heavy' && !attack.cancelInto.length;
+    const finisher = normal && !attack.hungKick && combo >= 3 && attack.id === 'heavy' && !attack.cancelInto.length;
     const knockdown = grounded && defender.hp > 0 && !inflicted
       && (basicKick ? kickFinisher : finisher || attack.knocksDown);
     if (knockdown) {
@@ -168,7 +187,7 @@ export function applyHit(contact) {
       defender.hitstun = 0;
       defender.bufferedAttack = null;
     } else {
-      if (normal && grounded && !inflicted) defender.knockVelocity *= .36;
+      if (normal && grounded && !inflicted && attack.hungKick !== 'heavy') defender.knockVelocity *= .36;
       defender.hitstun = inflicted === 'poisonStun' ? Math.max(42, attack.hitstun) : attack.hitstun;
     }
     defender.crouching = false;

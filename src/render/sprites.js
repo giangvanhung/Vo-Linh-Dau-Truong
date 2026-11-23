@@ -7,7 +7,7 @@ import { drawNewFighter } from './new-fighters.js';
 import { drawDetailedFighter, prepareDetailedFighter, prepareSupportPoses } from './detailed-fighters.js';
 import { drawHungEvolution } from './hung-evolution.js';
 import { drawMaiPose, maiPosePaths } from './mai-action-poses.js';
-import { applyHungRollPose, drawHungPose, hungAirborneFrame, hungCrouchFrame, hungCrouchWalkFrame, hungDodgeFrame, hungFallFrame, hungKickFrame, hungPosePaths, hungTechniqueFrame, hungTurnFrame, hungWalkFrame, maskHungScarf } from './hung-action-poses.js';
+import { applyHungRollPose, drawHungPose, hungAirborneFrame, hungComboKickPose, hungCrouchFrame, hungCrouchWalkFrame, hungDodgeFrame, hungFallFrame, hungKickFrame, hungPosePaths, hungTechniqueFrame, hungTurnFrame, hungWalkFrame, maskHungScarf } from './hung-action-poses.js';
 
 const attackClips = {
   light: ['light_punch', 1], heavy: ['heavy_punch', 2], kick: ['kick', 1],
@@ -44,7 +44,8 @@ export function animationName(fighter) {
   if (fighter.knockdownOnLanding && !fighter.onGround) return 'hit';
   if (fighter.hp <= 0) return 'ko';
   if (fighter.knockdown > 0) return 'knockdown';
-  if (fighter.freezeFrames || fighter.hitstun || fighter.guardBreak) return 'hit';
+  if (fighter.freezeFrames || fighter.hitstun) return 'hit';
+  if (fighter.guardBreak) return fighter.crouchGuardFatigue ? 'crouch' : 'hit';
   if (fighter.attack) return fighter.activePulse?.animation ?? fighter.attack.animation
     ?? attackClips[fighter.attack.id]?.[0] ?? fighter.attack.id;
   if (fighter.dash) return fighter.dash.roll ? 'roll' : 'dash';
@@ -259,7 +260,7 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
     const clips = sheet?.clips;
     const isHung = fighter.characterId === 'hung';
     if (isHung) {
-      clock.crouchTransition = fighter.crouching
+      clock.crouchTransition = fighter.crouching || (name === 'crouch' && fighter.guardBreak)
         ? Math.min(80, clock.crouchTransition + delta)
         : Math.max(0, clock.crouchTransition - delta * 2);
     }
@@ -313,7 +314,7 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
     const scale = (characters[fighter.characterId].sprite?.displaySize ?? 128) / source.h;
     const hungStride = isHung && (['run', 'crouch', 'crouchWalk'].includes(name) || (name === 'jump' && fighter.runJump));
     const kickFrame = isHung && actionPoses.kick ? hungKickFrame(fighter, name) : -1;
-    const kickSettle = isHung && name === 'kick' && fighter.onGround && attack?.id === 'kick'
+    const kickSettle = isHung && name === 'kick' && fighter.onGround && (attack?.id === 'kick' || attack?.hungKick === 'heavy')
       && !attack.pickupWeapon && !attack.lowStance && hungPoses.kick && hungPoses.landing
       && attack.elapsed >= attack.startup + attack.active + Math.ceil(attack.recovery * .40)
       && attack.elapsed < attack.startup + attack.active + Math.ceil(attack.recovery * .40) + 3;
@@ -347,7 +348,9 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
       ctx.restore();
       return true;
     }
-    const pose = techniqueFrame >= 0 ? drawHungPose(ctx, hungPoses.technique, 'technique', techniqueFrame, scale)
+    const comboKick = isHung && !fighter.disabled ? hungComboKickPose(fighter) : null;
+    const comboPose = comboKick && drawHungPose(ctx, actionPoses[comboKick[0]], ...comboKick, scale);
+    const pose = comboPose || (techniqueFrame >= 0 ? drawHungPose(ctx, hungPoses.technique, 'technique', techniqueFrame, scale)
       : heavyWindup ? drawHungPose(ctx, hungPoses.heavyWindup, 'heavyWindup', 0, scale)
       : hungLanding || kickSettle ? drawHungPose(ctx, hungPoses.landing, 'landing', 0, scale)
       : hungRollRecovery ? drawHungPose(ctx, hungPoses.rollRecovery, 'rollRecovery', 0, scale)
@@ -358,14 +361,15 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
       : crouchWalkFrame >= 0 ? drawHungPose(ctx, actionPoses.crouchWalk, 'crouchWalk', crouchWalkFrame, scale)
       : standingWalkFrame >= 0 ? drawHungPose(ctx, actionPoses.walk, 'walk', standingWalkFrame, scale)
       : isHung && !heavyRecovery && !motion && !(name === 'kick' && actionPoses.kick && fighter.onGround)
-        && drawHungPose(ctx, actionPoses.turn, 'turn', hungTurnFrame(fighter.attack, name), scale);
+        && drawHungPose(ctx, actionPoses.turn, 'turn', hungTurnFrame(fighter.attack, name), scale));
     if (pose) {
       const crouchPunch = crouchFrame === 2 || crouchFrame === 3;
       const swap = crouchPunch && (crouchFrame === 3) !== (fighter.attack.limbSide === 'right');
       const hands = swap ? [pose.front, pose.rear] : [pose.rear, pose.front];
       const [rear, front] = hands.map(([u, v]) => [u * scale, v * scale]);
+      const paintedComboScarf = comboPose && ['comboKick', 'landing', 'airborne'].includes(comboKick[0]);
       drawHungEvolution(ctx, hungEffects, fighter, animationTime, 0, 0, 0, scale,
-        front, rear, [pose.rear, pose.chest], Boolean(heavyWindup || hungLanding || hungRollRecovery || kickSettle) || techniqueFrame >= 0 || airborneFrame >= 0 || dodgeFrame >= 0);
+        front, rear, [pose.rear, pose.chest], Boolean(paintedComboScarf || heavyWindup || hungLanding || hungRollRecovery || kickSettle) || techniqueFrame >= 0 || airborneFrame >= 0 || dodgeFrame >= 0);
       ctx.restore();
       return true;
     }

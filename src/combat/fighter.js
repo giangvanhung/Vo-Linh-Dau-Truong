@@ -1,9 +1,16 @@
 import { groundHeightAt, stageFloorAt } from '../game/stages.js';
 import { endHeroForm, tickHeroForm } from '../game/hero-form.js';
+import { updateHungAirCombo } from '../game/hung-air-combo.js';
 
 export const FRAME_SECONDS = 1 / 60;
 export const KNOCKDOWN_FRAMES = 38;
 const specialSkills = new Set(['closeSkill', 'rangedSkill', 'ultimate', 'motionSuper']);
+const hungGroundChainLimit = 3;
+
+function isHungStandingNormal(id, definition) {
+  return !definition.lowStance && !definition.pickupWeapon && !definition.projectile
+    && (definition.hungKick === 'heavy' || definition.hungKick === 'launch' || (id === 'light' && !definition.hungKick));
+}
 
 export class Fighter {
   constructor(config, x, facing, rules) {
@@ -29,18 +36,20 @@ export class Fighter {
     this.crouching = false;
     this.blocking = false;
     this.attack = null;
+    this.hungFollow = this.hungAirChain = null;
     this.nextPunchSide = 'left';
     this.nextKickSide = 'left';
     this.bufferedAttack = null;
     this.hitstun = 0;
     this.knockdown = 0;
     this.knockdownOnLanding = false;
-    this.kickWallBounce = false;
+    this.kickWallBounce = null;
     this.knockVelocity = 0;
     this.flash = 0;
     this.attackLock = 0;
     this.guard = rules.guardMax;
     this.guardBreak = 0;
+    this.crouchGuardFatigue = false;
     this.guardReleaseRequired = false;
     this.guardRegenDelay = 0;
     this.combo = 0;
@@ -89,12 +98,14 @@ export class Fighter {
   get attacking() { return this.attack !== null; }
   get canMoveDuringAttack() {
     const attack = this.attack;
+    if (attack?.hungKick === 'slam') return false;
     if (attack?.plantFoot && this.onGround && attack.elapsed >= attack.advanceFrames
       && attack.elapsed < attack.startup + attack.active + Math.ceil(attack.recovery * .56)) return false;
     return !attack || (!attack.groundOnly && Boolean(attack.pickupWeapon || this.attacks[attack.id]));
   }
   get attackActive() {
     const attack = this.attack;
+    if (this.onGround && (attack?.hungKick === 'airJ' || attack?.hungKick === 'slam')) return false;
     return attack && attack.elapsed >= attack.startup && attack.elapsed < attack.startup + attack.active;
   }
 
@@ -209,7 +220,7 @@ export class Fighter {
     this.escapeProtection = Math.max(this.escapeProtection, step.invulnerableFrames);
     this.hitstun = this.knockdown = this.freezeFrames = this.guardBreak = this.escapeRecovery = this.attackLock = 0;
     this.knockdownOnLanding = false;
-    this.kickWallBounce = false;
+    this.kickWallBounce = null;
     if (this.stageCondition?.kind === 'stun') this.stageCondition = null;
     this.knockVelocity = 0;
     this.attack = this.bufferedAttack = null;
@@ -266,11 +277,12 @@ export class Fighter {
     }
   }
 
-  spendGuard(amount) {
+  spendGuard(amount, draining = false) {
     this.guard = Math.max(0, this.guard - amount);
     this.guardRegenDelay = this.rules.guardRegenDelay;
     if (this.guard > 0) return false;
     this.guardBreak = this.rules.guardBreakFrames;
+    this.crouchGuardFatigue = draining && this.characterId === 'hung' && this.crouching;
     this.guardReleaseRequired = true;
     this.blocking = false;
     return true;
@@ -284,25 +296,51 @@ export class Fighter {
 
   startAttack(id, definition, target) {
     if (this.disabled || this.stageCondition?.kind === 'morph' || this.dash || this.attackLock > 0 || this.blocking) return false;
+    const airComboMove = definition.hungKick === 'airJ' || definition.hungKick === 'slam';
+    if (airComboMove && (!this.hungAirChain || this.onGround)) return false;
     const { cost, required } = this.attackMeter(id, definition);
     if ((definition.groundOnly && !this.onGround) || this.cooldowns[id] > 0 || this.meter < required) return false;
     const previous = this.attack;
+    const hungGroundNormal = this.characterId === 'hung' && this.onGround && isHungStandingNormal(id, definition);
+    const hungGroundLink = hungGroundNormal && previous?.hungGroundChain > 0;
     if (previous) {
       const normalLink = previous.advance && definition.advance && this.onGround &&
         previous.elapsed >= previous.startup + (previous.confirmed ? 2 : previous.active);
       const confirmedLink = (!previous.advance || !definition.advance) && previous.confirmed && target.hitstun > definition.startup;
-      const kickLink = id === 'kick' && ['light', 'heavy', 'kick'].includes(previous.id)
+      const airLink = definition.hungKick === 'slam' && previous.hungKick === 'airJ'
+        && previous.confirmed && previous.elapsed >= previous.startup + 2;
+      const kickLink = id === 'kick' && !definition.hungKick && !previous.hungKick && ['light', 'heavy', 'kick'].includes(previous.id)
         && !previous.pickupWeapon && !previous.projectile && !definition.pickupWeapon && !definition.projectile
         && previous.confirmed && this.combo < 3 && previous.elapsed >= previous.startup + 2
         && target.hitstun > definition.startup && this.onGround && target.onGround;
-      if (!kickLink && (!previous.cancelInto.includes(id) || !(normalLink || confirmedLink))) return false;
+      let link = kickLink || (previous.cancelInto.includes(id) && (normalLink || confirmedLink));
+      if (definition.hungKick === 'slam') link = airLink;
+      if (hungGroundLink) {
+        link = previous.hungGroundChain < hungGroundChainLimit && previous.confirmed
+          && previous.elapsed >= previous.startup + 2 && target.hp > 0 && target.hitstun > definition.startup
+          && (previous.hungKick !== 'launch' || definition.hungKick !== 'launch');
+      }
+      if (!link) return false;
     }
 
-    if (!previous) this.combo = 0;
+    if (!previous && !airComboMove) this.combo = 0;
     this.attack = { id, ...definition, facing: this.facing, elapsed: 0, hit: false, confirmed: false,
       usesNativeWeapon: Boolean(this.weapon) && !this.weaponUses && !definition.pickupWeapon && !definition.unarmed };
     this.attack.lightStrikeDrop = this.lightStrikeDrop(this.attack, target);
-    if (definition.advance) {
+    if (hungGroundNormal) {
+      this.attack.hungGroundChain = (previous?.hungGroundChain ?? 0) + 1;
+      if (hungGroundLink) {
+        this.attack.advance = (definition.advance ?? 0) + 24;
+        this.attack.advanceFrames = definition.advanceFrames ?? definition.startup;
+        if (!target.onGround && definition.limbBoxes) {
+          this.attack.limbBoxes = definition.limbBoxes.map(box => ({ ...box, top: box.top + 34, height: box.height + 34 }));
+        }
+      }
+      if (this.attack.hungGroundChain >= hungGroundChainLimit) {
+        this.attack.cancelInto = [];
+        if (id === 'light') this.attack.hitstun = Math.min(11, this.attack.hitstun);
+      }
+    } else if (definition.advance && !definition.hungKick) {
       this.attack.normalChain = (previous?.normalChain ?? 0) + 1;
       if (this.attack.normalChain >= 3) {
         this.attack.cancelInto = [];
@@ -310,7 +348,7 @@ export class Fighter {
         this.attack.hitstun = Math.min(11, this.attack.hitstun);
       }
     }
-    if (this.unarmedChain && !definition.mainWeapon && !definition.pickupWeapon && id === 'light') {
+    if (this.unarmedChain && !hungGroundNormal && !definition.hungKick && !definition.mainWeapon && !definition.pickupWeapon && id === 'light') {
       const punch = (previous?.newPunch ?? 0) + 1;
       this.attack.newPunch = punch;
       this.attack.cancelInto = punch === 1 ? ['light', 'kick'] : ['kick'];
@@ -319,7 +357,7 @@ export class Fighter {
         this.attack.limbBoxes = definition.limbBoxes?.map(box => ({ ...box, far: box.far + 5 }));
       }
     }
-    if (this.unarmedChain && id === 'kick') {
+    if (this.unarmedChain && id === 'kick' && !definition.hungKick) {
       const rear = this.nextKickSide === 'right';
       this.attack.damage += rear ? 2 : 0;
       this.attack.recovery += rear ? 3 : 0;
@@ -328,7 +366,7 @@ export class Fighter {
     if (previous && this.onGround && target.onGround && !definition.projectile
       && !definition.travel && !definition.pickupWeapon) this.attack.followThrough = true;
     if (!definition.projectile && !definition.pickupWeapon) {
-      if (id === 'kick') {
+      if (id === 'kick' || (definition.hungKick && id === 'heavy')) {
         this.attack.limbSide = this.nextKickSide;
         this.nextKickSide = this.nextKickSide === 'left' ? 'right' : 'left';
       } else if (id === 'light' || id === 'heavy') {
@@ -348,9 +386,15 @@ export class Fighter {
     if (this.powerFrames) this.attack.damage *= 1.22;
     if (this.activeHeroForm) this.attack.damage *= this.activeHeroForm.damage;
     if (definition.heroCounter) this.heroCounter = 0;
+    if (definition.hungKick === 'airJ') this.hungAirChain.punchStarted = true;
+    if (definition.hungKick === 'slam') {
+      this.hungAirChain.finished = true;
+      this.vy = Math.max(this.vy, 50);
+    }
     if (this.evolving && this.evolution.damageMultiplier) this.attack.damage *= this.evolution.damageMultiplier;
     if (this.evolving && this.evolution.punchMultiplier && (id === 'light' || id === 'heavy')) {
-      this.attack.evolvedPunch = true;
+      if (definition.hungKick && definition.hungKick !== 'airJ') this.attack.evolvedKick = true;
+      else this.attack.evolvedPunch = true;
     }
     this.crouching = Boolean(definition.lowStance);
     this.meter -= cost;
@@ -415,8 +459,11 @@ export class Fighter {
     this.flash = 0;
     this.knockVelocity = wall ? wall * 1060 : (Math.sign(this.x - attacker.x) || -this.facing) * escape.pushSpeed;
     this.knockdownOnLanding = false;
-    this.kickWallBounce = false;
+    this.kickWallBounce = null;
+    this.hungFollow = this.hungAirChain = null;
     attacker.combo = 0;
+    if (attacker.hungFollow?.target === this) attacker.hungFollow = null;
+    if (attacker.hungAirChain?.target === this) attacker.hungAirChain = null;
     if (attacker.attack) attacker.attack.confirmed = false;
     return wall ? 'wall' : 'combo';
   }
@@ -465,6 +512,7 @@ export class Fighter {
   }
 
   update(dt, world, target) {
+    updateHungAirCombo(this, target, dt);
     if (this.dash) {
       this.x += this.dash.facing * this.dash.distance / this.dash.frames;
       this.dash.elapsed++;
@@ -472,10 +520,11 @@ export class Fighter {
     this.flash = Math.max(0, this.flash - dt);
     this.attackLock = Math.max(0, this.attackLock - dt);
     this.hitstun = Math.max(0, this.hitstun - 1);
+    if (this.kickWallBounce !== 'legacy' && (!this.hitstun || this.hp <= 0)) this.kickWallBounce = null;
     this.guardBreak = Math.max(0, this.guardBreak - 1);
     this.guardRegenDelay = Math.max(0, this.guardRegenDelay - dt);
     if (this.blocking) {
-      this.spendGuard(this.rules.guardDrain * dt);
+      this.spendGuard(this.rules.guardDrain * dt, true);
     } else if (this.guardBreak === 0 && this.guardRegenDelay === 0) {
       this.guard = Math.min(this.rules.guardMax, this.guard + this.rules.guardRegen * (this.poisonFrames ? .45 : 1) * dt);
     }
@@ -483,12 +532,10 @@ export class Fighter {
       const attack = this.attack;
       attack.elapsed++;
       const activeFrame = attack.elapsed - attack.startup;
+      if (attack.hungKick === 'slam' && activeFrame === 0) this.vy = Math.max(this.vy, 270);
       const advanceFrames = attack.advanceFrames ?? attack.startup + attack.active - 1;
       if (attack.advance && this.onGround && attack.elapsed <= advanceFrames) {
-        const step = attack.advance / advanceFrames;
-        const gap = (target.x - this.x) * attack.facing - (this.width + target.width) / 2;
-        const distance = Math.abs(this.y - target.y) < this.height ? Math.min(step, Math.max(0, gap)) : step;
-        this.x += attack.facing * distance;
+        this.advanceTowardOpponent(target, attack.facing, attack.advance / advanceFrames);
       } else if (!attack.advance && attack.followThrough && activeFrame <= 0 && this.onGround && target.onGround
         && Math.abs(this.y - target.y) < 12) {
         const gap = (target.x - this.x) * attack.facing - (this.width + target.width) / 2;
@@ -530,8 +577,8 @@ export class Fighter {
     if (wallRebound) {
       const inward = unclampedX > this.x ? -1 : 1;
       this.knockVelocity = inward * Math.max(480, Math.abs(this.knockVelocity) * .72);
-      this.vy = Math.min(this.vy, -170);
-      this.kickWallBounce = false;
+      if (this.kickWallBounce !== 'slam') this.vy = Math.min(this.vy, -170);
+      this.kickWallBounce = null;
     }
     this.updateVertical(dt, world);
     this.checkAwakeningBreak();
@@ -555,6 +602,7 @@ export class Fighter {
     this.y = walkingDownRamp ? floor : Math.min(floor, this.y + this.vy * dt);
     this.onGround = this.y === floor;
     if (this.onGround) {
+      this.hungAirChain = null;
       if (this.runJump) this.walkDistance = this.runJump.stride;
       this.runJump = null;
       this.airStepUsed = false;
@@ -562,7 +610,7 @@ export class Fighter {
       this.airDirection = 0;
       if (this.knockdownOnLanding) {
         this.knockdownOnLanding = false;
-        this.kickWallBounce = false;
+        this.kickWallBounce = null;
         if (this.hp > 0) this.knockdown = this.knockdownFrames ?? KNOCKDOWN_FRAMES;
         this.hitstun = 0;
       }
@@ -572,6 +620,12 @@ export class Fighter {
   clampX(world) {
     const margin = this.width / 2;
     this.x = Math.max(margin, Math.min(world.width - margin, this.x));
+  }
+
+  advanceTowardOpponent(target, direction, step) {
+    const gap = (target.x - this.x) * direction - (this.width + target.width) / 2;
+    const distance = Math.abs(this.y - target.y) < this.height ? Math.min(step, Math.max(0, gap)) : step;
+    this.x += direction * distance;
   }
 
   get hurtbox() {

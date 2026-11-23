@@ -1,11 +1,16 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
 import { readSuperMotion, superAttackFor } from './super-motion.js';
+import { followHungLaunch } from './hung-air-combo.js';
 
 export function applyControls(fighter, target, input, { jumpVelocity, world, useAttack, activateAwakening, dropWeapon, toast }) {
   if (input.direction && !input.guard && !fighter.disabled && !fighter.attacking && !fighter.dash) {
     fighter.facing = input.direction;
   }
   fighter.setGuard(input.guard);
+  const freshFollow = input.attackSequence?.length
+    ? input.attackSequence.some(press => press.id === 'kick' && !press.crouch)
+    : input.attack === 'kick' && !input.crouch;
+  if (freshFollow && !input.guard && !input.action && !input.charge && followHungLaunch(fighter, target)) return;
   const canBuffer = !fighter.disabled && !input.guard && !input.action && !input.charge;
   if (!canBuffer) fighter.bufferedAttack = null;
   const superMotion = readSuperMotion(fighter, input);
@@ -88,6 +93,8 @@ export function applyControls(fighter, target, input, { jumpVelocity, world, use
           if (fighter.attacks[press.id]) queue.push({ ...press, crouch: press.crouch && fighter.onGround, frames: 32 });
         }
       }
+      // A second standing L after a launcher requires a fresh press during the follow window.
+      while (fighter.attack?.hungKick === 'launch' && queue[0]?.id === 'kick' && !queue[0].crouch) queue.shift();
       const next = queue[0];
       if (next && (useAttack(fighter, target, next.id, next.crouch) || --next.frames <= 0 || !fighter.attack)) queue.shift();
       fighter.bufferedAttack = queue.length ? { queue } : null;
@@ -105,11 +112,15 @@ export function applyControls(fighter, target, input, { jumpVelocity, world, use
     const buffered = fighter.bufferedAttack;
     if (useAttack(fighter, target, buffered.id) || --buffered.frames <= 0) fighter.bufferedAttack = null;
   }
-  const canMove = !fighter.disabled && !fighter.dash && fighter.canMoveDuringAttack && !fighter.blocking;
+  const canSteer = !fighter.disabled && !fighter.dash && !fighter.blocking;
+  const canMove = canSteer && fighter.canMoveDuringAttack;
   const crouchGuard = fighter.blocking;
   fighter.crouching = fighter.attacking ? Boolean(fighter.attack.lowStance) : Boolean((canMove || crouchGuard) && crouch);
   if (canMove && !fighter.freeFlying) {
     const direction = fighter.onGround ? input.direction : fighter.airDirection;
     fighter.x += direction * fighter.walkingSpeed * (fighter.crouching ? .33 : 1) * FRAME_SECONDS;
+  } else if (canSteer && fighter.onGround && fighter.attack?.forwardStepFrames > fighter.attack?.elapsed
+    && input.direction === fighter.attack.facing) {
+    fighter.advanceTowardOpponent(target, input.direction, fighter.walkingSpeed * FRAME_SECONDS);
   }
 }

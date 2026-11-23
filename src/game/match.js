@@ -2,9 +2,10 @@ import { FRAME_SECONDS, Fighter } from '../combat/fighter.js';
 import { findHit, applyHit } from '../combat/hits.js';
 import { updateProjectiles } from '../combat/projectiles.js';
 import { faceOpponent } from '../combat/positioning.js';
+import { canFollowHungLaunch, hungAirAttack } from './hung-air-combo.js';
 import { CpuController } from '../combat/cpu.js';
 import { GameAudio } from '../platform/audio.js';
-import { createKeyboard, defaultBindings, keyCode } from '../platform/keyboard.js';
+import { createKeyboard, defaultBindings, keyCode, keyLabel } from '../platform/keyboard.js';
 import { mergeInputs } from '../platform/lan.js';
 import { loadSettings, persistSettings, roundFormats } from '../platform/settings.js';
 import { createArenaRenderer } from '../render/arena.js';
@@ -280,11 +281,23 @@ export function startGame(config) {
     byId('campaign-next').hidden = !saved || !next;
     byId('campaign-replay').disabled = !saved;
     byId('campaign-replay').textContent = won ? 'Chơi lại' : 'Thử lại';
+    byId('campaign-replay').classList.toggle('primary-button', saved && !next && !complete);
+    byId('campaign-replay').classList.toggle('panel-button', !saved || next || complete);
+    byId('campaign-list').classList.toggle('primary-button', saved && complete);
+    byId('campaign-list').classList.toggle('panel-button', !saved || !complete);
+    byId('campaign-result-stage').textContent = config.campaign[index].name;
+    byId('campaign-result-stage').hidden = false;
+    byId('campaign-payout').hidden = !saved || !won;
     const message = [];
     if (saved) {
-      if (won) message.push('+' + reward.gold + ' vàng · +' + reward.material + ' nguyên liệu');
-      if (reward.item) message.push('Nhận ' + catalog[reward.item].name);
-      if (reward.reserved) message.push('Kho đầy. Vật phẩm đang chờ ở danh sách ải.');
+      if (won) {
+        byId('campaign-payout-title').textContent = reward.first ? 'Đã nhận thưởng lần đầu' : 'Đã nhận thưởng chơi lại';
+        byId('campaign-payout-gold').textContent = '+' + reward.gold;
+        byId('campaign-payout-material').textContent = '+' + reward.material;
+        byId('campaign-payout-gear').hidden = !reward.item;
+        byId('campaign-payout-item').textContent = reward.item ? catalog[reward.item].name : '';
+      } else message.push('Thắng trận để nhận thưởng của ải.');
+      if (reward.reserved) message.push('Kho đầy. ' + catalog[config.campaign[index].first.item].name + ' đang chờ nhận ở danh sách ải.');
       if (next && reward.first) message.push('Đã mở ' + config.campaign[index + 1].name);
       if (complete) message.push('Có thể chơi lại mọi ải đã mở.');
       pendingCampaign = null;
@@ -375,9 +388,12 @@ export function startGame(config) {
   function useAttack(fighter, target, id, crouch = false) {
     const skill = id === 'motionSuper' ? superAttackFor(fighter) : fighter.skillFor(id);
     const crouchAttack = crouch && fighter.onGround ? fighter.crouchAttacks?.[id] : undefined;
-    const equipment = crouchAttack ? undefined : equippedAttack(fighter, id);
-    const main = crouchAttack ? undefined : mainWeaponAttack(fighter, id);
-    const started = fighter.startAttack(id, crouchAttack ?? equipment ?? main ?? skill ?? fighter.attacks[id], target);
+    const airAttack = hungAirAttack(fighter, target, id);
+    if (fighter.hungAirChain && (id === 'light' || id === 'heavy') && !airAttack) return false;
+    const normal = fighter.attacks[id];
+    const equipment = crouchAttack || airAttack ? undefined : equippedAttack(fighter, id);
+    const main = crouchAttack || airAttack || normal?.hungKick ? undefined : mainWeaponAttack(fighter, id);
+    const started = fighter.startAttack(id, airAttack ?? crouchAttack ?? equipment ?? main ?? skill ?? normal, target);
     if (started && equipment) {
       fighter.weaponUses = equipment.projectile?.shape === 'slipper' ? 0 : fighter.weaponUses - 1;
       toast(equipment.label.toUpperCase());
@@ -587,6 +603,9 @@ export function startGame(config) {
     ].filter(Boolean);
     const hits = contacts.map(applyHit);
     hits.forEach(hitEffects);
+    if (hung.hp <= 0 || mai.hp <= 0) {
+      hung.hungFollow = hung.hungAirChain = mai.hungFollow = mai.hungAirChain = null;
+    }
     for (const fighter of [hung, mai]) {
       if (fighter.knockdown || fighter.hp <= 0) pickups.release(fighter, stageFrame, world, true);
       if (reviveFighter(fighter, revivedSlots)) toast(fighter.name.toUpperCase() + ' · HỒI SINH');
@@ -642,7 +661,8 @@ export function startGame(config) {
       toast(label);
       burst(x, y, 18, color);
     }
-    const isKick = hit.attack.id === 'kick' || ['kick', 'sweep'].includes(hit.attack.animation);
+    const isKick = hit.attack.id === 'kick' || (hit.attack.hungKick && hit.attack.hungKick !== 'airJ')
+      || ['kick', 'sweep'].includes(hit.attack.animation);
     audio.cue(blocked ? 'block' : isKick ? 'kick' : hit.attack.id === 'heavy' ? 'heavy' : 'hit');
     hitstop = Math.max(hitstop, hit.hitstop);
     shake = Math.max(shake, hit.hitstop ? .14 : .07);
@@ -682,6 +702,7 @@ export function startGame(config) {
     phaseTime = 1.35;
     hung.stopFlight();
     mai.stopFlight();
+    hung.hungFollow = hung.hungAirChain = mai.hungFollow = mai.hungAirChain = null;
     clearInputs();
     mai.blocking = false;
     panels.setPauseAvailable(false);
@@ -703,7 +724,7 @@ export function startGame(config) {
     if (!nextRound && campaignRun) {
       const won = winsHung > winsMai;
       pendingCampaign = { index: campaignRun.index, serial: campaignRun.serial, won,
-        score: 'P1 · ' + hung.name + ' ' + winsHung + ' – ' + winsMai + ' CPU · ' + mai.name };
+        score: hung.name + ' ' + winsHung + ' – ' + winsMai + ' ' + mai.name + ' (CPU)' };
       byId('quick-result-actions').hidden = true;
       byId('campaign-result-actions').hidden = false;
       saveCampaignResult();
@@ -759,9 +780,10 @@ export function startGame(config) {
         : 'ĐẤU ĐI — ĐỪNG ĐỂ LỘ SƠ HỞ';
       if (ui['status-text'].textContent !== status) ui['status-text'].textContent = status;
     }
-    hud.updateMeterUI(hung, 'hung');
-    hud.updateMeterUI(mai, 'mai');
-    trainingPanel.update(practice && ['countdown', 'fight', 'paused'].includes(phase), mai);
+    hud.updateMeterUI(hung, 'hung', settings.bindings[localMode === 'team' ? team.activePlayer : 0]);
+    hud.updateMeterUI(mai, 'mai', lan || localMode === 'versus' ? settings.bindings[1] : null);
+    const followHint = phase === 'fight' && canFollowHungLaunch(hung, mai) ? keyLabel(settings.bindings[0].l) : '';
+    trainingPanel.update(practice && ['countdown', 'fight', 'paused'].includes(phase), hung, mai, followHint);
     const fighters = [hung, mai];
     const debug = practice && training.debug;
     const remaining = 1 - accumulator / FRAME_SECONDS;

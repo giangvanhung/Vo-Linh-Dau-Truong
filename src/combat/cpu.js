@@ -1,5 +1,6 @@
 import { FRAME_SECONDS } from './fighter.js';
 import { overlapsSurface, stageConditionAt, zoneWarning } from '../game/stages.js';
+import { followHungLaunch, hungFollowFrames } from '../game/hung-air-combo.js';
 
 export const difficulties = {
   easy:   { reaction: [.30, .50], guard: .18, evade: .15, skill: .14, punish: .20, ultimate: .40, escape: .10, spacing: 72 },
@@ -55,10 +56,22 @@ export class CpuController {
 
   update(dt, cpu, player, projectiles, world, useAttack, escape) {
     this.time += dt;
+    if (cpu.hungFollow?.frames <= hungFollowFrames - 6 && followHungLaunch(cpu, player)) {
+      this.setState('Attack', 0);
+      return;
+    }
+    const airChain = cpu.hungAirChain;
+    if (airChain && !cpu.onGround && !cpu.disabled && !player.onGround) {
+      if (airChain.punched) useAttack('heavy');
+      else if (!airChain.punchStarted && airChain.steering <= 8) useAttack('light');
+      return;
+    }
     const attack = player.attack;
     const attackReady = this.ready(attack, 'guard');
     const recovering = attack && attack.elapsed >= attack.startup + attack.active;
-    const missed = recovering && unsafeMoves.has(attack.id) && !attack.hit && attack.lastPulse == null
+    const unsafeHungKick = ['heavy', 'launch', 'sweep', 'slam'].includes(attack?.hungKick);
+    const missed = recovering && (unsafeMoves.has(attack.id) || unsafeHungKick)
+      && (unsafeHungKick ? !attack.confirmed : !attack.hit) && attack.lastPulse == null
       && (!attack.projectile || attack.projectileMissed);
     const punishReady = this.ready(missed ? attack : null, 'punish');
     const relativeX = player.x - cpu.x;

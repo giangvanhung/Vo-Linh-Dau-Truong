@@ -1,10 +1,13 @@
 import { FRAME_SECONDS } from '../combat/fighter.js';
 import { difficultyLabels } from '../platform/settings.js';
+import { keyLabel } from '../platform/keyboard.js';
 import { gear } from '../game/pickups.js';
 import { mainWeaponAttack } from '../game/weapon-attacks.js';
 import { heroEnergyMax, nextHeroForm } from '../game/hero-form.js';
 
 export const damageFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
+const cooldownFormat = new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const skillBindings = { closeSkill: 'u', rangedSkill: 'i', ultimate: 'o' };
 
 export function createHud() {
   const byId = id => document.getElementById(id);
@@ -21,7 +24,20 @@ export function createHud() {
     value: document.getElementById(side + '-meter-value'),
     dash: document.getElementById(side + '-dash'),
     escape: document.getElementById(side + '-escape'),
-    skills: document.getElementById(side + '-skills'),
+    skills: Array.from(byId(side + '-skills').children, card => {
+      card.className = 'skill-card';
+      const title = document.createElement('span');
+      title.className = 'skill-title';
+      const key = document.createElement('kbd');
+      key.className = 'skill-key';
+      const name = document.createElement('span');
+      name.className = 'skill-name';
+      const status = document.createElement('small');
+      status.className = 'skill-state';
+      title.append(key, name);
+      card.append(title, status);
+      return { id: card.dataset.skill, card, key, name, status };
+    }),
   };
 
   function updateRosterUI({ hung, mai, practice, difficulty, lan, team, activePlayer, activeCpu }) {
@@ -31,9 +47,10 @@ export function createHud() {
       hud.style.setProperty('--fighter-color', fighter.color);
       ui['score-' + side].parentElement.querySelector('.score-name').textContent = fighter.name.toUpperCase();
     }
-    document.querySelector('.player-hung .player-side').textContent = team ? 'P' + (activePlayer + 1) + (activePlayer ? ' · Cuối' : ' · Còn P2') : 'NGƯỜI CHƠI 1';
-    document.querySelector('.player-mai .player-side').textContent = team ? 'CPU ' + (activeCpu + 1) + (activeCpu ? ' · Cuối' : ' · Còn CPU 2') : practice ? 'BÙ NHÌN' : lan ? 'NGƯỜI CHƠI 2' : 'CPU · ' + difficultyLabels[difficulty].toUpperCase();
+    document.querySelector('.player-hung .player-side').textContent = team ? 'P' + (activePlayer + 1) + (activePlayer ? ' · Cuối' : ' · Còn P2') : 'P1';
+    document.querySelector('.player-mai .player-side').textContent = team ? 'CPU ' + (activeCpu + 1) + (activeCpu ? ' · Cuối' : ' · Còn CPU 2') : practice ? 'BÙ NHÌN' : lan ? 'P2' : 'CPU · ' + difficultyLabels[difficulty].toUpperCase();
     document.querySelector('.controls-card .heading-note').textContent = hung.name.toUpperCase() + ' · NGƯỜI CHƠI';
+    byId('heavy-control').textContent = hung.characterId === 'hung' ? hung.attacks.heavy.label : 'Đấm nặng';
     byId('kick-control').textContent = hung.attacks.kick.label;
     byId('close-control').textContent = hung.skills.closeSkill.label;
     byId('range-control').textContent = hung.skills.rangedSkill.label;
@@ -78,7 +95,7 @@ export function createHud() {
     ui.timer.style.color = seconds < 10 ? '#ef876b' : '';
   }
 
-  function updateMeterUI(fighter, side) {
+  function updateMeterUI(fighter, side, bindings) {
     const meter = meterUI[side];
     const flight = fighter.flight;
     meter.flight.hidden = !flight;
@@ -105,16 +122,17 @@ export function createHud() {
     if (meter.fill) meter.fill.style.width = fighter.meter / fighter.meterMax * 100 + '%';
     meter.fill?.parentElement.classList.toggle('full', fighter.meter >= fighter.meterMax);
     if (meter.value) setText(meter.value, value + '/' + fighter.meterMax);
-    for (const indicator of meter.skills.children) {
-      const id = indicator.dataset.skill;
+    for (const { id, card, key, name, status } of meter.skills) {
       const skill = mainWeaponAttack(fighter, id) ?? fighter.skillFor(id);
       const cooldown = fighter.cooldowns[id];
       const { required: cost } = fighter.attackMeter(id, skill);
-      const ready = !cooldown && fighter.meter >= cost;
-      const status = cooldown ? (cooldown * FRAME_SECONDS).toFixed(1) + 's' : ready ? 'Sẵn sàng' : 'Thiếu nộ';
-      const meterCost = cost ? ' · ' + cost + ' nộ' : '';
-      setText(indicator, skill.label + meterCost + ' · ' + status);
-      indicator.classList.toggle('ready', ready);
+      const state = cooldown ? 'cooldown' : fighter.meter >= cost ? 'ready' : 'meter';
+      if (card.dataset.state !== state) card.dataset.state = state;
+      if (key.hidden !== !bindings) key.hidden = !bindings;
+      if (bindings) setText(key, keyLabel(bindings[skillBindings[id]]));
+      setText(name, skill.label);
+      setText(status, cooldown ? 'Đang hồi ' + cooldownFormat.format(cooldown * FRAME_SECONDS) + 's'
+        : state === 'ready' ? '✓ Sẵn sàng' : 'Thiếu nộ · cần ' + cost);
     }
     const status = [
       fighter.stageCondition ? fighter.stageCondition.label : '',

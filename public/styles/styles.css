@@ -67,10 +67,6 @@
 .player-mai .energy-fill { margin-left: auto; }
 .hud .timer-wrap { padding: 7px 2px; background: #151119dc; border: 1px solid #fff4; border-radius: 8px; }
 .hud .timer-caption { color: #e0dbe1; }
-.skill-status { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 5px; color: #a19aa6; font-size: 8px; }
-.player-mai .skill-status { justify-content: flex-end; }
-.skill-status .ready { color: #f3c096; }
-.player-mai .skill-status .ready { color: #a4d7ff; }
 #difficulty-picker label { margin-right: 8px; color: #d5cbd0; }
 #cpu-difficulty { padding: 4px 8px; border: 1px solid #6c5351; border-radius: 3px; background: #27212a; color: #f1efed; font: inherit; cursor: pointer; }
 #cpu-difficulty:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }

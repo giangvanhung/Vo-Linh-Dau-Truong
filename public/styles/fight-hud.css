@@ -1,0 +1,184 @@
+:is(.hud, #training-tools, #hung-follow-hint) {
+  --fight-base: #0c131e;
+  --fight-surface: #141f2d;
+  --fight-line: #39475a;
+  --fight-text: #fff3df;
+  --fight-muted: #b8c3d2;
+  --fight-amber: #ffc56e;
+}
+
+.arena-scene .hud {
+  grid-template-columns: minmax(0, 1fr) clamp(54px, 9vw, 96px) minmax(0, 1fr);
+  gap: clamp(7px, 1.65vw, 22px);
+  padding: clamp(9px, 1.6vw, 16px) clamp(9px, 2.4vw, 24px);
+  border-bottom: 1px solid var(--fight-line);
+  color: var(--fight-text);
+  background: var(--fight-base);
+  text-shadow: none;
+}
+.hud .player-hud {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  --side-accent: var(--fight-amber);
+  --hp-color: #eab66b;
+}
+.hud .player-mai { --side-accent: #a1e0ee; --hp-color: #78bdcd; }
+.hud .player-meta { min-width: 0; margin-bottom: 7px; }
+.hud .player-meta > div { min-width: 0; justify-items: start; gap: 3px; }
+.hud .player-meta > .align-right { margin-inline-start: auto; justify-items: end; }
+.hud .player-meta strong {
+  color: var(--fight-text);
+  font-size: clamp(13px, 2.1vw, 23px);
+  line-height: 1.1;
+  letter-spacing: .02em;
+  overflow-wrap: anywhere;
+}
+.hud .player-side {
+  padding: 2px 5px;
+  border-inline-start: 2px solid var(--side-accent);
+  background: var(--fight-surface);
+  color: var(--side-accent);
+  font-size: clamp(9px, 1vw, 11px);
+  line-height: 1.2;
+  letter-spacing: .04em;
+}
+.hud .player-mai .player-side { border-inline: 0; border-inline-end: 2px solid var(--side-accent); }
+.hud .player-hud .health-track {
+  min-height: 20px;
+  border-color: var(--fight-line);
+  background: #20293a;
+}
+.hud .health-number { font-size: clamp(11px, 1.25vw, 14px); color: #fff; background: #080f19dc; }
+.hud .energy-row { margin-top: 6px; color: var(--fight-amber); font-variant-numeric: tabular-nums; }
+.hud .energy-track { min-width: 8px; border-color: #9c7946; background: #22222a; }
+.hud .energy-fill { background: var(--fight-amber); }
+.hud .damage-score { color: var(--fight-muted); }
+.hud .focus-status { color: var(--fight-muted); margin-top: 5px; }
+.hud .focus-status:empty { display: none; }
+.hud .player-hud > :is(.focus-status, .flight-stamina, .hero-energy) { order: 2; }
+
+.hud .timer-wrap {
+  display: grid;
+  gap: 3px;
+  padding: 6px 2px;
+  border: 1px solid var(--fight-line);
+  border-top-color: var(--fight-amber);
+  background: var(--fight-surface);
+}
+.hud .timer { color: var(--fight-text); font-size: clamp(24px, 4vw, 42px); font-variant-numeric: tabular-nums; }
+.hud .timer-caption { margin: 0; color: var(--fight-muted); font-size: clamp(7px, .92vw, 10px); letter-spacing: .03em; }
+.hud #round-label { color: var(--fight-amber); font-size: clamp(8px, 1vw, 11px); font-weight: 700; line-height: 1.2; }
+
+.hud .skill-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 7px;
+  text-align: start;
+}
+.hud .skill-card {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  min-height: 60px;
+  padding: 5px 6px;
+  border: 1px solid var(--fight-line);
+  border-radius: 6px;
+  background: var(--fight-surface);
+  line-height: 1.2;
+}
+.hud .skill-title { display: flex; align-items: center; gap: 5px; }
+.hud .skill-key, #training-panel kbd {
+  min-width: 18px;
+  width: auto;
+  height: auto;
+  min-height: 18px;
+  padding: 1px 4px;
+  border-color: #627083;
+  background: #192637;
+  color: var(--fight-text);
+  white-space: nowrap;
+}
+.hud .skill-key { color: var(--side-accent); }
+.hud .skill-key[hidden] { display: none; }
+.hud .skill-name { color: var(--fight-text); font-size: clamp(10px, 1.05vw, 13px); font-weight: 600; overflow-wrap: anywhere; }
+.hud .skill-state { color: var(--fight-muted); font-size: clamp(9px, .95vw, 11px); font-variant-numeric: tabular-nums; }
+.hud .skill-card[data-state="ready"] { border-color: #957343; }
+.hud .skill-card[data-state="ready"] .skill-state { color: var(--fight-amber); }
+.hud .skill-card[data-state="cooldown"] .skill-state { color: #bae0fb; }
+
+.arena-tools #training-tools, #training-tools #training-panel {
+  color: var(--fight-text);
+  border-color: var(--fight-line);
+  background: var(--fight-base);
+}
+.arena-tools:has(#training-tools[open]) { scrollbar-color: #57677c #141f2d; }
+#training-tools > summary { color: var(--fight-amber); font-weight: 700; }
+#training-panel .training-moves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#training-panel .training-moves li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--fight-line);
+  border-radius: 5px;
+  background: var(--fight-surface);
+  font-size: .77rem;
+  line-height: 1.25;
+}
+#training-panel .training-moves li[hidden] { display: none; }
+.training-keys { display: flex; align-items: center; gap: 2px; flex: none; }
+#training-hung-combo {
+  margin: 8px 0;
+  padding: 7px 8px;
+  border-inline-start: 2px solid var(--fight-amber);
+  background: var(--fight-surface);
+  color: var(--fight-muted);
+  font-size: .75rem;
+  line-height: 1.4;
+}
+#training-hung-combo strong { color: var(--fight-amber); }
+#training-hung-combo span { display: inline-flex; align-items: center; gap: 2px; margin-inline: 3px; }
+#training-panel .training-controls { margin-top: 10px; }
+
+.stage-wrap #hung-follow-hint {
+  position: absolute;
+  inset: 12px auto auto 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--fight-amber);
+  border-radius: 5px;
+  background: var(--fight-amber);
+  box-shadow: 0 2px 12px #0009;
+  color: #251809;
+  font-size: .83rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#hung-follow-hint kbd { background: #2f2112; border-color: #735133; color: var(--fight-text); }
+
+@media (max-width: 850px) {
+  .hud .skill-status { grid-template-columns: minmax(0, 1fr); }
+  .hud .skill-card { grid-template-columns: minmax(0, 1fr) auto; min-height: 32px; align-items: center; gap: 3px 6px; }
+}
+@media (max-width: 540px) {
+  .hud .skill-card { grid-template-columns: minmax(0, 1fr); min-height: 40px; padding: 4px 5px; }
+  .hud .skill-status { gap: 4px; }
+  .hud .skill-key { padding-inline: 2px; min-height: 15px; }
+  .stage-wrap #hung-follow-hint { inset-block-start: 51px; }
+  #training-tools[open] { width: 100%; }
+  #training-tools #training-panel { padding: 8px; }
+}
