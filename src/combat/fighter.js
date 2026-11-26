@@ -367,13 +367,17 @@ export class Fighter {
     if (previous && this.onGround && target.onGround && !definition.projectile
       && !definition.travel && !definition.pickupWeapon) this.attack.followThrough = true;
     if (!definition.projectile && !definition.pickupWeapon) {
-      if (id === 'kick' || ((definition.hungKick || definition.kickStyle) && id === 'heavy')) {
+      if (id === 'kick' || ((definition.hungKick || definition.kickStyle || definition.animation === 'maiAirSide') && id === 'heavy')) {
         this.attack.limbSide = this.nextKickSide;
         this.nextKickSide = this.nextKickSide === 'left' ? 'right' : 'left';
       } else if (id === 'light' || id === 'heavy') {
         this.attack.limbSide = this.nextPunchSide;
         this.nextPunchSide = this.nextPunchSide === 'left' ? 'right' : 'left';
       }
+    }
+    if (this.characterId === 'mai' && previous && !definition.pickupWeapon && !definition.mainWeapon) {
+      this.attack.maiPreviousPose = previous.id === 'light' && !previous.pickupWeapon && !previous.mainWeapon
+        && !previous.lowStance ? previous.limbSide === 'right' ? 'punch' : 'palm' : null;
     }
     const equipment = this.equipmentStats;
     if (equipment) this.attack.equipmentAttack = 1 + equipment.attack / 100;

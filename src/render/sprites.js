@@ -190,6 +190,11 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
       clock.landing = clock.airborne && fighter.onGround ? 54 : Math.max(0, (clock.landing ?? 0) - delta);
       clock.turn = clock.facing && clock.facing !== facing && fighter.onGround
         ? 42 : Math.max(0, (clock.turn ?? 0) - delta);
+      clock.flightStart = fighter.freeFlying && !clock.flying
+        ? 66 : Math.max(0, (clock.flightStart ?? 0) - delta);
+      clock.flying = fighter.freeFlying;
+      const leanTarget = fighter.freeFlying ? (fighter.flightX * facing * .15 - fighter.flightY * .07) : 0;
+      clock.flightLean = (clock.flightLean ?? 0) + (leanTarget - (clock.flightLean ?? 0)) * Math.min(1, delta / 54);
       clock.facing = facing;
       clock.airborne = !fighter.onGround;
       ctx.save();

@@ -228,6 +228,14 @@
     }
   },
   "aerialNormals": {
+    "light": {
+      "label": "Phong Quyền Trên Không",
+      "damage": 6, "startup": 4, "active": 4, "recovery": 9,
+      "range": 43, "knockback": 83, "hitstun": 17, "hitstop": 0, "guardDamage": 15,
+      "cancelInto": ["light", "heavy", "kick"],
+      "animation": "light_punch", "unarmed": true,
+      "limbBoxes": [{ "near": 19, "far": 43, "top": 82, "height": 11 }]
+    },
     "heavy": {
       "label": "Hoành Phong Trên Không",
       "damage": 12, "startup": 9, "active": 5, "recovery": 18,

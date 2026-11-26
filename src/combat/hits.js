@@ -132,6 +132,7 @@ export function applyHit(contact) {
   if (blocked) {
     defender.attackLock = .14;
   } else {
+    if (defender.freeFlying) defender.bufferedAttack = null;
     defender.stopFlight();
     defender.attack = null;
     defender.dash = null;

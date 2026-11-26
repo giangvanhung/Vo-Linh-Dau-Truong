@@ -5,6 +5,7 @@ import { applyHit, findHit } from '../src/combat/hits.js';
 import { applyControls } from '../src/game/fighter-controls.js';
 import { canFollowHungLaunch, followHungLaunch, hungAirAttack, hungFollowFrames } from '../src/game/hung-air-combo.js';
 import { animationName } from '../src/render/sprites.js';
+import { maiPoseName } from '../src/render/mai-action-poses.js';
 import { hungCrouchFrame } from '../src/render/hung-action-poses.js';
 import { loadFighterConfig } from './fighter-config.mjs';
 
@@ -32,6 +33,96 @@ function connect(first, second, id, definition = first.attacks[id]) {
   const contact = findHit(first, second);
   return contact && applyHit(contact);
 }
+
+test('Mai trades strikes at flight altitude in either facing and lands after being hit', () => {
+  const flightWorld = { ...world, height: 600, groundRatio: .825 };
+  const controls = {
+    world: flightWorld,
+    jumpVelocity: config.stage.jumpVelocity,
+    useAttack: (owner, target, id) => owner.startAttack(id, owner.aerialNormals?.[id] ?? owner.attacks[id], target),
+  };
+  for (const facing of [1, -1]) {
+    for (const altitude of [-12, -110, -210]) {
+      const mai = fighter('mai', 500 - 38 * facing, facing);
+      const opponent = fighter('hung', 500, -facing);
+      mai.awakeningLevel = 1;
+      mai.awakeningBarrier = 100;
+      mai.flightStamina = 100;
+      mai.y = altitude;
+      opponent.y = altitude === -110 ? altitude : 0;
+      opponent.onGround = opponent.y === 0;
+      applyControls(mai, opponent, { jump: true, attack: 'light' }, controls);
+      assert(mai.freeFlying && mai.attack);
+      assert(opponent.startAttack('light', opponent.attacks.light, mai));
+      mai.attack.elapsed = mai.attack.startup - 1;
+      mai.flightY = 0;
+      mai.update(FRAME_SECONDS, flightWorld, opponent);
+      opponent.attack.elapsed = opponent.attack.startup;
+      assert.equal(Boolean(findHit(mai, opponent)), altitude !== -210);
+      const contact = findHit(opponent, mai);
+      assert.equal(Boolean(contact), altitude !== -210);
+      if (!contact) continue;
+      mai.escapeProtection = 1;
+      assert.equal(findHit(opponent, mai), null);
+      mai.escapeProtection = 0;
+      applyHit(contact);
+      assert(!mai.freeFlying && !mai.attack);
+      for (let frame = 0; frame < 60; frame++) {
+        mai.update(FRAME_SECONDS, flightWorld, opponent);
+        mai.endFrame();
+      }
+      assert(mai.onGround && !mai.disabled);
+      applyControls(mai, opponent, { direction: facing }, controls);
+      assert.equal(mai.facing, facing);
+    }
+    const mai = fighter('mai', 500 - 48 * facing, facing);
+    const opponent = fighter('hung', 500, -facing);
+    mai.awakeningLevel = 1;
+    mai.awakeningBarrier = 100;
+    mai.flightStamina = 100;
+    mai.y = -80;
+    opponent.y = -80;
+    opponent.onGround = false;
+    applyControls(mai, opponent, { jump: true, attack: 'heavy' }, controls);
+    const attack = mai.attack;
+    assert.equal(attack.animation, 'maiAirSide');
+    mai.flightY = 0;
+    for (let frame = 0; frame < attack.startup; frame++) mai.update(FRAME_SECONDS, flightWorld, opponent);
+    assert(findHit(mai, opponent));
+    for (let frame = 0; frame < attack.active + attack.recovery; frame++) mai.update(FRAME_SECONDS, flightWorld, opponent);
+    assert(mai.freeFlying && !mai.attack);
+    applyControls(mai, opponent, { crouch: true }, controls);
+    for (let frame = 0; frame < 40; frame++) mai.update(FRAME_SECONDS, flightWorld, opponent);
+    assert(mai.onGround && !mai.freeFlying);
+  }
+});
+
+test('Mai links palm, rear punch and rising kick without showing idle between the punches', () => {
+  for (const facing of [1, -1]) {
+    const mai = fighter('mai', 500 - 38 * facing, facing);
+    const opponent = fighter('hung', 500, -facing);
+    const pose = () => maiPoseName(mai, animationName(mai), 0, 0);
+    assert(connect(mai, opponent, 'light')?.attack.confirmed);
+    assert.equal(pose(), 'palm');
+    advance(mai, opponent, 2);
+    assert(mai.startAttack('light', mai.attacks.light, opponent));
+    assert.equal(pose(), 'palm');
+    advance(mai, opponent, 2);
+    assert.equal(pose(), 'windup');
+    advance(mai, opponent, mai.attack.startup - 2);
+    assert.equal(pose(), 'punch');
+    const contact = findHit(mai, opponent);
+    assert(contact);
+    applyHit(contact);
+    advance(mai, opponent, 2);
+    assert(mai.startAttack('kick', mai.attacks.kick, opponent));
+    assert.equal(pose(), 'punch');
+    advance(mai, opponent, 2);
+    assert.equal(pose(), 'low');
+    advance(mai, opponent, 40);
+    assert.equal(pose(), 'guard');
+  }
+});
 
 test('Hùng stays low when holding guard empties it, and recoils when a blow breaks it', () => {
   const first = fighter('hung', 439, 1);

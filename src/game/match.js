@@ -391,8 +391,9 @@ export function startGame(config) {
     const airAttack = hungAirAttack(fighter, target, id);
     if (fighter.hungAirChain && (id === 'light' || id === 'heavy') && !airAttack) return false;
     const normal = (!fighter.onGround && fighter.aerialNormals?.[id]) || fighter.attacks[id];
-    const equipment = crouchAttack || airAttack ? undefined : equippedAttack(fighter, id);
-    const main = crouchAttack || airAttack || normal?.hungKick ? undefined : mainWeaponAttack(fighter, id);
+    const flightNormal = fighter.freeFlying ? fighter.aerialNormals?.[id] : undefined;
+    const equipment = crouchAttack || airAttack || flightNormal ? undefined : equippedAttack(fighter, id);
+    const main = crouchAttack || airAttack || flightNormal || normal?.hungKick ? undefined : mainWeaponAttack(fighter, id);
     const started = fighter.startAttack(id, airAttack ?? crouchAttack ?? equipment ?? main ?? skill ?? normal, target);
     if (started && equipment) {
       fighter.weaponUses = equipment.projectile?.shape === 'slipper' ? 0 : fighter.weaponUses - 1;

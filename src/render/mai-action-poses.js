@@ -26,6 +26,7 @@ function drawStandingKick(ctx, image, fighter, name, drawWeapon) {
   const anchors = standingKicks[style];
   if (!image || !anchors || (!air && name !== 'kick' && !pulse?.kickStyle)) return false;
   const { elapsed, startup, active, recovery } = attack;
+  if (attack.maiPreviousPose && elapsed < Math.min(2, startup)) return false;
   const age = elapsed - startup - active;
   if (!pulse && age >= recovery * .7) return false;
   const column = pulse ? 1 : elapsed < startup ? 0 : age < 0 ? 1 : 2;
@@ -133,9 +134,15 @@ export function maiPoseName(fighter, name, time, stride, transition = {}) {
       light: 'light_punch', heavy: 'heavy_punch', kick: 'kick',
     }[attack.id]] ?? strikes.skill_1;
     const age = attack.elapsed - attack.startup;
+    const unarmedLight = attack.id === 'light' && !armed && !attack.lowStance;
+    const rearPunch = unarmedLight && attack.limbSide === 'right';
     const airborne = !fighter.onGround && !attack.pickupWeapon && !attack.mainWeapon;
-    if (age < 0 || (attack.pulses && !fighter.activePulse && fighter.attackActive)) return airborne ? 'jump' : windup;
-    if (fighter.attackActive) return strike;
+    if (age < 0 || (attack.pulses && !fighter.activePulse && fighter.attackActive)) {
+      if (attack.maiPreviousPose && attack.elapsed < Math.min(2, attack.startup)) return attack.maiPreviousPose;
+      return rearPunch ? 'windup' : airborne ? 'jump' : windup;
+    }
+    if (fighter.attackActive) return rearPunch ? 'punch' : strike;
+    if (unarmedLight && age < attack.active + Math.ceil(attack.recovery / 3)) return rearPunch ? 'windup' : airborne ? 'jump' : 'block';
     if (airborne) return 'jump';
     if (attack.id === 'ultimate' && age < attack.active + 7) return 'lowStep';
     return recovery;
@@ -146,7 +153,7 @@ export function maiPoseName(fighter, name, time, stride, transition = {}) {
   if (name === 'crouchWalk') return Math.floor(stride / 10) % 2 ? 'lowStep' : 'low';
   if (name === 'block') return fighter.crouching ? 'lowBlock' : 'block';
   if (name === 'jump') {
-    if (fighter.freeFlying) return fighter.flightX && !fighter.flightY ? 'dash' : 'jump';
+    if (fighter.freeFlying) return transition.flightStart > 35 ? 'lowStep' : 'jump';
     return fighter.vy > 75 ? 'lowStep' : 'jump';
   }
   if (name === 'roll') return fighter.dash.elapsed < fighter.dash.frames * .84 ? 'jump' : 'low';
@@ -170,6 +177,11 @@ export function drawMaiPose(ctx, images, fighter, name, time, animationTime, str
   const height = bottom - top;
   const bob = pose === 'guard' || pose === 'gather' ? Math.sin(animationTime / 145) * .012 : 0;
   ctx.save();
+  if (name === 'jump' && transition?.flightLean) {
+    ctx.translate(0, -49);
+    ctx.rotate(transition.flightLean);
+    ctx.translate(0, 49);
+  }
   if (pose === 'sweep' && fighter.attack?.kickStyle === 'low') ctx.scale(.8, 1);
   if (pose === 'kick') applyKickBalance(ctx, fighter.attack);
   if (pose === 'cast' && fighter.attack?.pickupWeapon === 'blaster') {

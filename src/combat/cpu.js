@@ -93,11 +93,22 @@ export class CpuController {
     const canEscape = cpu.wallEscapeDirection(player, world.width) || (cpu.hitstun > 0
       && player.combo >= this.config.combat.escape.minCombo && cpu.meter >= this.config.combat.escape.cost);
     const comboReady = this.ready(canEscape ? attack : null, 'escape');
+    const move = id => cpu.skills[id] ?? (!cpu.onGround && cpu.aerialNormals?.[id]) ?? cpu.attacks[id];
+    const inRange = id => {
+      const hurt = player.hurtbox;
+      return cpu.attackBoxesFor({ ...move(id), id }, towards, player).some(hit =>
+        hit.x < hurt.x + hurt.width && hit.x + hit.width > hurt.x
+        && hit.y < hurt.y + hurt.height && hit.y + hit.height > hurt.y);
+    };
 
     if (cpu.disabled || cpu.dash || cpu.attacking || !cpu.onGround) {
       cpu.setGuard(false);
       if (this.state === 'JumpApproach' && !cpu.onGround && !cpu.disabled && !cpu.attacking) {
         cpu.x += towards * Math.min(Math.max(0, distance - 34), cpu.walkingSpeed * .82 * dt);
+        if (player.freeFlying) {
+          const normal = ['light', 'heavy', 'kick'].find(id => id !== this.lastMove && !move(id).groundOnly && inRange(id));
+          if (normal) this.startMove(normal, 'Attack', useAttack);
+        }
       }
       if (comboReady) {
         this.consume(attack, 'escape');
@@ -149,13 +160,6 @@ export class CpuController {
     }
 
     const recoveryLeft = recovering ? attack.startup + attack.active + attack.recovery - attack.elapsed : 0;
-    const move = id => cpu.skills[id] ?? cpu.attacks[id];
-    const inRange = id => {
-      const hurt = player.hurtbox;
-      return cpu.attackBoxesFor({ ...move(id), id }, towards, player).some(hit =>
-        hit.x < hurt.x + hurt.width && hit.x + hit.width > hurt.x
-        && hit.y < hurt.y + hurt.height && hit.y + hit.height > hurt.y);
-    };
     const approachRange = Math.min(this.profile.spacing, cpu.attacks.light.range + player.hurtbox.width / 2 - 6);
     const normals = ['light', 'heavy', 'kick'].filter(id => id !== this.lastMove && inRange(id));
     const ultimate = cpu.skills.ultimate;
@@ -196,6 +200,12 @@ export class CpuController {
         if (this.startMove(skill, 'Attack', useAttack)) return;
       }
       if (this.startMove(normals[Math.floor(this.random() * normals.length)], 'Attack', useAttack)) return;
+      if (player.freeFlying && !shot && distance < 165 && cpu.y - player.y > 34) {
+        cpu.vy = -this.config.stage.jumpVelocity * cpu.jumpMultiplier;
+        cpu.onGround = false;
+        this.setState('JumpApproach', 0);
+        return;
+      }
       if (!shot && world.platforms?.length && distance < 165 && cpu.y - player.y > 34 && player.onGround) {
         cpu.vy = -this.config.stage.jumpVelocity;
         cpu.onGround = false;
