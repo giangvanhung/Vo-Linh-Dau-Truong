@@ -333,7 +333,8 @@ export function createCombatEffects(ctx, images) {
       drawFireRush(fighter, ground);
       return;
     }
-    if (attack?.visual === 'maiWindSlash') {
+    if (attack?.visual === 'maiWindSlash' || (fighter.characterId === 'mai'
+      && (attack?.kickStyle || ['maiAirSide', 'maiAirDrop'].includes(attack?.animation)))) {
       drawMaiWindSlash(fighter, ground);
       return;
     }
@@ -385,15 +386,26 @@ export function createCombatEffects(ctx, images) {
     if (age < -6 || age >= attack.active + 4) return;
     const progress = Math.max(0, Math.min(1, (age - from) / duration));
     const slash = pulse ? attack.pulses.indexOf(pulse) : age >= attack.active && attack.pulses ? 2 : 0;
+    const kick = pulse?.kickStyle ?? attack.kickStyle ?? attack.animation;
+    const path = {
+      side: [46, -67, -.12, 66, 21],
+      rise: [39, -80, -1.1, 86, 37],
+      low: [28, -16, .1, 53, 17],
+      sweep: [43, -13, .12, 66, 19],
+      maiAirSide: [46, -87, -.12, 66, 21],
+      maiAirDrop: [35, -65, .38, 60, 22],
+    }[kick];
     const color = fighter.evolution?.color && fighter.evolving ? fighter.evolution.color : '#9fe7ff';
     ctx.save();
-    ctx.translate(fighter.x + attack.facing * (17 + 22 * progress), ground + fighter.y - 64);
+    ctx.translate(fighter.x + attack.facing * (path?.[0] ?? 17 + 22 * progress),
+      ground + fighter.y + (path?.[1] ?? -64));
     ctx.scale(attack.facing, 1);
-    ctx.rotate([-.84, .55, -1.2][slash] + progress * .64);
+    ctx.rotate((path?.[2] ?? [-.84, .55, -1.2][slash]) + progress * (path ? .23 : .64));
     ctx.globalAlpha = age < 0 ? (age + 6) / 15 : Math.max(.1, 1 - progress * .65) * (age < attack.active ? 1 : .48);
     ctx.shadowColor = color;
     ctx.shadowBlur = 12;
-    drawWindBlade((slash === 2 ? 107 : 80) * (.7 + progress * .3), slash === 2 ? 61 : 42, color);
+    drawWindBlade((path?.[3] ?? (slash === 2 ? 107 : 80)) * (.7 + progress * .3),
+      path?.[4] ?? (slash === 2 ? 61 : 42), color);
     ctx.restore();
   }
 

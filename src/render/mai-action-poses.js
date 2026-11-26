@@ -13,23 +13,43 @@ const standingKicks = {
   side: [[250, 490], [680, 490], [1207, 490]],
   rise: [[365, 997], [680, 997], [1250, 997]],
 };
+const kickHands = [
+  [[365, 140], [764, 143], [1303, 141]],
+  [[365, 776], [769, 635], [1308, 655]],
+];
 
-function drawStandingKick(ctx, image, fighter, name) {
+function drawStandingKick(ctx, image, fighter, name, drawWeapon) {
   const attack = fighter.attack;
-  const anchors = standingKicks[attack?.kickStyle];
-  if (!image || name !== 'kick' || !anchors) return false;
+  const air = name === 'maiAirSide' || name === 'maiAirDrop';
+  const pulse = fighter.activePulse;
+  const style = air ? 'side' : pulse?.kickStyle ?? attack?.kickStyle;
+  const anchors = standingKicks[style];
+  if (!image || !anchors || (!air && name !== 'kick' && !pulse?.kickStyle)) return false;
   const { elapsed, startup, active, recovery } = attack;
   const age = elapsed - startup - active;
-  if (elapsed < startup * .2 || age >= recovery * .7) return false;
-  const column = elapsed < startup ? 0 : age < 0 ? 1 : 2;
-  const rising = attack.kickStyle === 'rise';
+  if (!pulse && age >= recovery * .7) return false;
+  const column = pulse ? 1 : elapsed < startup ? 0 : age < 0 ? 1 : 2;
+  const rising = style === 'rise';
   // Pass through the bent-knee pose before returning from the high kick to guard.
   const retracting = rising && column === 2 && age < recovery * .3;
   const row = Number(rising && !retracting);
-  const [x, y] = (retracting ? standingKicks.side : anchors)[column];
+  const [x, y] = retracting ? standingKicks.side[2] : anchors[column];
   const scale = (fighter.sprite.displaySize ?? 128) * .86 / 467;
+  ctx.save();
+  if (air && !fighter.onGround) {
+    ctx.translate(0, -20);
+    if (name === 'maiAirDrop' && column === 1) {
+      ctx.translate(0, -64);
+      ctx.rotate(.36);
+      ctx.translate(0, 64);
+      ctx.scale(.8, 1);
+    }
+  }
   ctx.drawImage(image, column * 512, row * 512, 512, 512,
     (column * 512 - x) * scale, (row * 512 - y) * scale, 512 * scale, 512 * scale);
+  const [handX, handY] = kickHands[row][column];
+  drawWeapon([(handX - x) * scale, (handY - y) * scale]);
+  ctx.restore();
   return true;
 }
 
@@ -78,23 +98,26 @@ const strikes = {
   heavy_punch: ['windup', 'punch', 'guard'],
   kick: ['guard', 'kick', 'guard'],
   risingKick: ['low', 'kick', 'guard'],
-  lowKick: ['low', 'kick', 'low'],
-  sweep: ['low', 'sweep', 'low'],
+  lowKick: ['low', 'sweep', 'low'],
+  sweep: ['lowStep', 'sweep', 'low'],
+  maiAirSide: ['jump', 'kick', 'jump'],
+  maiAirDrop: ['jump', 'kick', 'jump'],
   skill_1: ['windup', 'slash', 'guard'],
   skill_2: ['windup', 'cast', 'guard'],
   ultimate: ['windup', 'slash', 'guard'],
-  maiCrosswind: ['dash', 'slash', 'guard'],
-  maiFinisher: ['windup', 'cast', 'guard'],
+  maiCrosswind: ['dash', 'kick', 'guard'],
+  maiFinisher: ['low', 'kick', 'guard'],
   maiLowPalm: ['low', 'lowPalm', 'low'],
   maiLowPunch: ['low', 'lowPunch', 'low'],
 };
 
-export function maiPoseName(fighter, name, time, stride) {
+export function maiPoseName(fighter, name, time, stride, transition = {}) {
   const attack = fighter.attack;
   if (name === 'ko') return time < 75 ? 'hit' : time < 170 ? 'fall' : 'down';
   if (name === 'knockdown') {
     const age = (fighter.knockdownFrames ?? KNOCKDOWN_FRAMES) - fighter.knockdown;
-    return age < 4 ? 'hit' : age < 10 ? 'fall' : fighter.knockdown > 5 ? 'down' : 'low';
+    return age < 4 ? 'hit' : age < 10 ? 'fall' : fighter.knockdown > 8 ? 'down'
+      : fighter.knockdown > 4 ? 'low' : 'lowStep';
   }
   if (name === 'hit') return 'hit';
   if (attack?.pickupWeapon === 'blaster') {
@@ -102,7 +125,6 @@ export function maiPoseName(fighter, name, time, stride) {
     return amount >= .72 ? 'cast' : amount >= .25 ? 'windup' : 'guard';
   }
   if (attack) {
-    if (attack.id === 'ultimate' && name === 'maiCrosswind') return 'punch';
     const normal = name === 'light_punch' || name === 'heavy_punch';
     const armed = normal && (attack.mainWeapon === 'blade' || attack.pickupWeapon);
     const poseSet = attack.kickStyle === 'rise' ? 'risingKick'
@@ -110,25 +132,34 @@ export function maiPoseName(fighter, name, time, stride) {
     const [windup, strike, recovery] = strikes[poseSet] ?? strikes[{
       light: 'light_punch', heavy: 'heavy_punch', kick: 'kick',
     }[attack.id]] ?? strikes.skill_1;
-    if (attack.elapsed < attack.startup || (attack.pulses && !fighter.activePulse && fighter.attackActive)) return windup;
-    if (fighter.attackActive || attack.elapsed < attack.startup + attack.active + 3) return strike;
+    const age = attack.elapsed - attack.startup;
+    const airborne = !fighter.onGround && !attack.pickupWeapon && !attack.mainWeapon;
+    if (age < 0 || (attack.pulses && !fighter.activePulse && fighter.attackActive)) return airborne ? 'jump' : windup;
+    if (fighter.attackActive) return strike;
+    if (airborne) return 'jump';
+    if (attack.id === 'ultimate' && age < attack.active + 7) return 'lowStep';
     return recovery;
   }
+  if (transition.landing > 0 && ['idle', 'run', 'crouch'].includes(name)) return 'lowStep';
+  if (transition.turn > 0 && ['idle', 'run'].includes(name)) return 'block';
   if (name === 'run') return Math.floor(stride / 17) % 2 ? 'runA' : 'runB';
   if (name === 'crouchWalk') return Math.floor(stride / 10) % 2 ? 'lowStep' : 'low';
   if (name === 'block') return fighter.crouching ? 'lowBlock' : 'block';
-  if (name === 'jump') return fighter.freeFlying && fighter.flightX && !fighter.flightY ? 'dash' : 'jump';
+  if (name === 'jump') {
+    if (fighter.freeFlying) return fighter.flightX && !fighter.flightY ? 'dash' : 'jump';
+    return fighter.vy > 75 ? 'lowStep' : 'jump';
+  }
   if (name === 'roll') return fighter.dash.elapsed < fighter.dash.frames * .84 ? 'jump' : 'low';
-  if (name === 'dash') return 'dash';
+  if (name === 'dash') return fighter.dash.elapsed < fighter.dash.frames * .72 ? 'dash' : 'lowStep';
   if (name === 'crouch') return 'low';
   return name === 'charge' ? 'gather' : 'guard';
 }
 
-export function drawMaiPose(ctx, images, fighter, name, time, animationTime, stride, drawWeapon) {
-  if (drawStandingKick(ctx, images[3], fighter, name)) return true;
-  const pose = maiPoseName(fighter, name, time, stride);
+export function drawMaiPose(ctx, images, fighter, name, time, animationTime, stride, drawWeapon, transition) {
+  if (drawStandingKick(ctx, images[3], fighter, name, drawWeapon)) return true;
+  const pose = maiPoseName(fighter, name, time, stride, transition);
   const base = poses[pose];
-  const running = name === 'run' && images[2];
+  const running = (pose === 'runA' || pose === 'runB') && images[2];
   const image = running || images[base ? 0 : 1];
   const runFrame = ((Math.floor(stride / 11) % 8) + 8) % 8;
   const frame = running ? runPoses[runFrame] : base ?? lowPoses[pose];
@@ -139,7 +170,8 @@ export function drawMaiPose(ctx, images, fighter, name, time, animationTime, str
   const height = bottom - top;
   const bob = pose === 'guard' || pose === 'gather' ? Math.sin(animationTime / 145) * .012 : 0;
   ctx.save();
-  if (pose === 'kick' || pose === 'sweep') applyKickBalance(ctx, fighter.attack);
+  if (pose === 'sweep' && fighter.attack?.kickStyle === 'low') ctx.scale(.8, 1);
+  if (pose === 'kick') applyKickBalance(ctx, fighter.attack);
   if (pose === 'cast' && fighter.attack?.pickupWeapon === 'blaster') {
     const { angle } = weaponMotion(fighter.attack);
     const recoil = (-.10 - angle) / .26;

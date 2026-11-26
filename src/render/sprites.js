@@ -186,13 +186,19 @@ export function createSpriteRenderer(ctx, characters, drawHeld = () => {}, getHu
       : 0;
     if (fighter.characterId === 'mai') {
       preloadFighter('mai');
+      const facing = fighter.attack?.facing ?? fighter.dash?.facing ?? fighter.facing;
+      clock.landing = clock.airborne && fighter.onGround ? 54 : Math.max(0, (clock.landing ?? 0) - delta);
+      clock.turn = clock.facing && clock.facing !== facing && fighter.onGround
+        ? 42 : Math.max(0, (clock.turn ?? 0) - delta);
+      clock.facing = facing;
+      clock.airborne = !fighter.onGround;
       ctx.save();
       ctx.translate(fighter.x, ground + fighter.y);
-      ctx.scale(fighter.attack?.facing ?? fighter.dash?.facing ?? fighter.facing, 1);
+      ctx.scale(facing, 1);
       if (fighter.invulnerable) ctx.globalAlpha = .78;
       if (filter) ctx.filter = filter;
       const drawn = drawMaiPose(ctx, maiPoses, fighter, name, animationTime - clock.start,
-        animationTime, movementPose?.stride ?? fighter.walkDistance, drawWeapon);
+        animationTime, movementPose?.stride ?? fighter.walkDistance, drawWeapon, clock);
       ctx.restore();
       if (drawn) return true;
     }

@@ -12,18 +12,19 @@ function standardNormals(character, hung) {
   const { hungKick: low, ...lowKick } = hung.crouchAttacks.heavy;
   const { hungKick: sweep, ...lowSweep } = hung.crouchAttacks.kick;
   const { light } = character.attacks;
+  const { standingKicks, aerialNormals } = character;
   return {
     ...character,
-    aerialNormals: character.attacks,
+    aerialNormals: { ...character.attacks, ...aerialNormals },
     attacks: {
       ...character.attacks,
       light: { ...(light.label === hung.attacks.light.label ? light : hung.attacks.light), unarmed: true },
-      heavy: { ...sideKick, kickStyle: 'side' },
-      kick: { ...launcher, animation: 'kick', kickStyle: 'rise' },
+      heavy: { ...sideKick, kickStyle: 'side', ...standingKicks?.heavy },
+      kick: { ...launcher, animation: 'kick', kickStyle: 'rise', ...standingKicks?.kick },
     },
     crouchAttacks: {
       light: { ...hung.crouchAttacks.light, ...character.crouchAttacks?.light },
-      heavy: { ...lowKick, animation: 'sweep', kickStyle: 'low' },
+      heavy: { ...lowKick, animation: 'sweep', kickStyle: 'low', ...standingKicks?.low },
       kick: { ...lowSweep, ...character.crouchAttacks?.kick, kickStyle: 'sweep' },
     },
   };

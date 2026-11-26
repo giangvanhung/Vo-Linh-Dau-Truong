@@ -137,7 +137,9 @@
           "to": 16,
           "knockback": 25,
           "hitstun": 14,
-          "animation": "maiCrosswind"
+          "animation": "maiCrosswind",
+          "kickStyle": "side",
+          "limbBoxes": [{ "near": 15, "far": 77, "top": 72, "height": 17 }]
         },
         {
           "from": 16,
@@ -146,6 +148,8 @@
           "hitstun": 30,
           "damage": 21,
           "animation": "maiFinisher",
+          "kickStyle": "rise",
+          "limbBoxes": [{ "near": 12, "far": 62, "top": 110, "height": 64 }],
           "launch": 300,
           "knockdownOnLanding": true
         }
@@ -193,8 +197,53 @@
   "dashCooldownFrames": 51,
   "profile": {
     "role": "Sát Thủ Phong",
-    "strength": "Lướt nhanh, nối đòn ngắn và ép tầm trung bằng lưỡi gió. Khi tiến hóa, Phong Kiếm còn quay về.",
-    "weakness": "Máu thấp, đấm nặng yếu hơn và dễ bị phạt khi lao vào hoặc nhảy vào."
+    "strength": "Đá ngang giữ tầm, đá hất bắt đối thủ trên không, quét thấp đánh ngã. Tam Thiên Phong kết thúc bằng hai cú đá.",
+    "weakness": "Máu thấp và dễ bị phạt khi đá hất hoặc quét hụt."
+  },
+  "standingKicks": {
+    "heavy": {
+      "label": "Hoành Phong Cước",
+      "startup": 9,
+      "active": 5,
+      "recovery": 17,
+      "limbBoxes": [{ "near": 17, "far": 76, "top": 72, "height": 17 }]
+    },
+    "kick": {
+      "label": "Thăng Phong Cước",
+      "startup": 11,
+      "active": 5,
+      "recovery": 22,
+      "launch": 410,
+      "limbBoxes": [
+        { "near": 16, "far": 45, "top": 79, "height": 34 },
+        { "near": 35, "far": 63, "top": 110, "height": 33 }
+      ]
+    },
+    "low": {
+      "label": "Phong Cước Thấp",
+      "startup": 7,
+      "active": 4,
+      "recovery": 15,
+      "limbBoxes": [{ "near": 12, "far": 49, "top": 25, "height": 18 }]
+    }
+  },
+  "aerialNormals": {
+    "heavy": {
+      "label": "Hoành Phong Trên Không",
+      "damage": 12, "startup": 9, "active": 5, "recovery": 18,
+      "range": 60, "knockback": 165, "hitstun": 19, "hitstop": 4, "guardDamage": 23,
+      "cancelInto": ["kick"],
+      "animation": "maiAirSide", "unarmed": true,
+      "limbBoxes": [{ "near": 17, "far": 74, "top": 92, "height": 19 }]
+    },
+    "kick": {
+      "label": "Giáng Phong Cước",
+      "damage": 9, "startup": 7, "active": 5, "recovery": 15,
+      "range": 50, "knockback": 125, "hitstun": 17, "hitstop": 2, "guardDamage": 17,
+      "cancelInto": [],
+      "animation": "maiAirDrop", "unarmed": true,
+      "limbBoxes": [{ "near": 16, "far": 57, "top": 75, "height": 25 }]
+    }
   },
   "attacks": {
     "light": {
